@@ -41,12 +41,6 @@ As a quick introduction, you perform three (3) steps while using TensorRT-LLM <b
 
 5. (Optional, but implemented in this example) Serve your LLM on the [Triton Inference Server](https://developer.nvidia.com/triton-inference-server)
 
-- [NVIDIA's TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM?tab=readme-ov-file) <br>
-- [Llama3-8B model on Hugging Face](https://huggingface.co/meta-llama/Meta-Llama-3-8B) <br>
-- [Creating a Hugging Face Write Token](https://huggingface.co/docs/hub/en/security-tokens) <br>
-- [Llama example on TesorRT-LLM Repo](https://github.com/NVIDIA/TensorRT-LLM/tree/main/examples/llama) <br>
-- [Triton Inference Server](https://developer.nvidia.com/triton-inference-server) <br>
-
 Scaling is done via Elastic Kubernetes Service (EKS). As you will see below, your AWS resources will be provisioned via the EKSCTL and the Kubectl.
 
 </p>
@@ -81,50 +75,13 @@ These instructions will get you a copy of the project up and running on your AWS
 
 ### Prerequisites
 
-What things you need to install the software and how to install them.
+#### Setup the VPC
+Please make sure that the VPC has been setup, from the given example in [infrastructure](infrastructure)
+#### Setup the EKS cluster
+Please make sure the EKS cluster has been setup, either from a given example in [infrastructure](infrastructure)
 
-1. [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-```
-# Linux
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
+Run all the steps found in [infrastructure](infrastructure) before trying to deploy an inference solution with TensorRT-LLM.
 
-# Mac OS
-curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
-sudo installer -pkg AWSCLIV2.pkg -target /
-
-# Windows
-msiexec.exe /i https://awscli.amazonaws.com/AWSCLIV2.msi
-```
-2. Install [eksctl](https://eksctl.io/installation/)
-3. Install [kubectl](https://kubernetes.io/docs/tasks/tools/)
-4. Install [docker](https://docs.docker.com/get-docker/)
-5. Have a VPC ready. The CloudFormation template to deploy the VPC can be found in
-
-```
-cd 0.\ Setup\ VPC
-vpc-cf.yaml
-```
-
-Run 
-```
-aws cloudformation describe-stacks --stack-name trtllm-vpc-stack
-```
-and grab the IDs of the VPC, PublicSubnet1, PublicSubnet2, PrivateSubnet1 and PrivateSubnet2. Note: you can replace "trtllm-vpc-stack" with the stack name you provide.
-
-Then, run
-```
-./edit-vpc-config.sh
-
-# Example
-Enter your VPC ID: vpc-xxxxxxxxxxxxxxxxx
-Enter your Private Subnet 1 ID: subnet-xxxxxxxxxxxxxxxxx
-Enter your Private Subnet 2 ID: subnet-xxxxxxxxxxxxxxxxx
-Enter your Public Subnet 1 ID: subnet-xxxxxxxxxxxxxxxxx
-Enter your Public Subnet 2 ID: subnet-xxxxxxxxxxxxxxxxx
-```
-and enter those 4 IDs. You are now ready to run the rest of the steps!
 
 ### Installing
 
@@ -142,7 +99,7 @@ Tag: latest
 ```
 For more information on configuring an ECR (Elastic Container Registry) Repository, check [this](https://docs.aws.amazon.com/AmazonECR/latest/userguide/Repositories.html).
 
-3. Run ./setup-secrets.sh and fill out whatever is prompted
+3. Run `./setup-secrets.sh` and fill out whatever is prompted
 ```
 cd ..
 ./setup-secrets
@@ -182,7 +139,7 @@ trtllm-build --checkpoint_dir /tensorrt/tensorrt-models/${MODEL_NAME}/0.10.0.dev
 ```
 AWS_ACCOUNT_ID = $(aws sts get-caller-identity --query Account --output text)
 ```
-6. Run docker build Dockerfile and push to your private ECR repo
+6. Run docker build Dockerfile and push to your private ECR repo. NOTE: This step must be done on a **GPU ENABLED INSTANCE**. The recommendation is to `git clone` this repo onto the instance and run `docker run` on there. Or, if you set up the cluster using the instructions in `1.infrastructure`, the repository should already be cloned onto the instances - you can simply `ssh` into one of your worker instances.
 ```
 cd 2.\ Setup\ Container
 docker build Dockerfile
@@ -198,10 +155,10 @@ docker tag image-id ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-2.amazonaws.com/trtllm-inf
 
 docker push ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-2.amazonaws.com/trtllm-inference-registry
 ```
-8. Create your EKS Cluster and NodeGroup
+8. (This step should have been done as part of the prerequisites. This is just here as a reminder) Create your EKS Cluster and NodeGroup. NOTE: Back to your local machine. 
 ```
-cd ../1.\ Setup\ Cluster
-eksctl create cluster cluster-config.yaml
+cd ../../1.infrastructure/1_setup_cluster/
+eksctl create cluster -f trtllm-cluster-config-example.yaml
 ```
 Note: If you make changes to your nodegroup after this step, you can just run
 ```
@@ -209,13 +166,13 @@ eksctl create nodegroup
 ```
 henceforth.
 
-7. Set up your ECR Secret (Kubernetes Secret)
+9. Set up your ECR Secret (Kubernetes Secret)
 ```
 cd ../2.\ Setup\ Container
 ./ecr-secret.sh
 ```
 
-8. Create your deployment: the pods that will be hosting your Engine used by the Triton Inference Server
+10. Create your deployment: the pods that will be hosting your Engine used by the Triton Inference Server
 ```
 kubectl apply -f manifest.yaml 
 
@@ -224,9 +181,10 @@ kubectl get pods
 kubectl logs pod-name
 ```
 
-9. Create an ingress of type Application Load Balancer to Load Balance to pods
+## 🚀 Scaling and Load Balancing
+1. Create an ingress of type Application Load Balancer to Load Balance to pods
 
-Before running kubectl apply, you need to install the AWS Load Balancer Controller. You can follow the instructions found in ["Install the AWS Load Balancer Controller add-on using Kubernetes Manifests"](https://docs.aws.amazon.com/eks/latest/userguide/lbc-manifest.html) (recommended). Alternatively, if you like using HELM instead of manifests, you can follow the instructions ["Install the AWS Load Balancer Controller using Helm"](https://docs.aws.amazon.com/eks/latest/userguide/lbc-helm.html).
+Before running `kubectl apply`, you need to install the AWS Load Balancer Controller. You can follow the instructions found in ["Install the AWS Load Balancer Controller add-on using Kubernetes Manifests"](https://docs.aws.amazon.com/eks/latest/userguide/lbc-manifest.html) (recommended). Alternatively, if you like using HELM instead of manifests, you can follow the instructions ["Install the AWS Load Balancer Controller using Helm"](https://docs.aws.amazon.com/eks/latest/userguide/lbc-helm.html).
 
 Once you've installed the load balancer controller, you can run:
 
@@ -262,9 +220,9 @@ curl -X POST k8s-default-trtllmin-<rest of ALB DNS>.us-east-2.elb.amazonaws.com/
 ```
 to test whether or not you are receiving the responses for your inference requests.
 
-10. Set up auto scaling (CAS + HPA)
+2. Set up auto scaling (CAS + HPA)
 
-    CLUSTER AUTO SCALER 
+    ### CLUSTER AUTO SCALER 
 
     a. Deploy the Cluster Autoscaler to your cluster
 
@@ -330,7 +288,7 @@ to test whether or not you are receiving the responses for your inference reques
     kubectl scale --replicas=x deploy llama3
     ```
 
-    HORIZONTAL POD AUTOSCALER
+    ### HORIZONTAL POD AUTOSCALER
 
     a. Install the Metrics Server
     ```
@@ -358,7 +316,8 @@ to test whether or not you are receiving the responses for your inference reques
     to check the details of your Horizontal Pod Autoscaler.
 
 
-11. Set up frontend (option of instance level or pod level)
+## 🎈 Application
+1. Set up frontend (option of instance level or pod level)
 
 To get this up and running ASAP, you can manually create an Application Load Balancer and Auto Scaling Group from your AWS Account. You can launch the instances into the existing public subnet (not recommended) or private subnet and create your routing rules accordingly. You can use the following user data script for your instances:
 ```
@@ -404,9 +363,3 @@ This is the frontend you should see.
 ## ✍️ Authors <a name = "authors"></a>
 
 - [@amanrsh](https://github.com/amanshanbhag) - Idea & Initial work
-
-## 🎉 Acknowledgements <a name = "acknowledgement"></a>
-
-- Hat tip to anyone whose code was used
-- Inspiration
-- References

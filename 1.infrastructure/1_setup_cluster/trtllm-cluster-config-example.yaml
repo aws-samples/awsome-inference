@@ -121,11 +121,11 @@ managedNodeGroups:
       echo "Installed"
 
       echo "Cloning github repo"
-      git clone https://amanshanbhag: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@github.com/amanshanbhag/trtllm-inference-p5.git /home/ec2-user/trtllm-inference-p5
-      cp /home/ec2-user/trtllm-inference-p5/3.\ Within\ Container/* /home/ec2-user
-      cp /home/ec2-user/trtllm-inference-p5/2.\ Setup\ Container/Dockerfile /home/ec2-user
-      cp /home/ec2-user/trtllm-inference-p5/2.\ Setup\ Container/healthcheck.py /home/ec2-user
-      cp /home/ec2-user/trtllm-inference-p5/2.\ Setup\ Container/requirements.txt /home/ec2-user
+      git clone https://github.com/aws-samples/awsome-inference.git /home/ec2-user/trtllm-inference-p5
+      cp /home/ec2-user/trtllm-inference-p5/2.projects/trtllm-inference/3.\ Within\ Container/* /home/ec2-user
+      cp /home/ec2-user/trtllm-inference-p5/2.projects/trtllm-inference/2.\ Setup\ Container/Dockerfile /home/ec2-user
+      cp /home/ec2-user/trtllm-inference-p5/2.projects/trtllm-inference/2.\ Setup\ Container/healthcheck.py /home/ec2-user
+      cp /home/ec2-user/trtllm-inference-p5/2.projects/trtllm-inference/2.\ Setup\ Container/requirements.txt /home/ec2-user
       echo "Cloned"
 
       # NODE_LABELS=$(aws eks describe-cluster --name trtllm-inference-cluster --query "cluster.endpoint" --output text)

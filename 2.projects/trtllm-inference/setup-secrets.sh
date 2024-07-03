@@ -39,7 +39,7 @@ read -p "Enter your Docker registry name (enter trtllm-inference-registry if you
 read -p "Enter the image tag for the image you'd like to use (enter latest if you want to use default): " IMAGE_TAG
 
 # Update cluster-config.yaml
-sed -i "s/cr-0ce6be6d411d2f43f/$CR_ID/" 1.\ Setup\ Cluster/cluster-config.yaml
+sed -i "s/cr-0ce6be6d411d2f43f/$CR_ID/" ../../infrastructure/1_setup_cluster/trtllm-cluster-config-example.yaml
 
 # Update 3.local_inference.sh
 sed -i "s/HF_USERNAME=\"[^\"]*\"/HF_USERNAME=\"$HF_USERNAME\"/" 3.\ Within\ Container/3.local_inference.sh
