@@ -1,0 +1,95 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  # Providing directly here to keep track.
+  name: nims-inference-cluster
+  region: us-east-2
+  version: "1.29"
+  tags:
+    karpenter.sh/discovery: nims-inference-cluster
+    created-by: amanrsh
+    env: nims-inference-cluster
+
+# Using an existing VPC - In an actual workflow, create VPC, get IDs (as environment variables) and use below
+vpc:
+  id: $PLACEHOLDER_VPC_ID
+  subnets:
+    private:
+      us-east-2a:
+        id: $PLACEHOLDER_SUBNET_PRIVATE_1
+      us-east-2b:
+        id: $PLACEHOLDER_SUBNET_PRIVATE_2
+    public:
+      us-east-2a:
+        id: $PLACEHOLDER_SUBNET_PUBLIC_1
+      us-east-2b:
+        id: $PLACEHOLDER_SUBNET_PUBLIC_2
+  clusterEndpoints:
+    privateAccess: true
+    publicAccess: true
+      
+cloudwatch:
+  clusterLogging:
+    enableTypes: ["*"]  
+
+iam:
+  withOIDC: true
+  serviceAccounts:
+    - metadata:
+        name: nims-service-account
+      attachPolicyARNs:
+        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
+
+addons:
+  - name: vpc-cni
+    version: 1.18.1-eksbuild.1
+    configurationValues: '{"env":{"ENABLE_PREFIX_DELEGATION":"true", "ENABLE_POD_ENI":"true", "POD_SECURITY_GROUP_ENFORCING_MODE":"standard"},"enableNetworkPolicy": "true"}'
+    resolveConflicts: overwrite      
+  - name: amazon-cloudwatch-observability
+    version: v1.6.0-eksbuild.1
+            
+managedNodeGroups:
+  - name: nims-inference-cluster
+    instanceType: $INSTANCE_TYPE
+    instancePrefix: nims-compute-node
+    privateNetworking: true
+    efaEnabled: true
+    minSize: 1
+    desiredCapacity: 1
+    maxSize: 2
+    volumeSize: 500
+    # Uncomment capacityReservation if you need it
+    # capacityReservation:
+    #   capacityReservationTarget:
+    #     capacityReservationID: "cr-0ce6be6d411d2f43f"
+    ami: ami-07c8bc6b0bb890e9e
+    amiFamily: AmazonLinux2
+    ssh:
+      publicKeyName: $PUBLIC_KEYPAIR_NAME
+      sourceSecurityGroupIds: [$SECURITY_GROUP_IDS]
+    updateConfig:
+      maxUnavailablePercentage: 50
+    iam:
+      withAddonPolicies:
+        externalDNS: true
+        certManager: true
+        autoScaler: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+        imageBuilder: true
+        xRay: true
+        awsLoadBalancerController: true
+        albIngress: true
+    overrideBootstrapCommand: |
+      #!/bin/bash
+      echo "Bootstrapping..."
+
+      /etc/eks/bootstrap.sh nims-inference-cluster      
+
+      nvidia-ctk runtime configure --runtime=containerd --set-as-default
+      systemctl restart containerd
+
+      echo "Bootstrapping complete!"              

@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llama3
+  labels:
+    created-by: amanrsh
+    type: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: llama3
+      instance: llama3
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+      labels:
+        name: llama3
+        app: llama3
+        instance: llama3
+        created-by: amanrsh
+    spec:
+      containers:
+      - name: trtllm-inference-container
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 300
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 300
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3  
+        image: 123456789012.dkr.ecr.us-east-2.amazonaws.com/trtllm-inference-registry:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 1100m
+            memory: 19000Mi
+          limits:
+            nvidia.com/gpu: "1"
+        volumeMounts:
+          - mountPath: /tmp
+            name: tmp-volume
+      serviceAccountName: trtllm-service-account
+      imagePullSecrets:
+        - name: ecr-secret
+      volumes:
+        - name: tmp-volume
+          emptyDir:
+            medium: Memory      
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llama3-service
+spec:
+  type: NodePort
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: app
+    - port: 8080
+      targetPort: 8080
+      name: health
+    - port: 8002
+      targetPort: 8002
+      name: metrics
+  selector:
+    app: llama3

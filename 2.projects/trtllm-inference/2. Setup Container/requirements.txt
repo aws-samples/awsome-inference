@@ -1,0 +1,4 @@
+protobuf
+SentencePiece
+torch
+flask

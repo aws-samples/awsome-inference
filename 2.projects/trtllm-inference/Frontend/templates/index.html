@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inference using TRT-LLM on AWS P5 EC2 instances - Scaling with EKS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+        }
+        .main-form, .additional-form {
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .main-form {
+            width: 65%;
+        }
+        .additional-form {
+            width: 30%;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        form {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .result-container {
+            border: 1px solid #ccc;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .result-container h2 {
+            margin-top: 0;
+        }
+        .result-item {
+            margin-bottom: 20px;
+        }
+        .error {
+            color: #ff0000;
+            font-weight: bold;
+        }
+        .max-tokens-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            justify-content: space-between;
+        }
+        .max-tokens-container label {
+            margin-right: 10px;
+        }
+        .max-tokens-container input[type="number"] {
+            width: 60px;
+            margin-right: 10px;
+        }
+        .max-tokens-container input[type="range"] {
+            flex-grow: 1;
+            margin-left: 10px;
+            width: 100%;
+        }
+        .prompt-textarea {
+            width: 100%;
+            height: 100px;
+            font-size: 16px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        .prompt-panel {
+            position: fixed;
+            top: 50px;
+            left: 20px;
+            width: 200px;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        .prompt-panel h2 {
+            margin-top: 0;
+        }
+
+        .prompt-panel ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .prompt-panel li {
+            cursor: pointer;
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .prompt-panel li:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body onload="updateMaxTokens()">
+    <div class="container">
+        <div class="main-form">
+            <h1>Inference using TRT-LLM on AWS P5 EC2 instances - Scaling with EKS</h1>
+            <div class="result-container">
+                {% if error %}
+                <div class="result-item error">
+                    <h2>Error:</h2>
+                    <p>{{ error }}</p>
+                </div>
+                {% endif %}
+                {% if history %}
+                    {% for item in history %}
+                        <div class="result-item">
+                            <h2>Past Query:</h2>
+                            <p><strong>Prompt:</strong> {{ item.prompt }}</p>
+                            <p><strong>Result:</strong> {{ item.result | safe }}</p>
+                            <p><strong>Latency:</strong> {{ item.latency }}</p>
+                            <p><strong>Token Count:</strong> {{ item.token_count }}</p>
+                            <p><strong>Total Tokens:</strong> {{ item.total_tokens }}</p>
+                            <p><strong>Tokens per Second:</strong> {{ item.tokens_per_second }}</p>
+                        </div>
+                    {% endfor %}
+                {% endif %}                
+                {% if result %}
+                    <div class="result-item">
+                        <h2>Current Result:</h2>
+                        <p><strong>Prompt:</strong> {{ prompt }}</p>
+                        <p><strong>Result:</strong> {{ result | safe }}</p>
+                    </div>
+                {% endif %}
+                <form method="post" action="{{ url_for('index') }}">
+                    <textarea class="prompt-textarea" id="prompt" name="prompt" placeholder="Enter a prompt" required></textarea>
+                    <div class="max-tokens-container">
+                        <label for="max-tokens">Max Tokens:</label>
+                        <input type="number" id="max-tokens" name="max-tokens" min="1" max="2000" value="200">
+                    </div>
+                    <button type="submit">Generate</button>
+                </form>
+                <input type="range" id="max-tokens-slider" name="max-tokens-slider" min="1" max="2000" value="200" oninput="updateMaxTokens()">
+            </div>
+        </div>
+        <div class="additional-form">
+            <h2>Additional Options</h2>
+            <p>
+                <label for="bad-words">Bad Words:</label>
+                <input type="text" id="bad-words" name="bad-words">
+                <button type="button" onclick="addBadWord()">Add</button>
+                <ul id="bad-words-list"></ul>
+            </p>
+            <p>
+                <label for="stop-words">Stop Words:</label>
+                <input type="text" id="stop-words" name="stop-words">
+                <button type="button" onclick="addStopWord()">Add</button>
+                <ul id="stop-words-list"></ul>
+            </p>
+        </div>
+        <div class="prompt-panel">
+            <h2>Example Prompts</h2>
+            <ul>
+                <li data-prompt="What is a Large Language Model?">What is a Large Language Model?</li>
+                <li data-prompt="hello world">hello world</li>
+                <li data-prompt="What is the quickest way for me to print numbers from 1 to 100 in Python?">What is the quickest way for me to print numbers from 1 to 100 in Python?</li>
+                <li data-prompt="&lt;|begin_of_text|&gt;&lt;|start_header_id|&gt;system&lt;|end_header_id|&gt;
+
+                You are a helpful AI assistant for travel tips and recommendations&lt;|eot_id|&gt;&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt;
+                
+                What can you help me with?&lt;|eot_id|&gt;&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;">From Meta for INST model</li>
+                <li data-prompt="Can you do a character analysis on the character &quot;Grover&quot; from the Percy Jackson series? You response should be in essay format of no less than 1500 words.">Character Analysis Essay</li>
+                
+            </ul>
+        </div>
+    </div>
+    <script>
+        function updateMaxTokens() {
+            const maxTokensInput = document.getElementById('max-tokens');
+            const maxTokensSlider = document.getElementById('max-tokens-slider');
+
+            // Update the slider value when the input field changes
+            maxTokensInput.addEventListener('input', () => {
+                maxTokensSlider.value = maxTokensInput.value;
+            });
+
+            // Update the input field value when the slider changes
+            maxTokensSlider.addEventListener('input', () => {
+                maxTokensInput.value = maxTokensSlider.value;
+            });
+        }
+        function addBadWord() {
+            var badWordInput = document.getElementById("bad-words");
+            var badWordsList = document.getElementById("bad-words-list");
+            var badWord = badWordInput.value.trim();
+
+            if (badWord !== "") {
+                const listItem = document.createElement("li");
+                listItem.textContent = badWord;
+                const removeButton = document.createElement("button");
+                removeButton.textContent = "Remove";
+                removeButton.onclick = function() {
+                    badWordsList.removeChild(listItem);
+                };
+                listItem.appendChild(removeButton);
+                badWordsList.appendChild(listItem);
+                badWordInput.value = "";
+            }
+        }
+        function addStopWord() {
+            const stopWordInput = document.getElementById('stop-words');
+            const stopWordsList = document.getElementById('stop-words-list');
+            const stopWord = stopWordInput.value.trim();
+
+            if (stopWord !== "") {
+                const listItem = document.createElement("li");
+                listItem.textContent = stopWord;
+                const removeButton = document.createElement("button");
+                removeButton.textContent = "Remove";
+                removeButton.onclick = function() {
+                    stopWordsList.removeChild(listItem);
+                };
+                listItem.appendChild(removeButton);
+                stopWordsList.appendChild(listItem);
+                stopWordInput.value = "";
+            }
+        }   
+        // New function to handle click on example prompts
+        function handlePromptClick(event) {
+            // Get the prompt text from the data-prompt attribute
+            const promptText = event.target.getAttribute('data-prompt');
+
+            // Set the prompt text in the text box
+            const textBox = document.querySelector('textarea.prompt-textarea');
+            textBox.value = promptText;
+
+            // Prevent the default form submission
+            event.preventDefault();
+        }
+
+        // Select the list items in the prompt panel
+        const promptItems = document.querySelectorAll('.prompt-panel li');
+
+        // Add click event listener to each list item
+        promptItems.forEach((item) => {
+            item.addEventListener('click', handlePromptClick);
+        });    
+    </script>
+</body>
+</html>

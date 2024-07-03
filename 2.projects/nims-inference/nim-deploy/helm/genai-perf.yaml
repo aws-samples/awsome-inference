@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: genai-perf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: genai-perf
+  template:
+    metadata:
+      labels:
+        app: genai-perf
+    spec:
+      containers:
+      - name: genai-perf
+        image: nvcr.io/nvidia/tritonserver:24.04-py3-sdk
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        command: ["/bin/sh", "-c"]
+        args: 
+          # - genai-perf -m llama3 --service-kind openai --endpoint v1/chat/completions --output-format vllm --input-type synthetic --num-of-output-prompts 100 --random-seed 123 --input-tokens-mean 200 --input-tokens-stddev 0 --streaming --expected-output-tokens 100 --concurrency 5000 --measurement-interval 4000 --profile-export-file my_profile_export.json --url openai-service:8000
+          # - genai-perf -m meta/llama3-8b-instruct --backend vllm --service-kind openai --endpoint v1/chat/completions --endpoint-type completions --num-prompts 100 --synthetic-input-tokens-mean 200 --synthetic-input-tokens-stddev 0 --random-seed 123 --output-tokens-mean 100 --streaming --concurrency 5000 --measurement-interval 4000 --profile-export-file my_profile_export.json --url openai-service:8000 -v
+          - genai-perf -m meta/llama3-8b-instruct --service-kind openai --endpoint v1/chat/completions --endpoint-type chat --prompt-source synthetic --num-prompts 500 --random-seed 123 --synthetic-input-tokens-mean 128 --synthetic-input-tokens-stddev 0 --streaming --output-tokens-mean 2048 --output-tokens-stddev 0 --tokenizer hf-internal-testing/llama-tokenizer --concurrency 3000 --measurement-interval 10000 --profile-export-file my_profile_export.json --url openai-service:8000 -v; ls; cat my_profile_export.json; sleep 36000000000000

@@ -1,0 +1,144 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  # Providing directly here to keep track.
+  name: trtllm-inference-cluster
+  region: us-east-2
+  version: "1.29"
+  tags:
+    karpenter.sh/discovery: trtllm-inference-cluster
+    created-by: amanrsh
+    env: trtllm-inference-cluster
+
+# Using an existing VPC - In an actual workflow, create VPC, get IDs (as environment variables) and use below
+vpc:
+  id: $PLACEHOLDER_VPC_ID
+  subnets:
+    private:
+      us-east-2a:
+        id: $PLACEHOLDER_SUBNET_PRIVATE_1
+      us-east-2b:
+        id: $PLACEHOLDER_SUBNET_PRIVATE_2
+    public:
+      us-east-2a:
+        id: $PLACEHOLDER_SUBNET_PUBLIC_1
+      us-east-2b:
+        id: $PLACEHOLDER_SUBNET_PUBLIC_2
+  clusterEndpoints:
+    privateAccess: true
+    publicAccess: true
+      
+cloudwatch:
+  clusterLogging:
+    enableTypes: ["*"]  
+
+iam:
+  withOIDC: true
+  serviceAccounts:
+    - metadata:
+        name: trtllm-service-account
+      attachPolicyARNs:
+        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
+
+addons:
+  - name: vpc-cni
+    version: 1.18.1-eksbuild.1
+    configurationValues: '{"env":{"ENABLE_PREFIX_DELEGATION":"true", "ENABLE_POD_ENI":"true", "POD_SECURITY_GROUP_ENFORCING_MODE":"standard"},"enableNetworkPolicy": "true"}'
+    resolveConflicts: overwrite      
+  - name: amazon-cloudwatch-observability
+    version: v1.6.0-eksbuild.1
+            
+managedNodeGroups:
+  - name: trtllm-inference-cluster
+    instanceType: $INSTANCE_TYPE
+    instancePrefix: trtllm-compute-node 
+    privateNetworking: true
+    efaEnabled: true
+    minSize: 1
+    desiredCapacity: 1
+    maxSize: 2
+    volumeSize: 500
+    # Uncomment capacityReservation if you need it
+    # capacityReservation:
+    #   capacityReservationTarget:
+    #     capacityReservationID: "cr-0ce6be6d411d2f43f"
+    ami: ami-07c8bc6b0bb890e9e
+    amiFamily: AmazonLinux2
+    ssh:
+      publicKeyName: $PUBLIC_KEYPAIR_NAME
+      sourceSecurityGroupIds: [$SECURITY_GROUP_IDS]
+    updateConfig:
+      maxUnavailablePercentage: 50
+    iam:
+      withAddonPolicies:
+        externalDNS: true
+        certManager: true
+        autoScaler: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+        imageBuilder: true
+        xRay: true
+        awsLoadBalancerController: true
+        albIngress: true
+    overrideBootstrapCommand: |
+      #!/bin/bash
+      echo "Bootstrapping..."
+      sudo yum -y update
+
+      echo "Updated!"
+
+      sudo su
+
+      echo "Installing pip"
+      wget https://bootstrap.pypa.io/get-pip.py
+      python3 ./get-pip.py
+
+      echo "Installing git"
+      yum install -y git
+      echo "Installed"
+
+      echo "Install git-lfs"
+      yum install -y git-lfs
+      git-lfs install
+      echo "Installed"
+
+      echo "Install docker"
+      yum install -y docker
+      service docker start
+      usermod -a -G docker ec2-user
+      echo "Installed"
+
+      echo "Install nvidia-docker"
+      distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+      curl -s -L https://nvidia.github.io/nvidia-container-runtime/$distribution/nvidia-container-runtime.repo | sudo tee /etc/yum.repos.d/nvidia-container-runtime.repo
+      yum install -y nvidia-container-runtime
+      yum install -y nvidia-docker2
+      yum install -y nvidia-container-toolkit
+      pkill -SIGHUP dockerd
+      echo "Installed"
+
+      echo "Cloning github repo"
+      git clone https://amanshanbhag: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@github.com/amanshanbhag/trtllm-inference-p5.git /home/ec2-user/trtllm-inference-p5
+      cp /home/ec2-user/trtllm-inference-p5/3.\ Within\ Container/* /home/ec2-user
+      cp /home/ec2-user/trtllm-inference-p5/2.\ Setup\ Container/Dockerfile /home/ec2-user
+      cp /home/ec2-user/trtllm-inference-p5/2.\ Setup\ Container/healthcheck.py /home/ec2-user
+      cp /home/ec2-user/trtllm-inference-p5/2.\ Setup\ Container/requirements.txt /home/ec2-user
+      echo "Cloned"
+
+      # NODE_LABELS=$(aws eks describe-cluster --name trtllm-inference-cluster --query "cluster.endpoint" --output text)
+      # API_SERVER_URL=$(aws eks describe-cluster --name trtllm-inference-cluster --query "cluster.kubernetesNetworkConfig.serviceIpv4Cidr" --output text)
+      # B64_CLUSTER_CA=$(aws eks describe-cluster --name trtllm-inference-cluster --query "cluster.certificateAuthority.data" --output text)
+
+      # echo ${NODE_LABELS}
+      # echo ${API_SERVER_URL}
+      # echo ${B64_CLUSTER_CA}
+
+      /etc/eks/bootstrap.sh trtllm-inference-cluster      
+
+      nvidia-ctk runtime configure --runtime=containerd --set-as-default
+      systemctl restart containerd
+
+      echo "Bootstrapping complete!"        
