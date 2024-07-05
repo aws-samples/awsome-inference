@@ -23,9 +23,21 @@ containerSecurityContext: {}
 customCommand: []
 
 ## @param env [array] Adds arbitrary environment variables to the main container
-env: []
-# name: OPENBLAS_NUM_THREADS
-# value: "1"
+env:
+  # TODO(Joey Chou): This is a workaround to run NIM on multiple GPUs.
+  #   Test and remove this once it gets fixed in the next release.
+  - name: LD_LIBRARY_PATH
+    value: "/usr/local/lib/python3.10/dist-packages/tensorrt_llm/libs:/usr/local/lib/python3.10/dist-packages/nvidia/cublas/lib:/usr/local/lib/python3.10/dist-packages/tensorrt_libs"
+  # # 2x A10G
+  # - name: NIM_MODEL_PROFILE
+  #   value: "e0f4a47844733eb57f9f9c3566432acb8d20482a1d06ec1c0d71ece448e21086"
+  # # 2x H100
+  # - name: NIM_MODEL_PROFILE
+  #   value: "879b05541189ce8f6323656b25b7dff1930faca2abe552431848e62b7e767080"
+  # # 1x H100, fp8
+  # - name: NIM_MODEL_PROFILE
+  #   value: "30b562864b5b1e3b236f7b6d6a0998efbed491e4917323d04590f715aa9897dc"
+
 # name: POD_NAME
 # valueFrom:
 #   fieldRef:

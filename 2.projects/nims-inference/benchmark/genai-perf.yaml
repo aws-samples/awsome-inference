@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: genai-perf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: genai-perf
+  template:
+    metadata:
+      labels:
+        app: genai-perf
+    spec:
+      containers:
+      - name: genai-perf
+        image: nvcr.io/nvidia/tritonserver:24.04-py3-sdk
+          # resources:
+          #   limits:
+          #     nvidia.com/gpu: 1
+          #               volumeMounts:
+        command: ["/bin/sh", "-c"]
+        args: 
+          - |
+            # Define paths to store benchmark data
+            export OUTPUT_DIR=benchmarks
+            export FILE_PREFIX=nim_profile
+            export JSON_FILENAME=${FILE_PREFIX}.json
+            export CSV_FILENAME=${FILE_PREFIX}_genai_perf.csv
+            export LOG_FILENAME=genai_perf.log
+            export LOCAL_PORTNUMBER=8000
+
+            # Loop for concurrency
+            export concurrency_values=(1 10 50 100 500 750 1000 2500 3000 4500 5000)
+            for concurrency in "${concurrency_values[@]}"; do
+              cmd="genai-perf \
+              -m meta/llama3-8b-instruct \
+              --service-kind openai \
+              --url openai-service:${LOCAL_PORTNUMBER} \
+              --endpoint v1/chat/completions \
+              --endpoint-type chat \
+              --concurrency ${concurrency} \
+              --prompt-source synthetic \
+              --num-prompts 500 \
+              --random-seed 123 \
+              --synthetic-input-tokens-mean 128 \
+              --synthetic-input-tokens-stddev 0 \
+              --streaming \
+              --output-tokens-mean 2048 \
+              --output-tokens-stddev 0 \
+              --tokenizer hf-internal-testing/llama-tokenizer \
+              --measurement-interval 10000 \
+              --profile-export-file ${JSON_FILENAME} \
+              -v"
+
+              echo "-------------------------------------------------"
+              echo "Running concurrency=${concurrency} ..."
+              echo "$cmd"
+              echo "$cmd" >> ${LOG_FILENAME}
+              eval $cmd > ${LOG_FILENAME}
+
+              # Move files to the folder
+              export CUR_OUTPU_DIR=${OUTPUT_DIR}/concurrency-${concurrency};
+              mkdir -p ${CUR_OUTPU_DIR}
+              echo "Moving outputs to ${CUR_OUTPU_DIR} ..."
+              mv ${JSON_FILENAME} ${CSV_FILENAME} ${LOG_FILENAME} ${CUR_OUTPU_DIR}
+              echo "-------------------------------------------------"
+            done
+            echo ""
+            echo "Concurrency=${concurrency_values} benchmarks finished! Outputs were saved to $OUTPUT_DIR"
+            echo "Please do 'kubectl cp <POD_NAME>:${OUTPUT_DIR} <LOCAL_DIRECTORY>' to copy benchmark data to local."
+            echo "You may stop the benchmark now."
+            sleep 360000000
+            # ls; cat my_profile_export.json; sleep 36000000000000
