@@ -85,13 +85,13 @@ This sub-directory (`1_setup_cluster/`) uses the following orchestrators for you
 This sub-directory contains yaml manifests, templates and examples to aid you in setting up clusters for inference.
 
 ### Files & Directories
-1. `capacity_block/`: If you are using [Capacity Blocks for ML](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-blocks.html), this directory is for you. This directory contains a YAML cluster configuration (`nims-cluster-config-example-cb.yaml`) without any nodegroups, and a CloudFormation template to create self-managed nodegroups (`capacity-block-eksctl-nodegroup.yaml`). For more information on deployment, check out the [Capacity Blocks]([capacity-blocks](https://github.com/aws-samples/awsome-inference/tree/capacity-block-eks/1.infrastructure#capacity-blocks)) section below.
+1. `capacity_block/`: If you are using [Capacity Blocks for ML](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-blocks.html), this directory is for you. This directory contains a YAML cluster configuration (`nims-cluster-config-example-cb.yaml`) without any nodegroups, and a CloudFormation template to create self-managed nodegroups (`capacity-block-eksctl-nodegroup.yaml`). For more information on deployment, check out the [Capacity Blocks](https://github.com/aws-samples/awsome-inference/tree/capacity-block-eks/1.infrastructure#capacity-blocks) section below.
 2. `eks-p5-odcr-vpc.yaml`: This is a blank template that you can use to spin up an EKS cluster of p5 instances that you have reserved via the [On-Demand Capacity Reservation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-reservations.html). 
 3. `nims-cluster-config-example.yaml`: This is an example config file that you can use with EKS (as-is, or with modifications) to set up an EKS cluster. Make sure you follow the `project` README and make changes to suit your own use-case.
 4. `trtllm-cluster-config-example.yaml`: This is an example config file that you can use with EKS (as-is, or with modifications) to set up an EKS cluster. Make sure you follow the project README and make changes to suit your own use-case.
 
-The instructions below pertain to creating an EKS cluster **only if** you are not using Capacity Blocks. If you are using Capacity Blocks, please check out the [Capacity Blocks]([capacity-blocks](https://github.com/aws-samples/awsome-inference/tree/capacity-block-eks/1.infrastructure#capacity-blocks)) section below.
-
+**Note: The instructions below pertain to creating an EKS cluster **only if** you are not using [Capacity Blocks](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-blocks.html). If you are using Capacity Blocks, please check out the [Capacity Blocks](https://github.com/aws-samples/awsome-inference/tree/capacity-block-eks/1.infrastructure#capacity-blocks) section below.
+**
 
 This step assuming you have a VPC stack ready from the previous step, with region in `us-east-2`. Base on the target deployments, there are example manifests which can be edited to setup an EKS cluster:
 
