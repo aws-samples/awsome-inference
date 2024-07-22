@@ -85,10 +85,13 @@ This sub-directory (`1_setup_cluster/`) uses the following orchestrators for you
 This sub-directory contains yaml manifests, templates and examples to aid you in setting up clusters for inference.
 
 ### Files & Directories
-1. `eks-p5-odcr-vpc.yaml`: This is a blank template that you can use to spin up an EKS cluster of p5 instances that you have reserved via the [On-Demand Capacity Reservation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-reservations.html). 
-2. `nims-cluster-config-example.yaml`: This is an example config file that you can use with EKS (as-is, or with modifications) to set up an EKS cluster. Make sure you follow the `project` README and make changes to suit your own use-case.
-3. `trtllm-cluster-config-example.yaml`: This is an example config file that you can use with EKS (as-is, or with modifications) to set up an EKS cluster. Make sure you follow the project README and make changes to suit your own use-case.
+1. `capacity_block/`: If you are using [Capacity Blocks for ML](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-blocks.html), this directory is for you. This directory contains a YAML cluster configuration (`nims-cluster-config-example-cb.yaml`) without any nodegroups, and a CloudFormation template to create self-managed nodegroups (`capacity-block-eksctl-nodegroup.yaml`). For more information on deployment, check out the [Capacity Blocks](https://github.com/aws-samples/awsome-inference/tree/capacity-block-eks/1.infrastructure#capacity-blocks) section below.
+2. `eks-p5-odcr-vpc.yaml`: This is a blank template that you can use to spin up an EKS cluster of p5 instances that you have reserved via the [On-Demand Capacity Reservation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-reservations.html). 
+3. `nims-cluster-config-example.yaml`: This is an example config file that you can use with EKS (as-is, or with modifications) to set up an EKS cluster. Make sure you follow the `project` README and make changes to suit your own use-case.
+4. `trtllm-cluster-config-example.yaml`: This is an example config file that you can use with EKS (as-is, or with modifications) to set up an EKS cluster. Make sure you follow the project README and make changes to suit your own use-case.
 
+**Note: The instructions below pertain to creating an EKS cluster **only if** you are not using [Capacity Blocks](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-blocks.html). If you are using Capacity Blocks, please check out the [Capacity Blocks](https://github.com/aws-samples/awsome-inference/tree/capacity-block-eks/1.infrastructure#capacity-blocks) section below.
+**
 
 This step assuming you have a VPC stack ready from the previous step, with region in `us-east-2`. Base on the target deployments, there are example manifests which can be edited to setup an EKS cluster:
 
@@ -112,7 +115,7 @@ For 1 to 5, the information can be found by below command, where the `<YOUR_VPC_
 aws cloudformation describe-stacks --stack-name <YOUR_VPC_STACK_NAME>
 ```
 
-For 7 and 8, ,ake sure you change the security group id (`$SECURITY_GROUP_IDS`) and public key (`$PUBLIC_KEYPAIR_NAME`) to personalize ssh access to your own account. 
+For 7 and 8, make sure you change the security group id (`$SECURITY_GROUP_IDS`) and public key (`$PUBLIC_KEYPAIR_NAME`) to personalize ssh access to your own account. 
 
 
 **Make sure you change up any fields you want to in the cluster configuration at this point!**
@@ -156,3 +159,81 @@ Note: If you make changes to your nodegroup after this step, you can just run
 ```bash
 eksctl create nodegroup -f <EXAMPLE_MANIFEST>.yaml  # (or any other config file, as required)
 ```
+
+## Capacity Blocks
+Currently, [Capacity Blocks for ML](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-blocks.html) have the restriction that they cannot be in a *managed node group*. Therefore, in this case, we would need to provision them as part of a [_self-managed node group_](https://docs.aws.amazon.com/eks/latest/userguide/worker.html). Complete the following steps to provision an EKS cluster with self-managed Capacity Block nodes:
+
+1. Deploy a bare-bones EKS cluster. The configuration file for this can be found in `capacity_block/nims-cluster-config-example-cb.yaml`. This config file creates an EKS cluster without the node group. It also adds on additional iam, cloudwatch and vpc-cni plugins.
+```
+cd capacity_block
+eksctl create cluster -f nims-cluster-config-example-cb.yaml
+```
+
+2. Once the cluster is created, we will proceed to create the self-managed node group. Note: self-managed here means that you will not be able to see the node group on your eks console, but you should be able to see the nodes by running `kubectl get nodes` once your cluster is provisioned. You can find the template for the CloudFormation stack in `capacity-block-eksctl-nodegroup.yaml`. You may do this via the CloudFormation console, similar to how you did for provisioning the VPC. Some important parameters:
+* `ClusterName` this needs to be the same as the cluster you created above, default to `eks-p5-odcr-vpc`
+* `ClusterControlPlaneSecurityGroup` grab this by visiting the EKS Console > **Cluster** > **Networking** > **Additional Security Group**
+* `NodeGroupName` choose a name for your nodegroup
+* `NodeAutoScalingGroupMinSize`, `NodeAutoScalingGroupDesiredCapacity`, `NodeAutoScalingGroupMaxSize` change these depending on scaling needs
+* `NodeImageIdSSMParam` defaults to the [EKS GPU AMI 1.29](https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html) but you can override this with the `NodeImageId` parameter.
+* `KeyName` if you'd like to ssh into these compute nodes, please provide the `KeyName` you'd like to use
+* `VpcId`, `Subnets` make sure these are the same as the ones provided while creating the cluster above
+* `CapacityBlockId` the ID of the CapacityBlock reservation that you made
+* This sets up a [security group for EFA](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa-start.html#efa-start-security).
+
+3. Once the nodegroup is created and the CloudFormation stack's creation is complete, we need to ensure that the node joins the cluster. To do so, we will need to change the permissions associated with the `ConfigMap` of the EKS cluster. Specifically, you'd need to follow these steps:
+
+    3.1 Check to see if you already have an `aws-auth` defined in your `ConfigMap`.
+    ```
+    kubectl describe configmap -n kube-system aws-auth
+    ```
+    This will either give you a description of the existing `aws-auth` configuration, or you will see an error that looks like `Error from server (NotFound): configmaps "aws-auth" not found`. Follow 3.2 and skip 3.3 if you are shown the configuration. Otherwise, if you see an error, skip 3.2 and follow 3.3.
+
+    3.2 If you don't see an error (i.e., if you are shown an `aws-auth` configuration)
+      3.2.1 Open the existing `ConfigMap` for editing.
+   ```
+   kubectl edit -n kube-system configmap/aws-auth
+   ```
+      3.2.2 If you already see a `mapRoles` entry, add a new one that looks like:
+   ```bash
+   [...]
+    data:
+      mapRoles: |
+        - rolearn: <ARN of instance role (not instance profile)>
+          username: system:node:{{EC2PrivateDNSName}}
+          groups:
+            - system:bootstrappers
+            - system:nodes
+    [...]
+   ```
+      3.2.3 Save the file and exit your text editor. 
+   
+    3.3. If you see an error (`Error from server (NotFound): configmaps "aws-auth" not found`), then you'd need to download the template `ConfigMap` file and apply it
+      3.3.1 Download the `ConfigMap` template
+   ```
+   curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2020-10-29/aws-auth-cm.yaml
+   ```
+      3.3.2 In the downloaded `aws-auth-cm.yaml` file, set the `rolearn` value to the `NodeInstanceRole` that you grabbed from the CloudFormation stack. You may choose to do this via a text editor, or replacing `my-node-instance-role` and running:
+   ```
+   sed -i.bak -e 's|<ARN of instance role (not instance profile)>|my-node-instance-role|' aws-auth-cm.yaml
+   ```
+      3.3.3 Apply the updated config
+   ```
+   kubectl apply -f aws-auth-cm.yaml
+   ```
+
+4. Once you complete step 3 (either option), you may check if the node joined your cluster with
+```
+kubectl get nodes
+```
+
+5. Once you've confirmed that the nodes have joined, you can go ahead and install additional plugins.
+
+   5.1 To install the [K8s NVIDIA CNI Plugin](https://github.com/NVIDIA/k8s-device-plugin), run
+   ```
+   kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.15.0/deployments/static/nvidia-device-plugin.yml
+   ```
+
+   5.2 If using EFA, make sure to install the [EFA CNI Plugin](https://docs.aws.amazon.com/eks/latest/userguide/node-efa.html)
+   ```
+   kubectl apply -f https://raw.githubusercontent.com/aws-samples/aws-efa-eks/main/manifest/efa-k8s-device-plugin.yml
+   ```

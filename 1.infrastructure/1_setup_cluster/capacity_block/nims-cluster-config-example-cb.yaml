@@ -1,0 +1,53 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  # Providing directly here to keep track.
+  name: test-inference-cluster
+  region: us-east-2
+  version: "1.29"
+  tags:
+    karpenter.sh/discovery: test-inference-cluster
+    created-by: amanrsh
+    env: test-inference-cluster
+
+# Using an existing VPC - In an actual workflow, create VPC, get IDs (as environment variables) and use below
+vpc:
+  id: vpc-0b76ea231aa463907
+  subnets:
+    private:
+      us-east-2a:
+        id: subnet-0525b84983f58b39f
+      us-east-2b:
+        id: subnet-00d28264c0bc5ed54
+    public:
+      us-east-2a:
+        id: subnet-005b28220741d10c5
+      us-east-2b:
+        id: subnet-019571fbefaa8475c
+  clusterEndpoints:
+    privateAccess: true
+    publicAccess: true
+      
+cloudwatch:
+  clusterLogging:
+    enableTypes: ["*"]  
+
+iam:
+  withOIDC: true
+  serviceAccounts:
+    - metadata:
+        name: test-service-account
+      attachPolicyARNs:
+        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
+
+addons:
+  - name: vpc-cni
+    version: 1.18.1-eksbuild.1
+    configurationValues: '{"env":{"ENABLE_PREFIX_DELEGATION":"true", "ENABLE_POD_ENI":"true", "POD_SECURITY_GROUP_ENFORCING_MODE":"standard"},"enableNetworkPolicy": "true"}'
+    resolveConflicts: overwrite      
+  - name: amazon-cloudwatch-observability
+    version: v1.6.0-eksbuild.1
+
+# Create the node group as an unmanaged node group by deploying the CloudFormation Stack 
+# capacity-block-eksctl-nodegroup.yaml
