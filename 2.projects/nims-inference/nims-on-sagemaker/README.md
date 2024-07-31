@@ -19,4 +19,4 @@ Here is a link to the [NIM Support Matrix](https://docs.nvidia.com/nim/large-lan
 
 NIMs are packaged as container images on a per model/model family basis. Each NIM is its own Docker container with models, such as Mistral and Llama. These containers include a runtime that runs on any NVIDIA GPU with sufficient GPU memory, but some model/GPU combinations are optimized. In this sample, we will be using the [NVIDIA NIM public ECR gallery on AWS](https://gallery.ecr.aws/nvidia/nim).
 
-In this example we show how to deploy `Mixtral 8x7B` and `Llama3 70B` on a `p4d.24xlarge` instance with NIM on Amazon SageMaker.
+In these examples we show how to deploy `Mixtral 8x7B` and `Llama3 70B` on a `p4d.24xlarge` instance with NIM on Amazon SageMaker.
