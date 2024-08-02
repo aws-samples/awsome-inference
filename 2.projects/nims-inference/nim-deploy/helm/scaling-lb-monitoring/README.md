@@ -85,7 +85,7 @@ This will show you the time series data for the `num_requests_running` metric ac
 
 Note: Make sure you send some requests to your pod **before** trying to query for the metric, since otherwise it won't show you the metric.
 
-### 🚀 3. (TODO) Scaling
+### 🚀 3. Scaling
 We'll be using the Kubernetes Horizontal Pod Autoscaler (HPA) to scale our NIM workload. 
 
 To use the HPA, we would need to install the Metrics Server. To do this, run:
