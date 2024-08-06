@@ -39,6 +39,9 @@ To send us a pull request, please:
 GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and
 [creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
 
+Once you see your project's PR up, make the following changes:
+1. Add your project to the [awsome-inference README](https://github.com/aws-samples/awsome-inference?tab=readme-ov-file#ml-inference-reference-architectures--tests). At the very least, this should include adding your project to the directory structure, and a quick description of your [project](https://github.com/aws-samples/awsome-inference?tab=readme-ov-file#projects). If your project requires infrastructure that is not already in the repository, please add that too.
+2. Add your project to the [2.project README](https://github.com/aws-samples/awsome-inference/tree/main/2.projects#projects). This would include adding a detailed description of your project, along with descriptions of any files and directories. Follow the examples already available!
 
 ## Finding contributions to work on
 Looking at the existing issues is a great way to find something to contribute on. As our projects, by default, use the default GitHub issue labels (enhancement/bug/duplicate/help wanted/invalid/question/wontfix), looking at any 'help wanted' issues is a great place to start.
