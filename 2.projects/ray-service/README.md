@@ -14,12 +14,12 @@ NOTE: THIS README IS STILL GETTING WORKED ON!!!
 
 [RayService](https://docs.ray.io/en/latest/serve/index.html) Ray Serve is a scalable model serving library for building online inference APIs. Ray Serve is a flexible toolkit for deploying various models, including deep learning, Scikit-Learn, and custom Python logic.Built on Ray, it scales across multiple machines and offers flexible resource allocation, enabling efficient, cost-effective model deployment.
 
-This repo contains an example to be able to run [StableDiffusion](https://huggingface.co/stabilityai/stable-diffusion-2) and [MobileNet](https://arxiv.org/abs/1801.04381) models on AWS and scale using [Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html).
+This repo contains an example to be able to run [StableDiffusion](https://huggingface.co/stabilityai/stable-diffusion-2), [MobileNet](https://arxiv.org/abs/1801.04381), and [DETR](https://huggingface.co/docs/transformers/en/model_doc/detr) models on AWS and scale using [Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html).
 </p>
 
 ## Prerequisite
 #### Setup the EKS cluster
-Please make sure the EKS cluster has been setup, either from a given example in [infrastructure](infrastructure)
+Please make sure the EKS cluster has been setup. Example EKS cluster set up in [infrastructure](infrastructure).
 
 #### Set up your AWS Kubectl Secret (Optional)
 Please run [`./kubectl-secret-keys.sh`](kubectl-secret-keys.sh). This will create a kubectl secret if python code needs to access your AWS credentials (like referencing a private S3 bucket). 
@@ -30,7 +30,7 @@ Please run [`./deploy-kuberay-operator.sh`](deploy-kuberay-operator.sh) to creat
 
 The KubeRay Operator allows for the deployment of the RayService. Now you are ready to get serving. 
 
-Note: In both of these examples, you have the option to edit the RayService yaml file. This can include adjusting the number of worker pods, adjusting the resource requirements of your pods, mounting any volumes, adding tolerations to your worker pods, etc. And overall, these yaml files can be used as a template for inference on other models as well. 
+Note: In both of these examples, you have the option to edit the RayService yaml file ([ray-service.mobilenet.yaml](/2.projects/ray-service/MobileNet/ray-service.mobilenet.yaml) , [ray-service.stable-diffusion.yaml](/2.projects/ray-service/StableDiffusion/ray-service.stable-diffusion.yaml)). This can include adjusting the number of worker pods, adjusting the resource requirements of your pods, mounting any volumes, adding tolerations to your worker pods, etc. And overall, these yaml files can be used as a template for inference on other models as well. 
 
 ## [MobileNet on EKS using Ray](https://docs.ray.io/en/latest/cluster/kubernetes/examples/mobilenet-rayservice.html)
 
@@ -73,7 +73,7 @@ kubectl port-forward svc/rayservice-mobilenet-serve-svc 8000
 Note: The Serve service is created after the Ray Serve applications are ready and running so this process may take approximately 1 minute after the pods are running. 
 
 ### 🎈 4. Send Request to Image Classifier
-Prepare one of your own image files or you can use one of the examples in the folder. Update `image_path` variable in ['mobilenet_req.py`](MobileNet/mobilenet_req.py). Then you can send your request. 
+Prepare one of your own image files. Update `image_path` variable in ['mobilenet_req.py`](MobileNet/mobilenet_req.py) with the location of your .png file. Then you can send your request. 
 
 ```bash
 python mobilenet_req.py
@@ -85,7 +85,7 @@ python mobilenet_req.py
 ## [Stable Diffusion on EKS using Ray](https://docs.ray.io/en/latest/cluster/kubernetes/examples/stable-diffusion-rayservice.html)
 
 
-Note: This repository contains the actual get and fulfill request code. You have the option to put this code (or your own code) into your own S3 bucket and reference the zipped code from there. In order to use S3, you need to run ['kubectl-secret-keys.sh'] to make secrets of your AWS credentials. Then you need to uncomment the secret references in the env variables in the Ray cluster. 
+Note: This repository contains the actual get and fulfill request code. You have the option to put this code (or your own code) into your own S3 bucket and reference the zipped code from there. In order to use S3, you need to run ['kubectl-secret-keys.sh'](/2.projects/ray-service/kubectl-secret-keys.sh) to make secrets of your AWS credentials. Then you need to uncomment the secret references in the env variables in the Ray cluster. 
 
 
 ### 1. Deploy RayService cluster. 
@@ -134,6 +134,54 @@ python stable_diffusion_req.py
 ```
 
 
+## [DETR on EKS using Ray](https://huggingface.co/facebook/detr-resnet-50)
+
+
+
+### 1. Deploy RayService cluster. 
+```bash
+cd StableDiffusion
+kubectl apply -f ray-service.detr.yaml
+```
+Run this command to deploy your RayService cluster.
+
+### 🔧 2. Test
+
+First, you need to make sure that your Ray pods are up and running. You should see one head pod and one worker pod:
+```bash
+kubectl get pods
+```
+Make sure that both pods have status RUNNING.
+
+### 2.5. Ray Dashboard (Optional)
+If you would like to access the Ray Dashboard to see a UI for your cluster, please follow.
+
+```bash
+kubectl get svc
+```
+
+Locate the head pod service that will look something like "detr-raycluster-XXXXX-head". Replace this with the service in the next command. 
+
+Now run,
+```bash
+kubectl port-forward svc/detr-raycluster-XXXXX-head 8265:8265
+```
+
+
+### 3. Forward the port for Ray Serve
+To try out the MobileNet query, please port-forward the service
+```bash
+kubectl port-forward svc/detr-serve-svc 8000
+```
+
+Note: The Serve service is created after the Ray Serve applications are ready and running so this process may take approximately 1 minute after the pods are running. 
+
+### 🎈 4. Send Request to Image Classifier
+Prepare one of your own image files or you can use one of the examples in the folder. Update `image_path` variable in ['detr_req.py`](DETR/detr_req.py). Then you can send your request. This will classify your objects and provide coordinate locations of where the object is in your image. 
+
+```bash
+python stable_diffusion_req.py
+```
 
 
 
@@ -160,11 +208,5 @@ python stable_diffusion_req.py
 - [@mvincig](https://github.com/mvinci12)
 - [@flostahl](https://github.com/flostahl-aws)
 
-
-## 🎉 Acknowledgements <a name = "acknowledgement"></a>
-
-- Hat tip to anyone whose code was used
-- Inspiration
-- References
 
 
