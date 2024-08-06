@@ -12,7 +12,7 @@ NOTE: THIS README IS STILL GETTING WORKED ON!!!
 
 [Ray](https://docs.ray.io/en/master/index.html) is an open source framework to build and scale your ML and Python applications easily. 
 
-[RayService](https://docs.ray.io/en/latest/serve/index.html) Ray Serve is a scalable model serving library for building online inference APIs. Ray Serve is a flexible toolkit for deploying various models, including deep learning, Scikit-Learn, and custom Python logic.Built on Ray, it scales across multiple machines and offers flexible resource allocation, enabling efficient, cost-effective model deployment.
+[RayService](https://docs.ray.io/en/latest/serve/index.html) is a scalable model serving library for building online inference APIs. Ray Serve is a flexible toolkit for deploying various models, including deep learning, Scikit-Learn, and custom Python logic.Built on Ray, it scales across multiple machines and offers flexible resource allocation, enabling efficient, cost-effective model deployment.
 
 This repo contains an example to be able to run [StableDiffusion](https://huggingface.co/stabilityai/stable-diffusion-2), [MobileNet](https://arxiv.org/abs/1801.04381), and [DETR](https://huggingface.co/docs/transformers/en/model_doc/detr) models on AWS and scale using [Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html).
 </p>
