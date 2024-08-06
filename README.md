@@ -15,7 +15,8 @@ README                                # Project Summaries
 |-- 1_setup_cluster/                  # Scripts to create your cluster using EKS
 2.project/
 |-- nims-inference/
-|-- trtllm-inference/ 
+|-- trtllm-inference/
+|-- ray-service/ 
 `-- ...
 // Other directories
 ```
@@ -35,6 +36,10 @@ This project aims to reduce the effort required to set up optimized inference wo
 This project aims at optimizing inference on GPU based AWS Accelerated Computing instances by demonstrating an example of running the Llama3-8B model on P5 instances and optimizing inference using NVIDIA's TensorRT-LLM. Scaling is demonstrated using Amazon Elastic Kubernetes Service (EKS).
 See [trtllm-inference](https://github.com/aws-samples/awsome-inference/blob/main/2.projects/trtllm-inference/README.md) for more information.
 
+
+### RAY SERVICE
+
+This repository contains some example code to help you get started with performing inference on AI/ML models on AWS accelerated EC2 instances with the help of [RayService](https://docs.ray.io/en/master/serve/index.html) (with NVIDIA GPUs). 
 
 ## Security
 

@@ -5,7 +5,8 @@ Once you have your infrastructure set up, your next step is to choose your infer
 The major components of this directory are:
 ```bash
 |-- nims-inference/                      
-|-- trtllm-inference/                 
+|-- trtllm-inference/ 
+|-- ray-service/                
 `-- ...
 // Other directories
 ```
@@ -28,3 +29,14 @@ This project aims to reduce the effort required to set up optimized inference wo
 ### Files & Directories
 1. `nim-deploy/`: This directory, provided by NVIDIA, contains helm charts and templates to get inference with NIMs set up quickly and efficiently.
 2. `benchmark/`: This directory consists of example benchmarking scripts that you can use as-is, or with additional flags as defined by NVIDIA's `genai-perf` tool.
+
+
+## RAY-SERVICE
+
+[RayService](https://docs.ray.io/en/latest/serve/index.html) is a scalable model serving library for building online inference APIs. Ray Serve is a flexible toolkit for deploying various models, including deep learning, Scikit-Learn, and custom Python logic. Built on Ray, it scales across multiple machines and offers flexible resource allocation, enabling efficient, cost-effective model deployment. This repo contains an example to be able to run [StableDiffusion](https://huggingface.co/stabilityai/stable-diffusion-2), [MobileNet](https://arxiv.org/abs/1801.04381), and [DETR](https://huggingface.co/docs/transformers/en/model_doc/detr) models on AWS and scale using [Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html).
+</p>
+
+### Files & Directories
+1. `MobileNet/`: This directory contains a Ray Service yaml and python code to run inference for this image classification model.
+2. `StableDiffusion/`: This directory contains a Ray Service yaml and python code to run inference for this text-to-image model. 
+3. `DETR/`: This directory contains a Ray Service yaml and python code to run inference for this object detection model.
