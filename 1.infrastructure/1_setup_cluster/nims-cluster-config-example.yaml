@@ -13,18 +13,18 @@ metadata:
 
 # Using an existing VPC - In an actual workflow, create VPC, get IDs (as environment variables) and use below
 vpc:
-  id: vpc-0ef30aca2af940d64
+  id: $PLACEHOLDER_VPC_ID
   subnets:
     private:
       us-east-2a:
-        id: subnet-0762a120ff2962d63
+        id: $PLACEHOLDER_SUBNET_PRIVATE_1
       us-east-2b:
-        id: subnet-0cd9a75c23bd3c89b
+        id: $PLACEHOLDER_SUBNET_PRIVATE_2
     public:
       us-east-2a:
-        id: subnet-04df790b9b9434185
+        id: $PLACEHOLDER_SUBNET_PUBLIC_1
       us-east-2b:
-        id: subnet-07fe34c5094313551
+        id: $PLACEHOLDER_SUBNET_PUBLIC_2
   clusterEndpoints:
     privateAccess: true
     publicAccess: true
@@ -51,10 +51,10 @@ addons:
             
 managedNodeGroups:
   - name: nims-inference-cluster
-    instanceType: g5.4xlarge
+    instanceType: $INSTANCE_TYPE
     instancePrefix: nims-compute-node
     privateNetworking: true
-    efaEnabled: false
+    efaEnabled: true
     minSize: 1
     desiredCapacity: 1
     maxSize: 2
@@ -66,8 +66,8 @@ managedNodeGroups:
     ami: ami-07c8bc6b0bb890e9e
     amiFamily: AmazonLinux2
     ssh:
-      publicKeyName: us-east-2-keypair
-      sourceSecurityGroupIds: [sg-018236d7929a0e050]
+      publicKeyName: $PUBLIC_KEYPAIR_NAME
+      sourceSecurityGroupIds: [$SECURITY_GROUP_IDS]
     updateConfig:
       maxUnavailablePercentage: 50
     iam:
