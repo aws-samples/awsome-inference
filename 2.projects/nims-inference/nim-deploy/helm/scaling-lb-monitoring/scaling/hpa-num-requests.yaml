@@ -1,0 +1,40 @@
+---
+kind: HorizontalPodAutoscaler
+apiVersion: autoscaling/v2
+metadata:
+  name: nim-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: my-nim
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  # Use the "Pods" metric, which is the average across all pods 
+  - type: Pods
+    pods:
+      metric:
+        name: num_requests_running
+      target:
+        # 10000 milli-requests per second = 10 requests 
+        type: AverageValue
+        averageValue: 100000m
+  # Need to scale down in case of lesser requests.
+  # In this policy, scaleDown specifies that the HPA should scale down to 100% of the required pods after 5 min stabilization.
+  # In this policy, scaleUp specifies that the HPA should scale up to 100% of the required pods immediately.
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      selectPolicy: Max

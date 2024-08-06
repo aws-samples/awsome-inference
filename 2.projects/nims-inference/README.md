@@ -13,6 +13,8 @@ NOTE: THIS README IS STILL GETTING WORKED ON!!!
 [NVIDIA NIM](https://developer.nvidia.com/nim) is a set of accelerated inference microservices that allow developers to run models on NVIDIA GPUs. With NIM, developers can get inference workloads set up quickly and efficiently. For more information on NIMs, check out the [Github repo](https://github.com/NVIDIA/nim-deploy/tree/main) (from NVIDIA).
 
 This repo contains an example to be able to run NIMs on AWS and scale using [Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html).
+
+**If you want to get set up with NIMs quickly on AWS, continue following the guide below. If you'd like to deploy your NIM on EKS with Autoscaling, Load Balancing, and custom metric collection with Prometheus (`num_requests_running`), please check out [scaling-lb-monitoring](https://github.com/aws-samples/awsome-inference/tree/main/2.projects/nims-inference/nim-deploy/helm/scaling-lb-monitoring).**
 </p>
 
 ## Prerequisite
@@ -149,9 +151,3 @@ ADD NIMs LINKS
 
 - [@amanrsh](https://github.com/amanshanbhag)
 - [@joeychou](https://github.com/JoeyTPChou) 
-
-## 🎉 Acknowledgements <a name = "acknowledgement"></a>
-
-- Hat tip to anyone whose code was used
-- Inspiration
-- References
