@@ -8,7 +8,7 @@ spec:
       - name: detr
         import_path: detr:app
         runtime_env:
-          working_dir: "https://github.com/flostahl-aws/ray-serve/archive/c09d2abcf07ce352a936958c8db3c9812d759d7e.zip"
+          working_dir: "s3://awsome-inference/remote-uri.zip"
           pip: 
             - torch
             - transformers==4.34.1
