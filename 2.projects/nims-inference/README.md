@@ -41,8 +41,8 @@ helm install my-nim nim-llm/ --set model.ngcAPIKey=$NGC_CLI_API_KEY --set persis
 
 Note: you also have the option to use custom values helm files.
 
-### 🔧 2. Test
-Note: To run this test step, you would need to set up the `nim` namespace. The example provided here runs everything in the default namespace. Follow the instructions in the `nim-deploy/helm` README to deploy the nim namespace.
+### 🔧 (Optional) 2. Test
+Note: To run this test step, you would need to set up the `nim` namespace. The example provided here runs everything in the default namespace. Follow the instructions in the `nim-deploy/helm` README to deploy the nim namespace. Running the `helm test` command below is optional.
 
 First, you need to make sure that your NIM pod is up and running:
 ```bash
