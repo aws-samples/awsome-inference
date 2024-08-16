@@ -23,16 +23,30 @@ spec:
         args: 
           # TODO(Joey Chou): Move this to config map and revise the benchmark script
           - |
-            export MODEL_NAME=meta/llama3-70b-instruct
-            export TOKENIZER=hf-internal-testing/llama-tokenizer  # meta-llama/Meta-Llama-3-70B-Instruct
+            pip3 install sentencepiece
+
+            export HF_TOKEN=<YOUR_TOKEN_HERE>
+            export MODEL_NAME=meta/llama-3_1-70b-instruct
+            export TOKENIZER=meta-llama/Meta-Llama-3.1-70B-instruct
             export OUTPUT_DIR=artifacts  # genai-perf default outputs
-            export BENCHMARK_OUTPUT_DIR=benchmarks
+            export BENCHMARK_OUTPUT_DIR_ROOT=benchmarks
             export LOCAL_PORTNUMBER=8000
             # export LOG_FILENAME=genai_perf.log
 
-            # Loop for concurrency
-            export concurrency_values=(16 32 64 128 256 512 1024 1536 2048)
-            for concurrency in "${concurrency_values[@]}"; do
+            # Optiona 1 - Loop for concurrency
+            export isl=7000
+            export osl=1000
+            export concurrency_values=(1 2 4 8 16 32 64 128 256 512 1024 2048)
+
+            # # Optiona 2 - Loop for ISL/OSL pairs
+            # export isls=(200 2000 200 7000 2000)
+            # export osls=(1000 200 200 1000 2000)
+            # export concurrency=250
+
+            # for concurrency in "${concurrency_values[@]}"; do
+            for i in "${!isls[@]}"; do
+              isl=${isls[i]}
+              osl=${osls[i]}
               cmd="genai-perf \
                    -m ${MODEL_NAME}  \
                    --service-kind openai \
@@ -42,10 +56,10 @@ spec:
                    --concurrency ${concurrency} \
                    --num-prompts 100 \
                    --tokenizer ${TOKENIZER} \
-                   --synthetic-input-tokens-mean 7000 \
+                   --synthetic-input-tokens-mean $isl \
                    --synthetic-input-tokens-stddev 0 \
                    --streaming \
-                   --extra-inputs max_tokens:1000 \
+                   --extra-inputs max_tokens:$osl \
                    --extra-inputs ignore_eos:true \
                    --measurement-interval 50000 \
                    --generate-plots \
@@ -59,6 +73,7 @@ spec:
               # eval $cmd > ${LOG_FILENAME}
 
               # Move files to the folder
+              export BENCHMARK_OUTPUT_DIR=${BENCHMARK_OUTPUT_DIR_ROOT}/isl-${isl}_osl-${osl} 
               mkdir -p ${BENCHMARK_OUTPUT_DIR}
               echo "Moving outputs to ${BENCHMARK_OUTPUT_DIR} ..."
               mv ${OUTPUT_DIR}/* ${BENCHMARK_OUTPUT_DIR}
