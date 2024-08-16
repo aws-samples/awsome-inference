@@ -34,19 +34,19 @@ spec:
             # export LOG_FILENAME=genai_perf.log
 
             # Optiona 1 - Loop for concurrency
-            export isl=7000
-            export osl=1000
+            export input_seq_len=7000
+            export output_seq_len=1000
             export concurrency_values=(1 2 4 8 16 32 64 128 256 512 1024 2048)
 
             # # Optiona 2 - Loop for ISL/OSL pairs
-            # export isls=(200 2000 200 7000 2000)
+            # export input_seq_lens=(200 2000 200 7000 2000)
             # export osls=(1000 200 200 1000 2000)
             # export concurrency=250
 
             # for concurrency in "${concurrency_values[@]}"; do
-            for i in "${!isls[@]}"; do
-              isl=${isls[i]}
-              osl=${osls[i]}
+            for i in "${!input_seq_lens[@]}"; do
+              input_seq_len=${input_seq_lens[i]}
+              output_seq_len=${osls[i]}
               cmd="genai-perf \
                    -m ${MODEL_NAME}  \
                    --service-kind openai \
@@ -56,10 +56,10 @@ spec:
                    --concurrency ${concurrency} \
                    --num-prompts 100 \
                    --tokenizer ${TOKENIZER} \
-                   --synthetic-input-tokens-mean $isl \
+                   --synthetic-input-tokens-mean $input_seq_len \
                    --synthetic-input-tokens-stddev 0 \
                    --streaming \
-                   --extra-inputs max_tokens:$osl \
+                   --extra-inputs max_tokens:$output_seq_len \
                    --extra-inputs ignore_eos:true \
                    --measurement-interval 50000 \
                    --generate-plots \
@@ -73,7 +73,7 @@ spec:
               # eval $cmd > ${LOG_FILENAME}
 
               # Move files to the folder
-              export BENCHMARK_OUTPUT_DIR=${BENCHMARK_OUTPUT_DIR_ROOT}/isl-${isl}_osl-${osl} 
+              export BENCHMARK_OUTPUT_DIR=${BENCHMARK_OUTPUT_DIR_ROOT}/isl-${input_seq_len}_osl-${output_seq_len} 
               mkdir -p ${BENCHMARK_OUTPUT_DIR}
               echo "Moving outputs to ${BENCHMARK_OUTPUT_DIR} ..."
               mv ${OUTPUT_DIR}/* ${BENCHMARK_OUTPUT_DIR}
