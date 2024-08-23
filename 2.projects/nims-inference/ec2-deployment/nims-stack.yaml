@@ -1,0 +1,493 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for deploying an EC2 instance with NVIDIA NIM container, ALB, VPC, and Route53 record'
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: g5.12xlarge
+    Description: EC2 instance type
+
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+
+  DomainName:
+    Type: String
+    Description: Domain name for the ALB (e.g., nim.example.com)
+
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: Route 53 Hosted Zone ID
+
+  VpcId:
+    Type: String
+    Description: Optional - Existing VPC ID. Leave blank to create a new VPC.
+    Default: ''
+
+  SubnetIds:
+    Type: CommaDelimitedList
+    Description: Optional - Existing Subnet IDs. Leave blank to create new subnets.
+    Default: ''
+
+  Repository:
+    Type: String
+    Default: nim/meta/llama3-8b-instruct
+    Description: NGC repository for the NIM container
+
+  LatestTag:
+    Type: String
+    Default: 1.0.0
+    Description: Latest tag for the NIM container
+
+  NGCApiKeySecretName:
+    Type: String
+    Description: Name of the Secrets Manager secret containing the NGC API Key
+    Default: NGCApiKey
+
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/canonical/ubuntu/server/jammy/stable/current/amd64/hvm/ebs-gp2/ami-id'
+
+  AWSRegion:
+    Type: String
+    Default: us-east-1
+    AllowedValues:
+      - us-east-1
+      - us-east-2
+      - us-west-2
+      - ca-central-1
+      - eu-central-1
+      - eu-west-1
+      - eu-west-2
+      - eu-west-3
+      - eu-north-1
+      - ap-northeast-1
+      - ap-northeast-2
+      - ap-southeast-1
+      - ap-southeast-2
+      - ap-south-1
+      - sa-east-1
+    Description: AWS Region to deploy the stack (must have at least 3 AZs)
+
+Conditions:
+  CreateVpc: !Equals [!Ref VpcId, '']
+  CreateSubnets: !Equals [!Join ['', !Ref SubnetIds], '']
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Condition: CreateVpc
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: NIM-VPC
+
+  PublicSubnet0:
+    Type: AWS::EC2::Subnet
+    Condition: CreateSubnets
+    Properties:
+      VpcId: !If [CreateVpc, !Ref VPC, !Ref VpcId]
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone:
+        !Select [
+          0,
+          !Split [',', !FindInMap [RegionMap, !Ref 'AWS::Region', AZs]],
+        ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub NIM-Public-Subnet-0
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Condition: CreateSubnets
+    Properties:
+      VpcId: !If [CreateVpc, !Ref VPC, !Ref VpcId]
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone:
+        !Select [
+          1,
+          !Split [',', !FindInMap [RegionMap, !Ref 'AWS::Region', AZs]],
+        ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub NIM-Public-Subnet-1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Condition: CreateSubnets
+    Properties:
+      VpcId: !If [CreateVpc, !Ref VPC, !Ref VpcId]
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone:
+        !Select [
+          2,
+          !Split [',', !FindInMap [RegionMap, !Ref 'AWS::Region', AZs]],
+        ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub NIM-Public-Subnet-2
+
+  PublicSubnet0RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateSubnets
+    Properties:
+      SubnetId: !Ref PublicSubnet0
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateSubnets
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateSubnets
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for NIM EC2 instance
+      VpcId: !If [CreateVpc, !Ref VPC, !Ref VpcId]
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ALB
+      VpcId: !If [CreateVpc, !Ref VPC, !Ref VpcId]
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+
+  EC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${NGCApiKeySecretName}-*'
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2InstanceRole
+
+  InstanceLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - setup
+        setup:
+          packages:
+            apt:
+              apt-transport-https: []
+              ca-certificates: []
+              curl: []
+              software-properties-common: []
+          commands:
+            01_add_docker_key:
+              command: 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -'
+            02_add_docker_repo:
+              command: 'add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"'
+            03_update_apt:
+              command: 'apt-get update'
+            04_install_docker:
+              command: 'apt-get install -y docker-ce docker-ce-cli containerd.io'
+            05_start_docker:
+              command: 'systemctl start docker && systemctl enable docker'
+            06_install_nvidia_toolkit:
+              command: |
+                distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+                curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
+                curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list
+                apt-get update
+                apt-get install -y nvidia-docker2
+                systemctl restart docker
+    Properties:
+      LaunchTemplateData:
+        ImageId: !Ref LatestAmiId
+        BlockDeviceMappings:
+          - DeviceName: /dev/sda1
+            Ebs:
+              VolumeSize: 250
+              VolumeType: gp3
+        MetadataOptions:
+          HttpTokens: required
+          HttpEndpoint: enabled
+        NetworkInterfaces:
+          - AssociatePublicIpAddress: true
+            DeviceIndex: 0
+            Groups:
+              - !Ref EC2SecurityGroup
+            SubnetId: !If
+              - CreateSubnets
+              - !Ref PublicSubnet1
+              - !Select [0, !Ref SubnetIds]
+        InstanceType: !Ref InstanceType
+        KeyName: !Ref KeyName
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            set -e
+
+            # Install AWS CloudFormation helper scripts and AWS CLI
+            apt-get update
+            apt-get install -y python3-pip unzip
+            pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+
+            # Install AWS CLI
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            ./aws/install
+
+            # Install NVIDIA drivers and CUDA
+            apt-get install -y linux-headers-$(uname -r)
+            distribution=$(. /etc/os-release;echo $ID$VERSION_ID | sed -e 's/\.//g')
+            wget https://developer.download.nvidia.com/compute/cuda/repos/$distribution/x86_64/cuda-keyring_1.0-1_all.deb
+            dpkg -i cuda-keyring_1.0-1_all.deb
+            apt-get update
+            apt-get install -y cuda-drivers
+
+            # Install Docker
+            apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+            add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+            apt-get update
+            apt-get install -y docker-ce docker-ce-cli containerd.io
+
+            # Install NVIDIA Container Toolkit
+            distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+            curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
+            curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list
+            apt-get update
+            apt-get install -y nvidia-docker2
+            systemctl restart docker
+
+            # Start cfn-init
+            /usr/local/bin/cfn-init -v --stack ${AWS::StackName} --resource InstanceLaunchTemplate --region ${AWS::Region}
+
+            # Retrieve NGC API Key from Secrets Manager
+            NGC_API_KEY=$(aws secretsmanager get-secret-value --secret-id ${NGCApiKeySecretName} --query SecretString --output text --region ${AWS::Region})
+
+            # Set up environment variables
+            CONTAINER_NAME=llama3-8b-instruct
+            VENDOR_NAME=meta
+            IMG_NAME="nvcr.io/nim/$VENDOR_NAME/$CONTAINER_NAME:1.0.0"
+            LOCAL_NIM_CACHE="/home/ubuntu/.cache/nim"
+
+            # Create cache directory
+            mkdir -p $LOCAL_NIM_CACHE
+            chown ubuntu:ubuntu $LOCAL_NIM_CACHE
+
+            # Login to NGC
+            echo $NGC_API_KEY | docker login nvcr.io -u '$oauthtoken' --password-stdin
+
+            # Run the container
+            docker run -d --restart unless-stopped --name=$CONTAINER_NAME \
+              --runtime=nvidia \
+              --gpus all \
+              -e NGC_API_KEY=$NGC_API_KEY \
+              -v "$LOCAL_NIM_CACHE:/opt/nim/.cache" \
+              -u $(id -u ubuntu) \
+              -p 8000:8000 \
+              $IMG_NAME
+
+            # Signal the success or failure of the setup
+            /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource NIMAutoScalingGroup --region ${AWS::Region}
+        IamInstanceProfile:
+          Arn: !GetAtt EC2InstanceProfile.Arn
+
+  NIMAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+        Count: 1
+    Properties:
+      VPCZoneIdentifier: !If
+        - CreateSubnets
+        - - !Ref PublicSubnet0
+          - !Ref PublicSubnet1
+          - !Ref PublicSubnet2
+        - !Ref SubnetIds
+      DesiredCapacity: 1
+      MinSize: 0
+      MaxSize: 1
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      TargetGroupARNs:
+        - !Ref ALBTargetGroup
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Condition: CreateVpc
+    Properties:
+      Tags:
+        - Key: Name
+          Value: NIM-IGW
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: NIM-Public-Route-Table
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Condition: CreateVpc
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Subnets: !If
+        - CreateSubnets
+        - - !Ref PublicSubnet0
+          - !Ref PublicSubnet1
+          - !Ref PublicSubnet2
+        - !Ref SubnetIds
+      Type: application
+
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+
+  DNSRecord:
+    Type: AWS::Route53::RecordSet
+    DependsOn: Certificate
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
+        HostedZoneId: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
+
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroup
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref Certificate
+
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: /health
+      Name: NIMTargetGroup
+      Port: 8000
+      Protocol: HTTP
+      TargetType: instance
+      VpcId: !If [CreateVpc, !Ref VPC, !Ref VpcId]
+
+Outputs:
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref NIMAutoScalingGroup
+  ALBDNSName:
+    Description: DNS name of the Application Load Balancer
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+  DomainName:
+    Description: Domain name for accessing the NIM
+    Value: !Ref DomainName
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      AZs: 'us-east-1a,us-east-1b,us-east-1c,us-east-1d,us-east-1e,us-east-1f'
+    us-east-2:
+      AZs: 'us-east-2a,us-east-2b,us-east-2c'
+    us-west-2:
+      AZs: 'us-west-2a,us-west-2b,us-west-2c,us-west-2d'
+    ca-central-1:
+      AZs: 'ca-central-1a,ca-central-1b,ca-central-1d'
+    eu-central-1:
+      AZs: 'eu-central-1a,eu-central-1b,eu-central-1c'
+    eu-west-1:
+      AZs: 'eu-west-1a,eu-west-1b,eu-west-1c'
+    eu-west-2:
+      AZs: 'eu-west-2a,eu-west-2b,eu-west-2c'
+    eu-west-3:
+      AZs: 'eu-west-3a,eu-west-3b,eu-west-3c'
+    eu-north-1:
+      AZs: 'eu-north-1a,eu-north-1b,eu-north-1c'
+    ap-northeast-1:
+      AZs: 'ap-northeast-1a,ap-northeast-1c,ap-northeast-1d'
+    ap-northeast-2:
+      AZs: 'ap-northeast-2a,ap-northeast-2b,ap-northeast-2c,ap-northeast-2d'
+    ap-southeast-1:
+      AZs: 'ap-southeast-1a,ap-southeast-1b,ap-southeast-1c'
+    ap-southeast-2:
+      AZs: 'ap-southeast-2a,ap-southeast-2b,ap-southeast-2c'
+    ap-south-1:
+      AZs: 'ap-south-1a,ap-south-1b,ap-south-1c'
+    sa-east-1:
+      AZs: 'sa-east-1a,sa-east-1b,sa-east-1c'
