@@ -19,7 +19,7 @@ This repo contains an example to be able to run NIMs on AWS and scale using [Ama
 
 ## Prerequisite
 #### Setup the EKS cluster
-Please make sure the EKS cluster has been setup, either from a given example in [infrastructure](infrastructure)
+Please make sure the EKS cluster has been setup, from a given example in [infrastructure](infrastructure)
 
 #### Set up your NGC API Key
 Please make sure you have the [NGC API key](https://docs.nvidia.com/ngc/gpu-cloud/ngc-user-guide/index.html#ngc-api-keys) ready to download the NIM docker images.
@@ -86,6 +86,9 @@ This will show you the time series data for the `num_requests_running` metric ac
 Note: Make sure you send some requests to your pod **before** trying to query for the metric, since otherwise it won't show you the metric.
 
 ### 🚀 3. Scaling
+In this section, we will provide you with different options to configure scaling your NIM workloads on Amazon EKS. Both of these are valid configurations, and have their own use-cases. 
+
+#### Option 1: HPA + CAS
 We'll be using the Kubernetes Horizontal Pod Autoscaler (HPA) to scale our NIM workload. 
 
 To use the HPA, we would need to install the Metrics Server. To do this, run:
@@ -112,6 +115,27 @@ kubectl apply -f scaling/hpa-num-requests.yaml
 ```
 
 If you'd like to also deploy a Cluster Autoscaler (CAS), please check out the [CAS scaling section](https://github.com/aws-samples/awsome-inference/tree/main/2.projects/trtllm-inference#cluster-auto-scaler) in the TensorRT-LLM example.
+
+#### Option 2: KEDA + Karpenter
+To get started with KEDA, you’d need to deploy KEDA onto your EKS Cluster. You can follow the following steps to do so [using HELM](https://keda.sh/docs/2.15/deploy/#helm).
+
+To configure auto scaling at the pod level (similar to HPA), we use KEDA to define a custom resource called ScaledObject, as shown in the file provided in scaling/kedas-config.yaml:
+
+The manifest defines a resource ScaledObject named keda-prometheus-hpa. This ScaledObject is responsible for scaling our NIM pod deployments and has a minReplicaCount of 1, meaning 1 pod is always running. As required, it scales the pods based on the custom metric num_requests_running, as emitted by the NIM pods and scraped by Prometheus. 
+
+We use the query max(num_requests_running) by (pod) so that if any single pod has more than 100 incoming requests, we scale up. KEDA also scales down the replicas after the num_requests_running has been below 100 for more than 5 minutes.
+
+To set up node scaling (similar to CAS), you can use Karpenter. You can use the [Karpenter Documentation](https://karpenter.sh/docs/getting-started/migrating-from-cas/) to run the steps required to set up Karpenter on your EKS Cluster.
+
+Once you have Karpenter set up on your EKS Cluster, you can create a manifest to create a resource of type NodePool (i.e., a Karpenter configuration). You can find the Karpenter configuration we use in scaling/karpenter-config.yaml 
+
+In this Karpenter NodePool definition, Karpenter can launch instances from on-demand capacity pools. This is done since this blog assumes that you’re using either On Demand (OD), On Demand Capacity Reservation (ODCR), or Capacity Blocks (CB) for your NIM deployment. If you’d like to use Spot instances, feel free to add “spot” to that array.
+
+Instances launched must be from the g (GPU accelerated) class, with instance generation being greater than 4. So, in this case, g5 and g6 are acceptable, but g4 is not. Feel free to change these values depending on your specific cluster configuration.
+
+The default NodePool definition also defines disruption policies, which means that any underutilized nodes will be removed (scaled down) so that pods can be consolidated to run on fewer or smaller nodes. The expireAfter parameter specified the maximum lifetime of any node before scaling down. 
+
+We also provision an EC2NodeClass with blockDeviceMappings, so Karpenter can provision instances with large enough EBS volumes. This template uses 500GB EBS gp3 volumes, but feel free to change this as required.
 
 ### 4. Load Balancing 
 To load balance across pods, we will be creating a Kubernetes ingress of type Application Load Balancer.
@@ -151,6 +175,52 @@ curl -X 'POST' \
   "stop": "\n",
   "frequency_penalty": 0.0
 }'
+```
+
+### 6. Observability
+To set up Observability, we will install [Grafana](https://grafana.com/docs/grafana/latest/setup-grafana/installation/kubernetes/). For this example, we are primarily using the Grafana defaults, but we are overriding several parameters. We are setting the storage class to gp2, setting up the admin password, configuring the datasource to point to Prometheus and creating an external load balancer for the service.
+
+First, take a look at `grafana.yaml` under grafana/. This file sets up prometheus as a data source for Grafana, so any custom metrics scraped by Prometheus (i.e., `num_requests_running` should be visible on Grafana).
+
+You can run 
+```bash
+kubectl create namespace grafana
+
+helm install grafana grafana/grafana \
+    --namespace grafana \
+    --set persistence.storageClassName="gp2" \
+    --set persistence.enabled=true \
+    --set adminPassword='EKS!sAWSome' \
+    --values ${HOME}/environment/grafana/grafana.yaml \
+    --set service.type=LoadBalancer
+```
+
+Once deployed, you can check status by running
+```bash
+kubectl get all -n grafana
+
+# Example output
+NAME                          READY   STATUS    RESTARTS   AGE
+pod/grafana-f64dbbcf4-794rk   1/1     Running   0          55s
+NAME              TYPE           CLUSTER-IP      EXTERNAL-IP                                                               PORT(S)        AGE
+service/grafana   LoadBalancer   10.100.60.167   aa0fa7322d86e408786cdd21ebcc461c-1708627185.us-east-2.elb.amazonaws.com   80:31929/TCP   55s
+
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/grafana   1/1     1            1           55s
+
+NAME                                DESIRED   CURRENT   READY   AGE
+replicaset.apps/grafana-f64dbbcf4   1         1         1       55s
+```
+
+You can get the ALB URL using
+```bash
+export GRAFANA_ALB=$(kubectl get svc -n grafana grafana -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+echo "http://$GRAFANA_ALB"
+```
+
+When logging in, please use username `admin` and the password you specified in the `helm install` command above. You can retrieve this password using
+```bash
+kubectl get secret --namespace grafana grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
 ```
 
 ## Benchmark

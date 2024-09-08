@@ -48,7 +48,14 @@ addons:
     resolveConflicts: overwrite      
   - name: amazon-cloudwatch-observability
     version: v1.6.0-eksbuild.1
-            
+  - name: aws-ebs-csi-driver
+    version: v1.26.0-eksbuild.1
+
+# Adding additional section to Cluster (eksctl) for any controllers you may want to install. Uncomment as required. 
+# wellKnownPolicies:
+#   ebsCSIController: true      # Adds policies for using the ebs-csi-controller
+#   efsCSIController: true      # Adds policies for using the ebs-csi-controller
+
 managedNodeGroups:
   - name: trtllm-inference-cluster
     instanceType: $INSTANCE_TYPE
