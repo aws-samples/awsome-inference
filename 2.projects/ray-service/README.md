@@ -60,7 +60,7 @@ Locate the head pod service that will look something like "rayservice-mobilenet-
 
 Now run,
 ```bash
-kubectl port-forward svc/stable-diffusion-raycluster-XXXXX-head-svc 8265:8265
+kubectl port-forward svc/mobilenet-raycluster-XXXXX-head-svc 8265:8265
 ```
 
 
@@ -110,7 +110,7 @@ If you would like to access the Ray Dashboard to see a UI for your cluster, plea
 kubectl get svc
 ```
 
-Locate the head pod service that will look something like "rayservice-mobilenet-raycluster-XXXXX-head-svc". Replace this with the service in the next command. 
+Locate the head pod service that will look something like "rayservice-stable-diffusion-raycluster-XXXXX-head-svc". Replace this with the service in the next command. 
 
 Now run,
 ```bash
@@ -119,7 +119,7 @@ kubectl port-forward svc/stable-diffusion-raycluster-XXXXX-head-svc 8265:8265
 
 
 ### 3. Forward the port for Ray Serve
-To try out the MobileNet query, please port-forward the service
+To try out the StableDiffusion query, please port-forward the service
 ```bash
 kubectl port-forward svc/stable-diffusion-serve-svc 8000
 ```
@@ -127,7 +127,7 @@ kubectl port-forward svc/stable-diffusion-serve-svc 8000
 Note: The Serve service is created after the Ray Serve applications are ready and running so this process may take approximately 1 minute after the pods are running. 
 
 ### 🎈 4. Send Request to Image Classifier
-Prepare one of your own image files or you can use one of the examples in the folder. Update `image_path` variable in ['stable_diffusion_req.py`](StableDiffusion/stable_diffusion_req.py). Then you can send your request. This will upload output.png result in your current folder. 
+Update "prompt" in stable_diffusion_req.py. Now, you can send your request. This will upload output.png result in your current folder. 
 
 ```bash
 python stable_diffusion_req.py
@@ -140,7 +140,7 @@ python stable_diffusion_req.py
 
 ### 1. Deploy RayService cluster. 
 ```bash
-cd StableDiffusion
+cd DETR
 kubectl apply -f ray-service.detr.yaml
 ```
 Run this command to deploy your RayService cluster.
@@ -180,7 +180,7 @@ Note: The Serve service is created after the Ray Serve applications are ready an
 Prepare one of your own image files or you can use one of the examples in the folder. Update `image_path` variable in ['detr_req.py`](DETR/detr_req.py). Then you can send your request. This will classify your objects and provide coordinate locations of where the object is in your image. 
 
 ```bash
-python stable_diffusion_req.py
+python detr_req.py
 ```
 
 
@@ -198,7 +198,7 @@ python stable_diffusion_req.py
 - [MobileNet](https://docs.ray.io/en/latest/cluster/kubernetes/examples/mobilenet-rayservice.html)
 - [StableDiffusion Instructions](https://docs.ray.io/en/latest/cluster/kubernetes/examples/stable-diffusion-rayservice.html)
 - [StableDiffusion Code](https://docs.ray.io/en/latest/serve/tutorials/stable-diffusion.html)
-- [aws-do-ray](TBD)
+- [aws-do-ray](https://github.com/aws-samples/aws-do-ray)
 
 
 
