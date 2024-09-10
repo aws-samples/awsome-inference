@@ -8,7 +8,7 @@ spec:
       - name: detr
         import_path: detr:app
         runtime_env:
-          working_dir: "s3://awsome-inference/remote-uri.zip"
+          working_dir: "https://github.com/mvinci12/awsome-inference-ray/archive/5cac0b3eca31f4c8ccf25b16aa8f48c02867a5cd.zip"
           pip: 
             - torch
             - transformers==4.34.1

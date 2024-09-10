@@ -8,7 +8,7 @@ spec:
       - name: stable_diffusion
         import_path: stable_diffusion:entrypoint
         runtime_env:
-          working_dir: "s3://awsome-inference/remote-uri.zip"
+          working_dir: "https://github.com/mvinci12/awsome-inference-ray/archive/5cac0b3eca31f4c8ccf25b16aa8f48c02867a5cd.zip"
           pip: ["diffusers==0.12.1"]
   rayClusterConfig:
     rayVersion: '2.9.0' # Should match the Ray version in the image of the containers
