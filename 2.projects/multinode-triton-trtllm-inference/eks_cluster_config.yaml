@@ -1,0 +1,52 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: wenhant-eks-cluster-east1
+  version: "1.30"
+  region: us-east-1
+
+availabilityZones:
+  - us-east-1a
+  - us-east-1b
+  - us-east-1c
+
+iam:
+  withOIDC: true
+
+managedNodeGroups:
+  - name: sys-ng-east1
+    instanceType: c5.2xlarge
+    minSize: 1
+    desiredCapacity: 1
+    maxSize: 1
+    volumeSize: 80
+    availabilityZones: ["us-east-1a"]
+    iam:
+      withAddonPolicies:
+        imageBuilder: true
+        autoScaler: true
+        ebs: true
+        efs: true
+        awsLoadBalancerController: true
+        cloudWatch: true
+        albIngress: true
+
+  - name: efa-compute-ng-east1
+    instanceType: p5.48xlarge
+    minSize: 1
+    desiredCapacity: 1
+    maxSize: 1
+    volumeSize: 300
+    efaEnabled: true
+    privateNetworking: true
+    availabilityZones: ["us-east-1a"]
+    iam:
+      withAddonPolicies:
+        imageBuilder: true
+        autoScaler: true
+        ebs: true
+        efs: true
+        awsLoadBalancerController: true
+        cloudWatch: true
+        albIngress: true
