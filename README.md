@@ -44,7 +44,7 @@ This repository contains some example code to help you get started with performi
 
 ### MULTI-NODE TRITON TRT-LLM INFERENCE
 
-This example shows how to use K8s LeaderWorketSet for multi-node deployment of LLama 3.1 405B model across P5 instances using NVIDIA Triton and NVIDIA TRT-LLM on EKS (Amazon Elastic Kubernetes Service) with support for autoscaling. This includes instructions for installing LeaderWorkerSet, building custom image to enable features like EFA, Helm chart and associated Python script. This deployment flow uses NVIDIA TensorRT-LLM as the inference engine and NVIDIA Triton Inference Server as the model server. See multinode-triton-trtllm-inference for more information.
+This example shows how to use K8s LeaderWorketSet for multi-node deployment of LLama 3.1 405B model across P5 instances using NVIDIA Triton and NVIDIA TRT-LLM on EKS (Amazon Elastic Kubernetes Service) with support for autoscaling. This includes instructions for installing LeaderWorkerSet, building custom image to enable features like EFA, Helm chart and associated Python script. This deployment flow uses NVIDIA TensorRT-LLM as the inference engine and NVIDIA Triton Inference Server as the model server. See [multinode-triton-trtllm-inference](2.projects/multinode-triton-trtllm-inference) for more information.
 
 ## Security
 
