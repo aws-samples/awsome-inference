@@ -39,7 +39,11 @@ See [trtllm-inference](https://github.com/aws-samples/awsome-inference/blob/main
 
 ### RAY SERVICE
 
-This repository contains some example code to help you get started with performing inference on AI/ML models on AWS accelerated EC2 instances with the help of [RayService](https://docs.ray.io/en/master/serve/index.html) (with NVIDIA GPUs). 
+This repository contains some example code to help you get started with performing inference on AI/ML models on AWS accelerated EC2 instances with the help of [RayService](https://docs.ray.io/en/master/serve/index.html) (with NVIDIA GPUs).
+
+### MULTI-NODE TRITON TRT-LLM INFERENCE
+
+This example shows how to use K8s LeaderWorketSet for multi-node deployment of LLama 3.1 405B model across P5 instances using NVIDIA Triton and NVIDIA TRT-LLM on EKS (Amazon Elastic Kubernetes Service) with support for autoscaling. This includes instructions for installing LeaderWorkerSet, building custom image to enable features like EFA, Helm chart and associated Python script. This deployment flow uses NVIDIA TensorRT-LLM as the inference engine and NVIDIA Triton Inference Server as the model server. See multinode-triton-trtllm-inference for more information.
 
 ## Security
 

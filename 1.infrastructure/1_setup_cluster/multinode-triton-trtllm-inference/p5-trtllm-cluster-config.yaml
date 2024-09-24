@@ -49,7 +49,7 @@ managedNodeGroups:
     privateNetworking: true
     efaEnabled: true
     minSize: 0
-    desiredCapacity: 0
+    desiredCapacity: 2
     maxSize: 2
     volumeSize: 500
     # comment out capacityReservation if you do not need ODCR
