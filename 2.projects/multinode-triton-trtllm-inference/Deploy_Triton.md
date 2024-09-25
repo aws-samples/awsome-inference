@@ -328,7 +328,7 @@ helm uninstall <installation_name>
 
 ## 8. (Optional) NCCL Test
 
-To test whether EFA is working properly, we can run a NCCL test across nodes. Make sure you modify the [nccl_test.yaml](../../1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/nccl_test.yaml) file and adjust the following values:
+To test whether EFA is working properly, we can run a NCCL test across nodes. Make sure you modify the [nccl_test.yaml](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/nccl_test.yaml) file and adjust the following values:
 
 - `slotsPerWorker` : set to the number of GPUs per node in your cluster
 - `-np` : set to "number_of_worker_nodes" * "number_of_gpus_per_node"
