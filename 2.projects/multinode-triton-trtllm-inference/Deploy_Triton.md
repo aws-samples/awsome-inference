@@ -2,7 +2,7 @@
 
 ## 1. Build the custom container image and push it to Amazon ECR
 
-We need to build a custom image on top of Triton TRT-LLM NGC container to include the kubessh file, server.py, and other EFA libraries and will then push this image to Amazon ECR. You can take a look at the [Dockerfile here](https://github.com/Wenhan-Tan/EKS_Multinode_Triton_TRTLLM/blob/main/multinode_helm_chart/containers/triton_trt_llm.containerfile).
+We need to build a custom image on top of Triton TRT-LLM NGC container to include the kubessh file, server.py, and other EFA libraries and will then push this image to Amazon ECR. You can take a look at the [Dockerfile here](/1.infrastructure/1_setup_cluster/multinode_helm_chart/containers/triton_trt_llm.containerfile).
 
 ```
 ## AWS
@@ -15,7 +15,7 @@ export IMAGE=triton_trtllm_multinode
 export TAG=":24.08"
 
 docker build \
-  --file ./triton_trt_llm.containerfile \
+  --file ./multinode_helm_chart/containers/triton_trt_llm.containerfile \
   --rm \
   --tag ${REGISTRY}${IMAGE}${TAG} \
   .
@@ -41,7 +41,7 @@ To build the TRT-LLM engine and set up Triton model repository inside the comput
 
 ### a. Modify the `setup_ssh_efs.yaml` file
 
-We use the `setup_ssh_efs.yaml` file which does "sleep infinity" to set up ssh access inside the compute node along with EFS.
+We use the [`setup_ssh_efs.yaml`](/2.projects/multinode-triton-trtllm-inference/multinode_helm_chart/setup_ssh_efs.yaml) file which does "sleep infinity" to set up ssh access inside the compute node along with EFS.
 
 Adjust the following values:
 
@@ -54,8 +54,7 @@ Adjust the following values:
 Deploy the pod:
 
 ```
-cd multinode_helm_chart/
-kubectl apply -f setup_ssh_efs.yaml
+kubectl apply -f multinode_helm_chart/setup_ssh_efs.yaml
 kubectl exec -it setup-ssh-efs -- bash
 ```
 
@@ -120,14 +119,14 @@ python3 tools/fill_template.py -i triton_model_repo/ensemble/config.pbtxt triton
 
 ```
 exit
-kubectl delete -f setup_ssh_efs.yaml
+kubectl delete -f multinode_helm_chart/setup_ssh_efs.yaml
 ```
 
 ## 3. Create `example_values.yaml` file for deployment
 
-Make sure you go over the provided `values.yaml` first to understand what each value represents.
+Make sure you go over the provided [`values.yaml`](./2.projects/multinode-triton-trtllm-inference/multinode_helm_chart/chart/values.yaml) first to understand what each value represents.
 
-Below is the `example_values.yaml` file we use where `<EFS_MOUNT_PATH>=/var/run/models`:
+Below is the [`example_values.yaml`](./2.projects/multinode-triton-trtllm-inference/multinode_helm_chart/chart/example_values.yaml) file we use where `<EFS_MOUNT_PATH>=/var/run/models`:
 
 ```
 gpu: NVIDIA-H100-80GB-HBM3
@@ -167,9 +166,9 @@ autoscaling:
 
 ```
 helm install multinode-deployment \
-  --values ./chart/values.yaml \
-  --values ./chart/example_values.yaml \
-  ./chart/.
+  --values ./multinode_helm_chart/chart/values.yaml \
+  --values ./multinode_helm_chart/chart/example_values.yaml \
+  ./multinode_helm_chart/chart/.
 ```
 
 In this example, we are going to deploy Triton server on 2 nodes with 8 GPUs each. This will result in having 2 pods running in your cluster. Command `kubectl get pods` should output something similar to below:
@@ -227,7 +226,7 @@ I0717 23:01:28.544321 300 http_server.cc:362] "Started Metrics Service at 0.0.0.
 > [!Note]
 > You may run into an error of `the GPU number is incompatible with 8 gpusPerNode when MPI size is 8`. The root cause is starting from v0.11.0, TRT-LLM backend checks the gpusPerNode parameter in the `config.json` file inside the output engines folder. This parameter is set during engine build time. If the value is the not the same as the number of GPUs in your node, this assertion error shows up. To resolve this, simply change the value in the file to match the number of GPUs in your node.
 
-## 5. Send a Curl POST request for infernce
+## 5. Send a curl POST request for infernce
 
 In this AWS example, we can view the external IP address of Load Balancer by running `kubectl get services`. Note that we use `multinode_deployment` as helm chart installation name here. Your output should look something similar to below:
 
@@ -268,7 +267,7 @@ NAME                   REFERENCE                                TARGETS   MINPOD
 multinode-deployment   LeaderWorkerSet/leaderworkerset-sample   0/1       1         2         1          66m
 ```
 
-From the output above, the current metric value is 0 and the target value is 1. Note that in this example, our metric is a custom metric defined in Prometheus Rule. You can find more details in the [Install Prometheus rule for Triton metrics](2.%20Configure_EKS_Cluster.md#8-install-prometheus-rule-for-triton-metrics) step. When the current value exceed 1, the HPA will start to create a new replica. We can either increase traffic by sending a large amount of requests to the LoadBalancer or manually increase minimum number of replicas to let the HPA create the second replica. In this example, we are going to choose the latter and run the following command:
+From the output above, the current metric value is 0 and the target value is 1. Note that in this example, our metric is a custom metric defined in Prometheus Rule. You can find more details in the [Install Prometheus rule for Triton metrics](./2.projects/multinode-triton-trtllm-inference/Configure_EKS_Cluster.md#8-install-prometheus-rule-for-triton-metrics) step. When the current value exceed 1, the HPA will start to create a new replica. We can either increase traffic by sending a large amount of requests to the LoadBalancer or manually increase minimum number of replicas to let the HPA create the second replica. In this example, we are going to choose the latter and run the following command:
 
 ```
 kubectl patch hpa multinode-deployment -p '{"spec":{"minReplicas": 2}}'
@@ -294,7 +293,7 @@ Events:
   Normal   TriggeredScaleUp  15s   cluster-autoscaler  pod triggered scale-up: [{eks-efa-compute-ng-2-7ac8948c-e79a-9ad8-f27f-70bf073a9bfa 2->4 (max: 4)}]
 ```
 
-The first event means that there are no available nodes to schedule any pods. This explains why the second 2 pods are in `Pending` status. The second event states that the Cluster Autoscaler detects that this pod is `unschedulable`, so it is going to increase number of nodes in our cluster until maximum is reached. You can find more details in the [Install Cluster Autoscaler](2.%20Configure_EKS_Cluster.md#10-install-cluster-autoscaler) step. This process can take some time depending on whether AWS have enough nodes available to add to your cluster. Eventually, the Cluster Autoscaler will add 2 more nodes in your node group so that the 2 `Pending` pods can be scheduled on them. Your `kubectl get nodes` and `kubectl get pods` commands should output something similar to below:
+The first event means that there are no available nodes to schedule any pods. This explains why the second 2 pods are in `Pending` status. The second event states that the Cluster Autoscaler detects that this pod is `unschedulable`, so it is going to increase number of nodes in our cluster until maximum is reached. You can find more details in the [Install Cluster Autoscaler](./2.projects/multinode-triton-trtllm-inference/Configure_EKS_Cluster.md#10-install-cluster-autoscaler) step. This process can take some time depending on whether AWS have enough nodes available to add to your cluster. Eventually, the Cluster Autoscaler will add 2 more nodes in your node group so that the 2 `Pending` pods can be scheduled on them. Your `kubectl get nodes` and `kubectl get pods` commands should output something similar to below:
 
 ```
 NAME                             STATUS   ROLES    AGE   VERSION
@@ -323,7 +322,7 @@ The HPA will delete the second replica if current metric does not exceed the tar
 ## 7. Uninstall the Helm chart
 
 ```
-helm uninstall <installation_name>
+helm uninstall multinode-deployment
 ```
 
 ## 8. (Optional) NCCL Test
@@ -403,7 +402,7 @@ GenAI-Perf is a benchmarking tool for Triton server to measure latency and throu
 
 ### a. Modify the `gen_ai_perf.yaml` file
 
-Adjust the following values:
+Adjust the following values in [gen_ai_perf.yaml](./2.projects/multinode-triton-trtllm-inference/multinode_helm_chart/gen_ai_perf.yaml) file:
 
 - `image` : change image tag. Default is 24.08 which supports TRT-LLM v0.12.0
 - `claimName` : set to your EFS pvc name
@@ -439,7 +438,7 @@ genai-perf \
   -- --request-count=1
 ```
 
-You should output something similar to below (example of Llama 3.1 405B on 2 x p5.48xlarge for Input Len=32,000 and Output Len=1,125):
+You should output something similar to below (example of Llama 3.1 405B, BF16 precision on 2 x p5.48xlarge for Input Len=32,000 and Output Len=1,125):
 
 ```
                                                LLM Metrics                                                
