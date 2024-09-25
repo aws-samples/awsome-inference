@@ -267,7 +267,7 @@ NAME                   REFERENCE                                TARGETS   MINPOD
 multinode-deployment   LeaderWorkerSet/leaderworkerset-sample   0/1       1         2         1          66m
 ```
 
-From the output above, the current metric value is 0 and the target value is 1. Note that in this example, our metric is a custom metric defined in Prometheus Rule. You can find more details in the [Install Prometheus rule for Triton metrics](./2.projects/multinode-triton-trtllm-inference/Configure_EKS_Cluster.md#8-install-prometheus-rule-for-triton-metrics) step. When the current value exceed 1, the HPA will start to create a new replica. We can either increase traffic by sending a large amount of requests to the LoadBalancer or manually increase minimum number of replicas to let the HPA create the second replica. In this example, we are going to choose the latter and run the following command:
+From the output above, the current metric value is 0 and the target value is 1. Note that in this example, our metric is a custom metric defined in Prometheus Rule. You can find more details in the [Install Prometheus rule for Triton metrics](./Configure_EKS_Cluster.md#8-install-prometheus-rule-for-triton-metrics) step. When the current value exceed 1, the HPA will start to create a new replica. We can either increase traffic by sending a large amount of requests to the LoadBalancer or manually increase minimum number of replicas to let the HPA create the second replica. In this example, we are going to choose the latter and run the following command:
 
 ```
 kubectl patch hpa multinode-deployment -p '{"spec":{"minReplicas": 2}}'
@@ -293,7 +293,7 @@ Events:
   Normal   TriggeredScaleUp  15s   cluster-autoscaler  pod triggered scale-up: [{eks-efa-compute-ng-2-7ac8948c-e79a-9ad8-f27f-70bf073a9bfa 2->4 (max: 4)}]
 ```
 
-The first event means that there are no available nodes to schedule any pods. This explains why the second 2 pods are in `Pending` status. The second event states that the Cluster Autoscaler detects that this pod is `unschedulable`, so it is going to increase number of nodes in our cluster until maximum is reached. You can find more details in the [Install Cluster Autoscaler](./2.projects/multinode-triton-trtllm-inference/Configure_EKS_Cluster.md#10-install-cluster-autoscaler) step. This process can take some time depending on whether AWS have enough nodes available to add to your cluster. Eventually, the Cluster Autoscaler will add 2 more nodes in your node group so that the 2 `Pending` pods can be scheduled on them. Your `kubectl get nodes` and `kubectl get pods` commands should output something similar to below:
+The first event means that there are no available nodes to schedule any pods. This explains why the second 2 pods are in `Pending` status. The second event states that the Cluster Autoscaler detects that this pod is `unschedulable`, so it is going to increase number of nodes in our cluster until maximum is reached. You can find more details in the [Install Cluster Autoscaler](./Configure_EKS_Cluster.md#10-install-cluster-autoscaler) step. This process can take some time depending on whether AWS have enough nodes available to add to your cluster. Eventually, the Cluster Autoscaler will add 2 more nodes in your node group so that the 2 `Pending` pods can be scheduled on them. Your `kubectl get nodes` and `kubectl get pods` commands should output something similar to below:
 
 ```
 NAME                             STATUS   ROLES    AGE   VERSION
@@ -402,7 +402,7 @@ GenAI-Perf is a benchmarking tool for Triton server to measure latency and throu
 
 ### a. Modify the `gen_ai_perf.yaml` file
 
-Adjust the following values in [gen_ai_perf.yaml](./2.projects/multinode-triton-trtllm-inference/multinode_helm_chart/gen_ai_perf.yaml) file:
+Adjust the following values in [gen_ai_perf.yaml](./multinode_helm_chart/gen_ai_perf.yaml) file:
 
 - `image` : change image tag. Default is 24.08 which supports TRT-LLM v0.12.0
 - `claimName` : set to your EFS pvc name
