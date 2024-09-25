@@ -97,6 +97,7 @@ trtllm-build --checkpoint_dir ./converted_checkpoint \
 
 ### c. Prepare the Triton model repository
 
+We will set up the model repository for TRT-LLM ensemble model. For more details on setting up model config files please see [model configuration](https://github.com/triton-inference-server/tensorrtllm_backend/blob/main/docs/model_config.md) and [here](https://github.com/triton-inference-server/tensorrtllm_backend).
 ```
 cd <EFS_MOUNT_PATH>/tensorrtllm_backend
 mkdir triton_model_repo
