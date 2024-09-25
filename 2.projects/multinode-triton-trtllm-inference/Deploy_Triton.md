@@ -68,7 +68,7 @@ git lfs install
 git submodule update --init --recursive
 ```
 
-Build a Llama3.1-405B engine with Tensor Parallelism=8, Pipeline Parallelism=2 to run on 2 nodes of p5.48xlarge (8xH100 GPUs each), so total of 16 GPUs across 2 nodes.
+Build a Llama3.1-405B engine with Tensor Parallelism=8, Pipeline Parallelism=2 to run on 2 nodes of p5.48xlarge (8xH100 GPUs each), so total of 16 GPUs across 2 nodes. For more details on building TRT-LLM engine please see [TRT-LLM LLama 405B example](https://github.com/NVIDIA/TensorRT-LLM/tree/main/examples/llama#run-llama-31-405b-model), and for other models see [TRT-LLM examples](https://github.com/NVIDIA/TensorRT-LLM/tree/main/examples).
 
 ```
 cd tensorrtllm_backend/tensorrt_llm/examples/llama
