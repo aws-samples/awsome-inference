@@ -124,9 +124,9 @@ kubectl delete -f multinode_helm_chart/setup_ssh_efs.yaml
 
 ## 3. Create `example_values.yaml` file for deployment
 
-Make sure you go over the provided [`values.yaml`](./2.projects/multinode-triton-trtllm-inference/multinode_helm_chart/chart/values.yaml) first to understand what each value represents.
+Make sure you go over the provided [`values.yaml`](./multinode_helm_chart/chart/values.yaml) first to understand what each value represents.
 
-Below is the [`example_values.yaml`](./2.projects/multinode-triton-trtllm-inference/multinode_helm_chart/chart/example_values.yaml) file we use where `<EFS_MOUNT_PATH>=/var/run/models`:
+Below is the [`example_values.yaml`](./multinode_helm_chart/chart/example_values.yaml) file we use where `<EFS_MOUNT_PATH>=/var/run/models`:
 
 ```
 gpu: NVIDIA-H100-80GB-HBM3
