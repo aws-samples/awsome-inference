@@ -89,6 +89,7 @@ This sub-directory contains yaml manifests, templates and examples to aid you in
 2. `eks-p5-odcr-vpc.yaml`: This is a blank template that you can use to spin up an EKS cluster of p5 instances that you have reserved via the [On-Demand Capacity Reservation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-reservations.html). 
 3. `nims-cluster-config-example.yaml`: This is an example config file that you can use with EKS (as-is, or with modifications) to set up an EKS cluster. Make sure you follow the `project` README and make changes to suit your own use-case.
 4. `trtllm-cluster-config-example.yaml`: This is an example config file that you can use with EKS (as-is, or with modifications) to set up an EKS cluster. Make sure you follow the project README and make changes to suit your own use-case.
+5. `multinode-triton-trtllm-inference/`: This directory contains the guide and yaml file for creating EKS cluster for Triton TRT-LLM multi-node inference.
 
 **Note: The instructions below pertain to creating an EKS cluster **only if** you are not using [Capacity Blocks](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-blocks.html). If you are using Capacity Blocks, please check out the [Capacity Blocks](https://github.com/aws-samples/awsome-inference/tree/capacity-block-eks/1.infrastructure#capacity-blocks) section below.
 **

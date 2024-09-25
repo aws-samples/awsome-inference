@@ -1,0 +1,49 @@
+# Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# See values.yaml for reference values.
+
+# gpu: NVIDIA-A10G
+# gpu: NVIDIA-A100-SXM4-40GB
+gpu: NVIDIA-H100-80GB-HBM3
+gpuPerNode: 8
+persistentVolumeClaim: efs-claim
+
+tensorrtLLM:
+  parallelism:
+    tensor: 8
+    pipeline: 2
+
+triton:
+  image:
+    name: wenhant16/triton_trtllm_multinode:24.08.1
+  resources:
+    cpu: 64
+    memory: 512Gi
+    efa: 32 # If you don't want to enable EFA, set this to 0.
+  triton_model_repo_path: /var/run/models/tensorrtllm_backend/triton_model_repo
+  enable_nsys: false # Note if you send lots of requests, nsys report can be very large.
+
+logging:
+  tritonServer:
+    verbose: true
+
+autoscaling:
+  enable: true
+  replicas:
+    maximum: 2
+    minimum: 1
+  metric:
+    name: triton:queue_compute:ratio
+    value: 1

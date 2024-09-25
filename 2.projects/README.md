@@ -7,6 +7,7 @@ The major components of this directory are:
 |-- nims-inference/                      
 |-- trtllm-inference/ 
 |-- ray-service/                
+|-- multinode-triton-trtllm-inference/
 `-- ...
 // Other directories
 ```
@@ -40,3 +41,14 @@ This project aims to reduce the effort required to set up optimized inference wo
 1. `MobileNet/`: This directory contains a Ray Service yaml and python code to run inference for this image classification model.
 2. `StableDiffusion/`: This directory contains a Ray Service yaml and python code to run inference for this text-to-image model. 
 3. `DETR/`: This directory contains a Ray Service yaml and python code to run inference for this object detection model.
+
+
+## MULTI-NODE TRITON TRT-LLM INFERENCE
+
+This example shows how to use K8s LeaderWorketSet for multi-node deployment of LLama 3.1 405B model across P5 instances using NVIDIA Triton and NVIDIA TRT-LLM on EKS (Amazon Elastic Kubernetes Service) with support for autoscaling. This includes instructions for installing LeaderWorkerSet, building custom image to enable features like EFA, Helm chart and associated Python script. This deployment flow uses NVIDIA TensorRT-LLM as the inference engine and NVIDIA Triton Inference Server as the model server. See [multinode-triton-trtllm-inference](2.projects/multinode-triton-trtllm-inference) for more information.
+
+
+### Files & Directories
+1. `1.infrastructure/1_setup_cluster/trtllm_multinode_sample`: This directory contains the guide [Create_EKS_Cluster.md](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/Create_EKS_Cluster.md) to setup 2x P5.48xlarge EKS cluster as well as example cluster config yaml file [`p5-trtllm-cluster-config.yaml`](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/p5-trtllm-cluster-config.yaml) and EFS Persistent Volume Claim files in directory [pvc](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/pvc)
+2. The [Configure_EKS_Cluster.md](./Configure_EKS_Cluster.md) guide to install necessary components like Prometheus Kubernetes Stack, EFA Plugin, LeaderWorkerSet, etc within the EKS cluster.
+3. The [Deploy_Triton.md](./Deploy_Triton.md) guide to build TRT-LLM engines for LLama 3.1 405B model, setup Triton model repository and install the multi-node deployment helm chart. This guide also covers testing the Horizontal Pod Autoscaler and Cluster Autoscaler and benchmarking LLM inference performance using genai-perf.
