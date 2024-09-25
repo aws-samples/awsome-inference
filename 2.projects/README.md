@@ -45,7 +45,8 @@ This project aims to reduce the effort required to set up optimized inference wo
 
 ## MULTI-NODE TRITON TRT-LLM INFERENCE
 
-This example shows how to use K8s LeaderWorketSet for multi-node deployment of LLama 3.1 405B model across P5 instances using NVIDIA Triton and NVIDIA TRT-LLM on EKS (Amazon Elastic Kubernetes Service) with support for autoscaling. This includes instructions for installing LeaderWorkerSet, building custom image to enable features like EFA, Helm chart and associated Python script. This deployment flow uses NVIDIA TensorRT-LLM as the inference engine and NVIDIA Triton Inference Server as the model server. 
+This example shows how to use K8s LeaderWorketSet for multi-node deployment of LLama 3.1 405B model across P5 instances using NVIDIA Triton and NVIDIA TRT-LLM on EKS (Amazon Elastic Kubernetes Service) with support for autoscaling. This includes instructions for installing LeaderWorkerSet, building custom image to enable features like EFA, Helm chart and associated Python script. This deployment flow uses NVIDIA TensorRT-LLM as the inference engine and NVIDIA Triton Inference Server as the model server. See [multinode-triton-trtllm-inference](2.projects/multinode-triton-trtllm-inference) for more information.
+
 
 ### Files & Directories
 1. `1.infrastructure/1_setup_cluster/trtllm_multinode_sample`: This directory contains the guide [Create_EKS_Cluster.md](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/Create_EKS_Cluster.md) to setup 2x P5.48xlarge EKS cluster as well as example cluster config yaml file [`p5-trtllm-cluster-config.yaml`](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/p5-trtllm-cluster-config.yaml) and EFS Persistent Volume Claim files in directory [pvc](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/pvc)
