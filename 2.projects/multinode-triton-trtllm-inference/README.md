@@ -12,6 +12,6 @@ We have 1 pod per node, so the main challenge in deploying models that require m
 
 ## Setup and Installation
 
- 1. First create the EFA-enabled EKS Cluster following the steps in [1. Create_EKS_Cluster.md](../../1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/1. Create_EKS_Cluster.md)
+ 1. First create the EFA-enabled EKS Cluster following the steps in [1. Create_EKS_Cluster.md](1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/1. Create_EKS_Cluster.md)
  2. Then follow the [2. Configure_EKS_Cluster.md](./2. Configure_EKS_Cluster.md) guide to install necessary components like Prometheus Kubernetes Stack, EFA Plugin, LeaderWorkerSet, etc within the EKS cluster.
  3. Finally, follow the [3. Deploy_Triton.md](./3. Deploy_Triton.md) guide to build TRT-LLM engines for LLama 3.1 405B model, setup Triton model repository and install the multi-node deployment helm chart. This guide also covers testing the Horizontal Pod Autoscaler and Cluster Autoscaler and benchmarking LLM inference performance using genai-perf.
