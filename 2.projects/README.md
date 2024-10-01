@@ -28,9 +28,10 @@ See [trtllm-inference](https://github.com/aws-samples/awsome-inference/blob/main
 This project aims to reduce the effort required to set up optimized inference workloads on AWS, with the help of NVIDIA NIMs. NIMs provides users with an efficient optimization framework that is very quick and easy to set up. The example shown demonstrates running the Llama3-8B model on P5 instances and scaling with Amazon Elastic Kubernetes Service (EKS). See [nims-inference](https://github.com/aws-samples/awsome-inference/blob/main/nims-inference/README.md) for more information.
 
 ### Files & Directories
-1. `nim-deploy/`: This directory, provided by NVIDIA, contains helm charts and templates to get inference with NIMs set up quickly and efficiently.
-2. `benchmark/`: This directory consists of example benchmarking scripts that you can use as-is, or with additional flags as defined by NVIDIA's `genai-perf` tool.
-
+1. `benchmark/`: This directory consists of all the performance testing numbers for NIM. This directory also consists of example benchmarking scripts that you can use as-is, or with additional flags as defined by NVIDIA's `genai-perf` tool.
+2. `ec2-deployment/`: This directory consists of all the deployment files needed to get started with deploying NIM on EC2
+3. `nim-on-sagemaker/`: This directory consists of all the deployment files and example plug-and-play notebooks needed to get started with deploying NIM on SageMaker
+4. `nim-deploy/`: This directory, provided by NVIDIA, contains helm charts and templates to get inference with NIMs set up quickly and efficiently.
 
 ## RAY-SERVICE
 
