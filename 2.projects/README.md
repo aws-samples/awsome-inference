@@ -7,6 +7,7 @@ The major components of this directory are:
 |-- nims-inference/                      
 |-- trtllm-inference/ 
 |-- ray-service/                
+|-- multinode-triton-trtllm-inference/
 `-- ...
 // Other directories
 ```
@@ -27,9 +28,10 @@ See [trtllm-inference](https://github.com/aws-samples/awsome-inference/blob/main
 This project aims to reduce the effort required to set up optimized inference workloads on AWS, with the help of NVIDIA NIMs. NIMs provides users with an efficient optimization framework that is very quick and easy to set up. The example shown demonstrates running the Llama3-8B model on P5 instances and scaling with Amazon Elastic Kubernetes Service (EKS). See [nims-inference](https://github.com/aws-samples/awsome-inference/blob/main/nims-inference/README.md) for more information.
 
 ### Files & Directories
-1. `nim-deploy/`: This directory, provided by NVIDIA, contains helm charts and templates to get inference with NIMs set up quickly and efficiently.
-2. `benchmark/`: This directory consists of example benchmarking scripts that you can use as-is, or with additional flags as defined by NVIDIA's `genai-perf` tool.
-
+1. `benchmark/`: This directory consists of all the performance testing numbers for NIM. This directory also consists of example benchmarking scripts that you can use as-is, or with additional flags as defined by NVIDIA's `genai-perf` tool.
+2. `ec2-deployment/`: This directory consists of all the deployment files needed to get started with deploying NIM on EC2
+3. `nim-on-sagemaker/`: This directory consists of all the deployment files and example plug-and-play notebooks needed to get started with deploying NIM on SageMaker
+4. `nim-deploy/`: This directory, provided by NVIDIA, contains helm charts and templates to get inference with NIMs set up quickly and efficiently.
 
 ## RAY-SERVICE
 
@@ -40,3 +42,14 @@ This project aims to reduce the effort required to set up optimized inference wo
 1. `MobileNet/`: This directory contains a Ray Service yaml and python code to run inference for this image classification model.
 2. `StableDiffusion/`: This directory contains a Ray Service yaml and python code to run inference for this text-to-image model. 
 3. `DETR/`: This directory contains a Ray Service yaml and python code to run inference for this object detection model.
+
+
+## MULTI-NODE TRITON TRT-LLM INFERENCE
+
+This example shows how to use K8s LeaderWorketSet for multi-node deployment of LLama 3.1 405B model across P5 instances using NVIDIA Triton and NVIDIA TRT-LLM on EKS (Amazon Elastic Kubernetes Service) with support for autoscaling. This includes instructions for installing LeaderWorkerSet, building custom image to enable features like EFA, Helm chart and associated Python script. This deployment flow uses NVIDIA TensorRT-LLM as the inference engine and NVIDIA Triton Inference Server as the model server. See [multinode-triton-trtllm-inference](2.projects/multinode-triton-trtllm-inference) for more information.
+
+
+### Files & Directories
+1. `1.infrastructure/1_setup_cluster/trtllm_multinode_sample`: This directory contains the guide [Create_EKS_Cluster.md](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/Create_EKS_Cluster.md) to setup 2x P5.48xlarge EKS cluster as well as example cluster config yaml file [`p5-trtllm-cluster-config.yaml`](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/p5-trtllm-cluster-config.yaml) and EFS Persistent Volume Claim files in directory [pvc](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/pvc)
+2. The [Configure_EKS_Cluster.md](./Configure_EKS_Cluster.md) guide to install necessary components like Prometheus Kubernetes Stack, EFA Plugin, LeaderWorkerSet, etc within the EKS cluster.
+3. The [Deploy_Triton.md](./Deploy_Triton.md) guide to build TRT-LLM engines for LLama 3.1 405B model, setup Triton model repository and install the multi-node deployment helm chart. This guide also covers testing the Horizontal Pod Autoscaler and Cluster Autoscaler and benchmarking LLM inference performance using genai-perf.
