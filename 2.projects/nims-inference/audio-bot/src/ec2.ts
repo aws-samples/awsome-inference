@@ -225,7 +225,7 @@ export class EC2Resources extends Construct {
       '  --runtime=nvidia \\',
       '  --gpus \'"device=0,1,2,3"\' \\',
       '  -e NGC_API_KEY=$NGC_API_KEY \\',
-      '  -e CONTAINER_PROFILE=tensorrt_llm-h100-fp8-tp2-latency \\',
+      '  -e NIM_MODEL_PROFILE=tensorrt_llm-h100-fp8-tp2-latency \\',
       '  -v "/home/ubuntu/.cache/nim:/opt/nim/.cache" \\',
       '  -u $(id -u ubuntu) \\',
       '  -p 8000:8000 \\',

@@ -78,7 +78,8 @@ Reminder:
 
 You are a friendly, conversational AI assistant helping a caller order a pizza over the phone. 
 Your task is to gather all necessary information for a pizza order, including size, toppings, and crust type.
-Keep responses concise and natural. If the user doesn't provide all necessary details, ask for the missing information. Only ask one question at a time.
+Keep responses short and natural. If the user doesn't provide all necessary details, ask for the missing information. Only ask one question at a time.
+Your response will be used to generate audio responses to the user.  Non-standard characters should not be included.
 Don't mention the function or expose its usage to the user."""
 
 role_prompt = role_prompt.format(tool_json=json.dumps(tools[0]["function"], indent=2))
@@ -159,6 +160,7 @@ async def generate_llm_response(conversation_history):
         full_response = response_data['choices'][0]['message']['content']
         logger.info(f"Full LLM response content: '{full_response}'")
         
+        final_response = ""
         if '<function=' in full_response:
             logger.debug("Function call detected in the response")
             start_index = full_response.index('<function=')
@@ -167,24 +169,42 @@ async def generate_llm_response(conversation_history):
             
             logger.debug(f"Extracted function call: {function_call}")
             
-
             function_name = function_call.split('=')[1].split('>')[0]
-            parameters = json.loads(function_call.split('>')[1].split('</function>')[0])
+            parameters_str = function_call.split('>', 1)[1].rsplit('</function>', 1)[0].strip()
             
-            logger.debug(f"Function name: {function_name}")
-            logger.debug(f"Function parameters: {parameters}")
-            
+            try:
+                parameters = json.loads(parameters_str)
+                logger.debug(f"Function name: {function_name}")
+                logger.debug(f"Function parameters: {parameters}")
 
-            if function_name == 'process_pizza_order':
-                result = process_pizza_order(**parameters)
-                logger.debug(f"Function call result: {result}")
-                
-            full_response = full_response[:start_index] + full_response[end_index:]
-            logger.debug(f"Response after removing function call: {full_response}")
+                if function_name == 'process_pizza_order':
+                    result = process_pizza_order(**parameters)
+                    logger.debug(f"Function call result: {result}")
+                    
+                    # Generate a final message based on the order processing result
+                    if result['order_complete']:
+                        final_response = "Great! I've processed your order for a {size} pizza with {toppings} and {crust} crust. Have a great day!".format(
+                            size=parameters['size'],
+                            toppings=", ".join(parameters['toppings']),
+                            crust=parameters['crust']
+                        )
+                    else:
+                        final_response = "I'm sorry, but there seems to be an issue with your order. Can you please confirm the details?"
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing function parameters: {parameters_str}")
+                logger.error(f"JSON decode error: {str(e)}")
+                final_response = "I apologize, but I'm having trouble processing your order. Could you please repeat your pizza preferences?"
+
+            # Use only the final_response when a function call is processed
+            combined_response = final_response
+        else:
+            # If no function call, use the full response
+            combined_response = full_response.strip()
         
+        logger.info(f"Final response: {combined_response}")
         end_time = time.time()
         logger.info(f"LLM response generation completed in {end_time - start_time:.2f} seconds")
-        return full_response
+        return combined_response
     else:
         logger.warning("Unexpected response format from NIM endpoint")
         return "I'm sorry, I couldn't generate a response. Could you please try again?"
