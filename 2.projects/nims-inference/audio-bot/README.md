@@ -4,7 +4,7 @@ This project implements a NIM Voice Bot using Twilio and deployed with AWS CDK, 
 
 ## Architecture Overview
 
-![Architecture Diagram](/images/Overview.png)
+![Architecture Diagram](./images/Overview.png)
 
 The architecture consists of the following main components:
 
@@ -84,7 +84,7 @@ The architecture consists of the following main components:
 
 Create a Twilio phone number and point the webhook to the `TWILIO_HOST_NAME` and `DOMAIN_NAME` in the `.env` file.  For example: `https://voice.yourdomain.com/answer`.  Where `voice` is your `TWILIO_HOST_NAME` and `yourdomain.com` is your `DOMAIN_NAME`.
 
-![Twilio Configuration](/images/Twilio.png)
+![Twilio Configuration](./images/Twilio.png)
 
 ## Main Components
 
@@ -224,7 +224,7 @@ https://catalog.ngc.nvidia.com/orgs/nvidia/teams/nim/collections/meta-llama-3-1-
 
 ## Call Flow
 
-![Call Flow](/images/CallFlow.png)
+![Call Flow](./images/CallFlow.png)
 
 ### Twilio Server
 
