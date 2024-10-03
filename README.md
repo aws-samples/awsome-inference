@@ -18,6 +18,8 @@ README                                # Project Summaries
 |-- trtllm-inference/
 |-- ray-service/ 
 |-- multinode-triton-trtllm-inference/
+3.use-cases/
+|-- nims-inference/
 `-- ...
 // Other directories
 ```
@@ -48,7 +50,7 @@ This example shows how to use [K8s LeaderWorketSet](https://github.com/kubernete
 
 ### AUDIO BOT
 
-This repository contains an example of how to build an audio bot using EC2 with NIMs.  This will deploy an EC2 instance with NIMs installed and configured to support ASR, Inference, and TTS.  The bot will run on an EC2 instance and will be able to receive audio input from a user and respond with audio output.
+This repository contains an example of how to build an audio bot using EC2 with NIMs.  This will deploy an EC2 instance with NIMs installed and configured to support ASR, Inference, and TTS.  The bot will run on an EC2 instance and will be able to receive audio input from a user and respond with audio output.  See [audio-bot](https://github.com/aws-samples/awsome-inference/audio-bot/blob/main/3.use-cases/nims-inference/audio-bot/README.md) for more information.
 
 ## Security
 
