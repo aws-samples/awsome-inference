@@ -1,0 +1,47 @@
+@startuml AI_Voice_Call_Flow
+!define HTTP_COLOR #4CAF50
+!define WEBSOCKET_COLOR #2196F3
+!define GRPC_COLOR #FFC107
+!define SIP_RTP_COLOR #9C27B0
+!define VOICE_COLOR #FF5722
+!define INTERNAL_COLOR #FF9800
+
+skinparam sequenceMessageAlign center
+skinparam backgroundColor #EFEFEF
+skinparam handwritten false
+
+actor "User" as user
+participant "PSTN" as pstn
+participant "Twilio" as twilio
+
+box "Twilio Server" #LightBlue
+participant "HTTP Server" as httpserver
+participant "WebSocket Server" as wsserver
+end box
+
+participant "ASR NIM" as asr
+participant "LLM NIM" as llm
+participant "TTS NIM" as tts
+
+user -> pstn : Call <color:VOICE_COLOR>[Voice]</color>
+pstn -> twilio : Call <color:SIP_RTP_COLOR>[SIP/RTP]</color>
+twilio -> httpserver : Webhook <color:HTTP_COLOR>[HTTP POST]</color>
+httpserver -> twilio : TWiML Response <color:HTTP_COLOR>[HTTP]</color>
+twilio -> wsserver : Audio stream <color:WEBSOCKET_COLOR>[WebSocket]</color>
+
+loop while call is active
+    wsserver -> asr : Audio stream <color:GRPC_COLOR>[gRPC]</color>
+    asr -> wsserver : Transcription <color:GRPC_COLOR>[gRPC]</color>
+    wsserver -> httpserver : Transcription <color:INTERNAL_COLOR>[Internal]</color>
+    httpserver -> llm : Transcription <color:HTTP_COLOR>[HTTP POST]</color>
+    llm -> httpserver : LLM Response <color:HTTP_COLOR>[HTTP]</color>
+    httpserver -> wsserver : LLM Response <color:INTERNAL_COLOR>[Internal]</color>
+    wsserver -> tts : LLM Response <color:GRPC_COLOR>[gRPC]</color>
+    tts -> wsserver : Audio stream <color:GRPC_COLOR>[gRPC]</color>
+    wsserver -> twilio : Audio stream <color:WEBSOCKET_COLOR>[WebSocket]</color>
+end
+
+twilio -> pstn : Audio stream <color:SIP_RTP_COLOR>[SIP/RTP]</color>
+pstn -> user : Audio stream <color:VOICE_COLOR>[Voice]</color>
+
+@enduml
