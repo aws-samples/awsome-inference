@@ -48,6 +48,9 @@ This repository contains some example code to help you get started with performi
 
 This example shows how to use [K8s LeaderWorketSet](https://github.com/kubernetes-sigs/lws/tree/main) for multi-node deployment of LLama 3.1 405B model across P5 (H100) instances using NVIDIA Triton and NVIDIA TRT-LLM on EKS (Amazon Elastic Kubernetes Service) with support for autoscaling. This includes instructions for installing LeaderWorkerSet, building custom image to enable features like EFA, Helm chart and associated Python script. This deployment flow uses NVIDIA TensorRT-LLM as the inference engine and NVIDIA Triton Inference Server as the model server. This example should also work for other GPU instances like G5, P4D, G6, G6E, P5E. See [multinode-triton-trtllm-inference](2.projects/multinode-triton-trtllm-inference) for more information.
 
+## USE-CASES
+These are real life use-case examples on using projects from `2.PROJECTS/` to demonstrate catering the projects to real-life scenarios.
+
 ### AUDIO BOT
 
 This repository contains an example of how to build an audio bot using EC2 with NIMs.  This will deploy an EC2 instance with NIMs installed and configured to support ASR, Inference, and TTS.  The bot will run on an EC2 instance and will be able to receive audio input from a user and respond with audio output.  See [audio-bot](https://github.com/aws-samples/awsome-inference/audio-bot/blob/main/3.use-cases/nims-inference/audio-bot/README.md) for more information.
