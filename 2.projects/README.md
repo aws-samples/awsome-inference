@@ -53,3 +53,7 @@ This example shows how to use K8s LeaderWorketSet for multi-node deployment of L
 1. `1.infrastructure/1_setup_cluster/trtllm_multinode_sample`: This directory contains the guide [Create_EKS_Cluster.md](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/Create_EKS_Cluster.md) to setup 2x P5.48xlarge EKS cluster as well as example cluster config yaml file [`p5-trtllm-cluster-config.yaml`](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/p5-trtllm-cluster-config.yaml) and EFS Persistent Volume Claim files in directory [pvc](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/pvc)
 2. The [Configure_EKS_Cluster.md](./Configure_EKS_Cluster.md) guide to install necessary components like Prometheus Kubernetes Stack, EFA Plugin, LeaderWorkerSet, etc within the EKS cluster.
 3. The [Deploy_Triton.md](./Deploy_Triton.md) guide to build TRT-LLM engines for LLama 3.1 405B model, setup Triton model repository and install the multi-node deployment helm chart. This guide also covers testing the Horizontal Pod Autoscaler and Cluster Autoscaler and benchmarking LLM inference performance using genai-perf.
+
+## TRITON TRT-LLM INFERENCE ON SAGEMAKER
+
+These examples show how to deploy different kind of LLMs like encoder-decoder models (T5/Flan-T5/BART) and decoder-only models using Triton TRT-LLM on SageMaker. See [triton-trtllm-sagemaker-inference](2.projects/triton-trtllm-sagemaker-inference) for more information.
