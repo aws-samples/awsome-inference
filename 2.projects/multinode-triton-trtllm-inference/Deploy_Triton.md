@@ -2,7 +2,7 @@
 
 ## 1. Build the custom container image and push it to Amazon ECR
 
-We need to build a custom image on top of Triton TRT-LLM NGC container to include the kubessh file, server.py, and other EFA libraries and will then push this image to Amazon ECR. You can take a look at the [Dockerfile here](/1.infrastructure/1_setup_cluster/multinode_helm_chart/containers/triton_trt_llm.containerfile).
+We need to build a custom image on top of Triton TRT-LLM NGC container to include the kubessh file, server.py, and other EFA libraries and will then push this image to Amazon ECR. You can take a look at the [Dockerfile here](/2.projects/multinode-triton-trtllm-inference/multinode_helm_chart/containers/triton_trt_llm.containerfile).
 
 ```
 ## AWS
@@ -68,7 +68,7 @@ git lfs install
 git submodule update --init --recursive
 ```
 
-Build a Llama3.1-405B engine with Tensor Parallelism=8, Pipeline Parallelism=2 to run on 2 nodes of p5.48xlarge (8xH100 GPUs each), so total of 16 GPUs across 2 nodes. For more details on building TRT-LLM engine please see [TRT-LLM LLama 405B example](https://github.com/NVIDIA/TensorRT-LLM/tree/main/examples/llama#run-llama-31-405b-model), and for other models see [TRT-LLM examples](https://github.com/NVIDIA/TensorRT-LLM/tree/main/examples).
+Build a Llama3.1-405B engine with Tensor Parallelism=8, Pipeline Parallelism=2 to run on 2 nodes of p5.48xlarge (8xH100 GPUs each), so total of 16 GPUs across 2 nodes. **Make sure to upgrade Huggingface `transformers` version to latest version otherwise convert_checkpoint.py can fail.** For more details on building TRT-LLM engine please see [TRT-LLM LLama 405B example](https://github.com/NVIDIA/TensorRT-LLM/tree/main/examples/llama#run-llama-31-405b-model), and for other models see [TRT-LLM examples](https://github.com/NVIDIA/TensorRT-LLM/tree/main/examples).
 
 ```
 cd tensorrtllm_backend/tensorrt_llm/examples/llama
@@ -251,7 +251,7 @@ You should output similar to below:
 ```
 
 > [!Note]
-> You may run into an error of `Multiple tagged security groups found for instance i-*************`. The root cause is both EKS cluster security group and EFA security group are using the same tag of `kubernetes.io/cluster/wenhant-eks-cluster : owned`. This tag should only be attached to 1 security group, usually your main security group. To resolve this, simply delete the tag from the EFA security group.
+> You may run into an error of `Multiple tagged security groups found for instance i-*************`. The root cause is both EKS cluster security group and EFA security group are using the same tag of `kubernetes.io/cluster/eks-cluster : owned`. This tag should only be attached to 1 security group, usually your main security group. To resolve this, simply delete the tag from the EFA security group.
 
 ## 6. Test Horizontal Pod Autoscaler and Cluster Autoscaler
 
@@ -439,19 +439,17 @@ genai-perf \
   -- --request-count=1
 ```
 
-You should output something similar to below (example of Llama 3.1 405B, BF16 precision on 2 x p5.48xlarge for Input Len=32,000 and Output Len=1,125):
+You should output something similar to below. These numbers are just for example purposes and not representative of peak performance.
 
 ```
                                                LLM Metrics                                                
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┓
-┃                Statistic ┃        avg ┃        min ┃        max ┃        p99 ┃        p90 ┃        p75 ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━┩
-│ Time to first token (ms) │  24,473.19 │  24,473.19 │  24,473.19 │  24,473.19 │  24,473.19 │  24,473.19 │
-│ Inter token latency (ms) │      89.99 │      89.99 │      89.99 │      89.99 │      89.99 │      89.99 │
-│     Request latency (ms) │ 125,625.09 │ 125,625.09 │ 125,625.09 │ 125,625.09 │ 125,625.09 │ 125,625.09 │
-│   Output sequence length │   1,125.00 │   1,125.00 │   1,125.00 │   1,125.00 │   1,125.00 │   1,125.00 │
-│    Input sequence length │  32,768.00 │  32,768.00 │  32,768.00 │  32,768.00 │  32,768.00 │  32,768.00 │
-└──────────────────────────┴────────────┴────────────┴────────────┴────────────┴────────────┴────────────┘
-Output token throughput (per sec): 8.96
-Request throughput (per sec): 0.01
+| Statistic                 | avg        | min        | max        | p99        | p90        | p75        |
+|---------------------------|------------|------------|------------|------------|------------|------------|
+| Time to first token (ms)  | 847.16     | 825.78     | 853.19     | 853.17     | 852.93     | 852.69     |
+| Inter token latency (ms)  | 48.22      | 48.19      | 48.25      | 48.25      | 48.25      | 48.25      |
+| Request latency (ms)      | 50,176.83  | 50,147.34  | 50,216.11  | 50,215.92  | 50,214.18  | 50,205.07  |
+| Output sequence length    | 1,024.00   | 1,024.00   | 1,024.00   | 1,024.00   | 1,024.00   | 1,024.00   |
+| Input sequence length     | 1,024.00   | 1,023.00   | 1,025.00   | 1,025.00   | 1,025.00   | 1,024.00   |
+
+Output token throughput (per sec): 20.41
 ```
