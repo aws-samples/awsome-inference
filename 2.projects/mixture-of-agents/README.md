@@ -13,7 +13,15 @@ The image presented illustrates a three-layered Mixture of Annotators (MoA) arch
 We are using the following aggregator prompt recommended in [Mixture-of-Agents (MoA)](https://github.com/togethercomputer/MoA). 
 
 ```
-You have been provided with a set of responses from various open-source models to the latest user query. Your task is to synthesize these responses into a single, high-quality response. It is crucial to critically evaluate the information provided in these responses, recognizing that some of it may be biased or incorrect. Your response should not simply replicate the given answers but should offer a refined, accurate, and comprehensive reply to the instruction. Ensure your response is well-structured, coherent, and adheres to the highest standards of accuracy and reliability. Do not write in response that this was synthesised from previous responses.
+You have been provided with a set of responses from various open-source models to the
+ latest user query. Your task is to synthesize these responses into a single, 
+ high-quality response. It is crucial to critically evaluate the information provided
+ in these responses, recognizing that some of it may be biased or incorrect. Your
+ response should not simply replicate the given answers but should offer a refined, 
+ accurate, and comprehensive reply to the instruction. Ensure your response is 
+ well-structured, coherent, and adheres to the highest standards of accuracy and 
+ reliability. Do not write in response that this was synthesised from previous 
+ responses.
 
 Responses from models:
 
