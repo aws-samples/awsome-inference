@@ -8,6 +8,7 @@ The major components of this directory are:
 |-- trtllm-inference/ 
 |-- ray-service/                
 |-- multinode-triton-trtllm-inference/
+|-- mixture-of-agents/
 `-- ...
 // Other directories
 ```
@@ -57,3 +58,12 @@ This example shows how to use K8s LeaderWorketSet for multi-node deployment of L
 ## TRITON TRT-LLM SAGEMAKER
 
 These examples shows how to deploy LLMs like T5, Mistral using NVIDIA Triton TRT-LLM on Amazon SageMaker. See [triton-trtllm-sagemaker](2.projects/triton-trtllm-sagemaker) for more information.
+
+## MIXTURE OF AGENTS (MoA)
+
+Recent advances in large language models (LLMs) have shown substantial capabilities, but harnessing the collective expertise of multiple LLMs is an open direction. [Mixture-of-Agents (MoA)](https://github.com/togethercomputer/MoA) approach to leverages the collective strengths of multiple LLMs through a layered architecture. Each layer comprises multiple LLMs, and each model uses outputs from the previous layer's agents as auxiliary information. See [Mixture-of-Agents (MoA) on Amazon bedrock](/2.projects/mixture-of-agents) for more information.
+
+### Files & Directories
+1. [2.projects/mixture-of-agents/mixture-of-agents(MoA).ipynb](/2.projects/mixture-of-agents/mixture-of-agents(MoA).ipynb): Notebook that illustrates the MoA architecture and evaluation mechanism.
+2. [2.projects/mixture-of-agents/outputs/](/2.projects/mixture-of-agents/outputs/): This directory consists of output of 2-layers MoA.
+3. [2.projects/mixture-of-agents/alpaca_eval](/2.projects/mixture-of-agents/alpaca_eval/): This directory is from AlpacaEval GitHub repository and consists of results of Anthropic Claude 3.5 Sonnet. These results are used during evaluation. 
