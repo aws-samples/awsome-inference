@@ -65,5 +65,5 @@ Recent advances in large language models (LLMs) have shown substantial capabilit
 
 ### Files & Directories
 1. [2.projects/mixture-of-agents/mixture-of-agents(MoA).ipynb](/2.projects/mixture-of-agents/mixture-of-agents(MoA).ipynb): Notebook that illustrates the MoA architecture and evaluation mechanism.
-2. [2.projects/mixture-of-agents/outputs/]: This directory consists of output of 2-layers MoA.
-3. [2.projects/mixture-of-agents/alpaca_eval]: This directory is from AlpacaEval GitHub repository and consists of results of Anthropic Claude 3.5 Sonnet. These results are used during evaluation. 
+2. [2.projects/mixture-of-agents/outputs/](/2.projects/mixture-of-agents/outputs/): This directory consists of output of 2-layers MoA.
+3. [2.projects/mixture-of-agents/alpaca_eval](/2.projects/mixture-of-agents/alpaca_eval/): This directory is from AlpacaEval GitHub repository and consists of results of Anthropic Claude 3.5 Sonnet. These results are used during evaluation. 
