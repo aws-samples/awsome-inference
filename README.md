@@ -48,9 +48,14 @@ This repository contains some example code to help you get started with performi
 
 This example shows how to use [K8s LeaderWorketSet](https://github.com/kubernetes-sigs/lws/tree/main) for multi-node deployment of LLama 3.1 405B model across P5 (H100) instances using NVIDIA Triton and NVIDIA TRT-LLM on EKS (Amazon Elastic Kubernetes Service) with support for autoscaling. This includes instructions for installing LeaderWorkerSet, building custom image to enable features like EFA, Helm chart and associated Python script. This deployment flow uses NVIDIA TensorRT-LLM as the inference engine and NVIDIA Triton Inference Server as the model server. This example should also work for other GPU instances like G5, P4D, G6, G6E, P5E. See [multinode-triton-trtllm-inference](2.projects/multinode-triton-trtllm-inference) for more information.
 
+
 ### MIXTURE OF AGENTS (MoA)
 
 Recent advances in large language models (LLMs) have shown substantial capabilities, but harnessing the collective expertise of multiple LLMs is an open direction. [Mixture-of-Agents (MoA)](https://github.com/togethercomputer/MoA) approach to leverages the collective strengths of multiple LLMs through a layered architecture. Each layer comprises multiple LLMs, and each model uses outputs from the previous layer's agents as auxiliary information.
+
+### TRITON TRT-LLM SAGEMAKER
+
+These examples shows how to deploy LLMs like T5, Mistral using NVIDIA Triton TRT-LLM on Amazon SageMaker. See [triton-trtllm-sagemaker](2.projects/triton-trtllm-sagemaker) for more information.
 
 ## USE-CASES
 These are real life use-case examples on using projects from `2.PROJECTS/` to demonstrate catering the projects to real-life scenarios.
