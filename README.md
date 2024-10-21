@@ -18,6 +18,7 @@ README                                # Project Summaries
 |-- trtllm-inference/
 |-- ray-service/ 
 |-- multinode-triton-trtllm-inference/
+|-- mixture-of-agents/
 3.use-cases/
 |-- nims-inference/
 `-- ...
