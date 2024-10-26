@@ -2,7 +2,8 @@
 
 Models keep getting bigger. To keep cost of inference low, we need novel ways to compress models.
 
-[[image:./model_size.png]]
+<center><img src="model_size.png" width="80%"/> </br>
+</center>
 
 
 Ways to compress models:
