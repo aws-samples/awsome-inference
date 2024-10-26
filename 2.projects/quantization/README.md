@@ -18,16 +18,29 @@ Next we will deep dive into Quantization theory and different ways to quantize m
 
 1. FP32: Uses 4 bytes to store a parameter
 2. INT8: Uses 1 byte to store a parameter
+3. BF16 has a bigger range than FP16 but is less precise
+4. Use `torch.iinfo(torch.int8)` or `torch.finfo(torch.float32)` to see more details
 
 ```
->>> import numpy as np
->>> number = 3.14159265359
->>> fp32_number_np = np.float32(number)
->>> print("NumPy:", fp32_number_np)
-NumPy: 3.1415927
->>> int8_number = np.int8(number)
->>> print(int8_number)
-3
+# Python by default saves in FP64
+>>> number = 1/3
+>>> number
+0.3333333333333333
+>>> format(number,'0.60f')
+'0.333333333333333314829616256247390992939472198486328125000000'
+>>> tensor_fp32 = torch.tensor(number,dtype=torch.float32)
+>>> format(tensor_fp32, '0.60f')
+'0.333333343267440795898437500000000000000000000000000000000000'
+>>> tensor_fp16 = torch.tensor(number,dtype=torch.float16)
+>>> format(tensor_fp16, '0.60f')
+'0.333251953125000000000000000000000000000000000000000000000000'
+>>> tensor_bf16 = torch.tensor(number,dtype=torch.bfloat16)
+>>> format(tensor_bf16, '0.60f')
+'0.333984375000000000000000000000000000000000000000000000000000'
+>>> tensor_int8 = torch.tensor(number,dtype=torch.int8)
+<stdin>:1: DeprecationWarning: an integer is required (got type float).  Implicit conversion to integers using __int__ is deprecated, and may be removed in a future version of Python.
+>>> format(tensor_int8, '0.60f')
+'0.000000000000000000000000000000000000000000000000000000000000'
 >>>
 ```
 
