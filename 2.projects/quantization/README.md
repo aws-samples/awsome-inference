@@ -1,4 +1,14 @@
-# How to quantize models post-training to accelerate inference?
+# Quantization
+
+Models keep getting bigger.
+
+
+Ways to compress models:
+
+1. Pruning: 
+
+
+## How to quantize models post-training to accelerate inference?
 
 ## What is quantization?
 
