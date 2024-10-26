@@ -1,5 +1,15 @@
 # Downcast CLIP models and examine impact on accuracy
 
+You can downcast models to FP16 or BF16 as simply as:
+
+```
+model_fp16 = deepcopy(model)
+model_fp16 = model_fp16.to(torch.float16)
+
+model_bf16 = deepcopy(model)
+model_bf16 = model_bf16.to(torch.bfloat16)
+```
+
 ```
 (quant) awsankur@p5-dy-gpu-2:~/quantization$ python3 downcast_clip.py
 FP32 Output probs: tensor([[9.9925e-01, 7.5487e-04]], grad_fn=<SoftmaxBackward0>)
