@@ -1,6 +1,8 @@
 # Quantization
 
-Models keep getting bigger.
+Models keep getting bigger. To keep cost of inference low, we need novel ways to compress models.
+
+[[image:./model_size.png]]
 
 
 Ways to compress models:
