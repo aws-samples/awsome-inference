@@ -11,3 +11,5 @@ However, INT8 remains widely used due to its simplicity and broad hardware suppo
 
 
 [https://docs.nvidia.com/deeplearning/transformer-engine/user-guide/examples/te_llama/tutorial_accelerate_hf_llama_with_te.html]
+
+[https://github.com/NVIDIA/TensorRT-Model-Optimizer/blob/main/llm_ptq/README.md]
