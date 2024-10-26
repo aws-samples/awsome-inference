@@ -44,14 +44,11 @@ Next we will deep dive into Quantization theory and different ways to quantize m
 >>>
 ```
 
+## Downcast models to FP16, BF16, Int8 
 
-## How to quantize models post-training to accelerate inference?
+[https://github.com/aws-samples/awsome-inference/tree/quantization/2.projects/quantization/downcast_models]
 
-## What is quantization?
-
-
-## Quantization basics?
-
+## FP8 quantization
 
 ## Quantization methods?
 
