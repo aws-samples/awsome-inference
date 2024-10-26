@@ -8,3 +8,6 @@ FP8 quantization offers several advantages over INT8 quantization:
 4. **Quantization of Activations**: FP8 can efficiently quantize both weights and activations, which is beneficial for overall model performance.
 
 However, INT8 remains widely used due to its simplicity and broad hardware support, but it may require additional techniques to mitigate its limitations.
+
+
+[https://docs.nvidia.com/deeplearning/transformer-engine/user-guide/examples/te_llama/tutorial_accelerate_hf_llama_with_te.html]
