@@ -50,6 +50,8 @@ Next we will deep dive into Quantization theory and different ways to quantize m
 
 ## FP8 quantization
 
+[https://github.com/aws-samples/awsome-inference/tree/quantization/2.projects/quantization/fp8_quantization]
+
 ## Quantization methods?
 
 
