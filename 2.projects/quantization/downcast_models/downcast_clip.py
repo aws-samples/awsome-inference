@@ -44,7 +44,7 @@ max_diff = torch.abs(logits_per_image_fp16 - logits_per_image_fp32).max().item()
 
 print(f"FP16 Logits Mean diff: {mean_diff} | Max diff: {max_diff}")
 
-# Cast model to fp16
+# Cast model to bf16
 model_bf16 = deepcopy(model)
 model_bf16 = model_bf16.to(torch.bfloat16)
 
