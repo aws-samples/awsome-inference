@@ -3,18 +3,22 @@ kind: ClusterConfig
 
 metadata:
   name: trtllm-inference-cluster
-  region: us-east-1
+  region: $REGION
   version: "1.30"
 
 vpc:
   id: $PLACEHOLDER_VPC_ID
   subnets:
     private:
-      us-east-1a:
+      $AVAILABILITY_ZONE_1:
         id: $PLACEHOLDER_SUBNET_PRIVATE_1
+      $AVAILABILITY_ZONE_2:
+        id: $PLACEHOLDER_SUBNET_PRIVATE_2
     public:
-      us-east-1a:
+      $AVAILABILITY_ZONE_1:
         id: $PLACEHOLDER_SUBNET_PUBLIC_1
+      $AVAILABILITY_ZONE_2:
+        id: $PLACEHOLDER_SUBNET_PUBLIC_2
         
   clusterEndpoints:
     privateAccess: true
@@ -27,7 +31,23 @@ cloudwatch:
 iam:
   withOIDC: true
 
-            
+# Adding additional section to Cluster (eksctl) for any controllers you may want to install. Uncomment as required. 
+wellKnownPolicies:
+#   ebsCSIController: true      # Adds policies for using the ebs-csi-controller
+  efsCSIController: true      # Adds policies for using the efs-csi-controller  
+
+addons:
+  - name: vpc-cni
+    version: 1.18.1-eksbuild.1
+    configurationValues: '{"env":{"ENABLE_PREFIX_DELEGATION":"true", "ENABLE_POD_ENI":"true", "POD_SECURITY_GROUP_ENFORCING_MODE":"standard"},"enableNetworkPolicy": "true"}'
+    resolveConflicts: overwrite      
+  - name: amazon-cloudwatch-observability
+    version: v1.6.0-eksbuild.1
+  # - name: aws-ebs-csi-driver
+  #   version: v1.26.0-eksbuild.1
+  - name: aws-efs-csi-driver     
+    version: v2.0.7-eksbuild.1  
+
 managedNodeGroups:
   - name: cpu-node-group
     instanceType: c5.2xlarge
@@ -55,7 +75,7 @@ managedNodeGroups:
     # comment out capacityReservation if you do not need ODCR
     capacityReservation:
       capacityReservationTarget:
-        capacityReservationID: "cr-xxxxxxxxxxxxxx"
+        capacityReservationID: "$CR_ID"
     iam:
       withAddonPolicies:
         imageBuilder: true
@@ -67,4 +87,3 @@ managedNodeGroups:
         albIngress: true
         externalDNS: true
         certManager: true
-        autoScaler: true
