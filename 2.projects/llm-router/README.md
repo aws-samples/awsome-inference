@@ -30,3 +30,15 @@ conda install -y pytorch=2.4.1 torchvision torchaudio transformers datasets fssp
 pip install boto3
 pip install "routellm[serve,eval]"
 ```
+
+Get Model IDs from Bedrock: https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html#model-ids-arns
+
+```
+Router choices:
+ "random": RandomRouter,
+    "mf": MatrixFactorizationRouter,
+    "causal_llm": CausalLLMRouter,
+    "bert": BERTRouter,
+    "sw_ranking": SWRankingRouter,
+```
+https://github.com/lm-sys/RouteLLM/issues/65
