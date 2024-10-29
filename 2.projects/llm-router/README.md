@@ -42,3 +42,7 @@ Router choices:
     "sw_ranking": SWRankingRouter,
 ```
 https://github.com/lm-sys/RouteLLM/issues/65
+
+Try https://github.com/anyscale/llm-router
+
+
