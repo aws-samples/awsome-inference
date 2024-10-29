@@ -9,19 +9,19 @@ As first step we will add node labels and taints
 * A node label of `nvidia.com/gpu=present` to more easily identify nodes with NVIDIA GPUs.
 * A node taint of `nvidia.com/gpu=present:NoSchedule` to prevent non-GPU pods from being deployed to GPU nodes.
 
-Run the following command to get nodes:
+Run the following command to get nodes with instance type:
 
 ```
-kubectl get nodes
+kubectl get nodes -L node.kubernetes.io/instance-type
 ```
 
 You should see output something similar to below:
 
 ```
-NAME                          STATUS   ROLES    AGE     VERSION
-ip-192-168-117-30.ec2.internal   Ready    <none>   3h10m   v1.30.2-eks-1552ad0
-ip-192-168-127-31.ec2.internal   Ready    <none>   155m    v1.30.2-eks-1552ad0
-ip-192-168-26-106.ec2.internal   Ready    <none>   3h23m   v1.30.2-eks-1552ad0
+NAME                          STATUS   ROLES    AGE     VERSION    INSTANCE-TYPE
+ip-192-168-117-30.ec2.internal   Ready    <none>   3h10m   v1.30.2-eks-1552ad0    p5.48xlarge 
+ip-192-168-127-31.ec2.internal   Ready    <none>   155m    v1.30.2-eks-1552ad0    c5.2xlarge
+ip-192-168-26-106.ec2.internal   Ready    <none>   3h23m   v1.30.2-eks-1552ad0    p5.48xlarge
 ```
 
 > [!Note]
@@ -30,10 +30,11 @@ ip-192-168-26-106.ec2.internal   Ready    <none>   3h23m   v1.30.2-eks-1552ad0
 Run the following command to add label and taints:
 
 ```
-kubectl label nodes ip-192-168-117-30.ec2.internal nvidia.com/gpu=present
-kubectl label nodes ip-192-168-127-31.ec2.internal nvidia.com/gpu=present
-kubectl taint nodes ip-192-168-117-30.ec2.internal nvidia.com/gpu=present:NoSchedule
-kubectl taint nodes ip-192-168-127-31.ec2.internal nvidia.com/gpu=present:NoSchedule
+# Add label
+kubectl label nodes $(kubectl get nodes -L node.kubernetes.io/instance-type | grep p5 | cut -d ‘ ‘ -f 1) nvidia.com/gpu=present
+
+# Add taint
+kubectl taint nodes $(kubectl get nodes -L node.kubernetes.io/instance-type | grep p5 | cut -d ‘ ‘ -f 1) nvidia.com/gpu=present:NoSchedule
 ```
 
 Alternatively, you can add labels and taints in node groups under [EKS console](https://console.aws.amazon.com/eks/home).

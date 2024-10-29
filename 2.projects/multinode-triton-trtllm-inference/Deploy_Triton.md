@@ -71,7 +71,7 @@ git submodule update --init --recursive
 Build a Llama3.1-405B engine with Tensor Parallelism=8, Pipeline Parallelism=2 to run on 2 nodes of p5.48xlarge (8xH100 GPUs each), so total of 16 GPUs across 2 nodes. **Make sure to upgrade Huggingface `transformers` version to latest version otherwise convert_checkpoint.py can fail.** For more details on building TRT-LLM engine please see [TRT-LLM LLama 405B example](https://github.com/NVIDIA/TensorRT-LLM/tree/main/examples/llama#run-llama-31-405b-model), and for other models see [TRT-LLM examples](https://github.com/NVIDIA/TensorRT-LLM/tree/main/examples).
 
 ```
-cd tensorrtllm_backend/tensorrt_llm/examples/llama
+cd tensorrt_llm/examples/llama
 
 pip install -U "huggingface_hub[cli]"
 huggingface-cli login
@@ -99,22 +99,23 @@ trtllm-build --checkpoint_dir ./converted_checkpoint \
 
 We will set up the model repository for TRT-LLM ensemble model. For more details on setting up model config files please see [model configuration](https://github.com/triton-inference-server/tensorrtllm_backend/blob/main/docs/model_config.md) and [here](https://github.com/triton-inference-server/tensorrtllm_backend).
 ```
+# Example Tokenizer Path
+export PATH_TO_TOKENIZER=/var/run/models/tensorrtllm_backend/tensorrt_llm/examples/llama/Meta-Llama-3.1-405B
+
+# Example Engine Path
+export PATH_TO_ENGINE=/var/run/models/tensorrtllm_backend/tensorrt_llm/examples/llama/trt_engines/tp8-pp2
+
 cd <EFS_MOUNT_PATH>/tensorrtllm_backend
 mkdir triton_model_repo
 
-cp -r all_models/inflight_batcher_llm/ensemble triton_model_repo/
-cp -r all_models/inflight_batcher_llm/preprocessing triton_model_repo/
-cp -r all_models/inflight_batcher_llm/postprocessing triton_model_repo/
-cp -r all_models/inflight_batcher_llm/tensorrt_llm triton_model_repo/
+rsync -av --exclude='tensorrt_llm_bls' ./all_models/inflight_batcher_llm/ triton_model_repo/
 
-python3 tools/fill_template.py -i triton_model_repo/preprocessing/config.pbtxt tokenizer_dir:<PATH_TO_TOKENIZER>,tokenizer_type:llama,triton_max_batch_size:8,preprocessing_instance_count:1
-python3 tools/fill_template.py -i triton_model_repo/tensorrt_llm/config.pbtxt triton_backend:tensorrtllm,triton_max_batch_size:8,decoupled_mode:True,max_beam_width:1,engine_dir:<PATH_TO_ENGINES>,enable_kv_cache_reuse:False,batching_strategy:inflight_batching,max_queue_delay_microseconds:0
-python3 tools/fill_template.py -i triton_model_repo/postprocessing/config.pbtxt tokenizer_dir:<PATH_TO_TOKENIZER>,tokenizer_type:llama,triton_max_batch_size:8,postprocessing_instance_count:1
-python3 tools/fill_template.py -i triton_model_repo/ensemble/config.pbtxt triton_max_batch_size:8
+# Replace PATH_TO_AWSOME_INFERENCE_GITHUB with path to where you cloned the GitHub repo
+bash PATH_TO_AWSOME_INFERENCE_GITHUB/2.projects/multinode-triton-trtllm-inference/update_triton_configs.sh
 ```
 
 > [!Note]
-> Be sure to substitute the correct values for `<PATH_TO_TOKENIZER>` and `<PATH_TO_ENGINES>` in the example above. Keep in mind that the tokenizer, the TRT-LLM engines, and the Triton model repository shoudl be in a shared file storage between your nodes. They're required to launch your model in Triton. For example, if using AWS EFS, the values for `<PATH_TO_TOKENIZER>` and `<PATH_TO_ENGINES>` should be respect to the actutal EFS mount path. This is determined by your persistent-volume claim and mount path in chart/templates/deployment.yaml. Make sure that your nodes are able to access these files.
+> If you choose to not use environment variables for your paths, be sure to substitute the correct values for `<PATH_TO_TOKENIZER>` and `<PATH_TO_ENGINES>` in the example above. Instead of using the shell script, please copy paste the 4 Python commands to your command line. Keep in mind that the tokenizer, the TRT-LLM engines, and the Triton model repository should be in a shared file storage between your nodes. They're required to launch your model in Triton. For example, if using AWS EFS, the values for `<PATH_TO_TOKENIZER>` and `<PATH_TO_ENGINES>` should be respect to the actutal EFS mount path. This is determined by your persistent-volume claim and mount path in chart/templates/deployment.yaml. Make sure that your nodes are able to access these files.
 
 ### d. Delete the pod
 
@@ -420,7 +421,7 @@ kubectl exec -it gen-ai-perf -- bash
 Run the below command to start benchmarking:
 
 ```
-genai-perf \
+genai-perf profile \
   -m ensemble \
   --service-kind triton \
   --backend tensorrtllm \

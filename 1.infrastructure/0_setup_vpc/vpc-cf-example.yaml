@@ -67,7 +67,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: public-awsome-inference-inference-us-east-2a
+          Value: public-awsome-inference-inference-az-a
 
   PublicSubnet2:
     Type: AWS::EC2::Subnet
@@ -78,7 +78,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: public-awsome-inference-inference-us-east-2b
+          Value: public-awsome-inference-inference-az-b
 
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
@@ -89,7 +89,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: private-awsome-inference-inference-us-east-2a
+          Value: private-awsome-inference-inference-az-a
 
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
@@ -100,7 +100,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: private-awsome-inference-inference-us-east-2b
+          Value: private-awsome-inference-inference-az-b
 
   NatGateway1EIP:
     Type: AWS::EC2::EIP

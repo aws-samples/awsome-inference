@@ -97,11 +97,11 @@ tolerations:
 
 affinity:
   nodeAffinity:
-  requiredDuringSchedulingIgnoredDuringExecution:
-    nodeSelectorTerms:
-    - matchExpressions:
-      # Ensures that DCGM Exporter process is only deployed to nodes with GPUs.
-      - key: nvidia.com/gpu
-        operator: Exists
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        # Ensures that DCGM Exporter process is only deployed to nodes with GPUs.
+        - key: nvidia.com/gpu
+          operator: Exists
 
 kubeletPath: "/var/lib/kubelet/pod-resources"
