@@ -19,6 +19,7 @@ README                                # Project Summaries
 |-- ray-service/ 
 |-- multinode-triton-trtllm-inference/
 |-- mixture-of-agents/
+|-- mig/
 3.use-cases/
 |-- nims-inference/
 `-- ...
@@ -58,6 +59,10 @@ Recent advances in large language models (LLMs) have shown substantial capabilit
 
 These examples shows how to deploy LLMs like T5, Mistral using NVIDIA Triton TRT-LLM on Amazon SageMaker. See [triton-trtllm-sagemaker](2.projects/triton-trtllm-sagemaker) for more information.
 
+### MIG 
+
+This directory contains a README on how you can leverage Multi-Instance GPUs (MIGs) to partition your GPUs based on your workload. For more detailed documentation, check out the [MIG user guide](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/).
+
 ## USE-CASES
 These are real life use-case examples on using projects from `2.PROJECTS/` to demonstrate catering the projects to real-life scenarios.
 
@@ -78,3 +83,7 @@ This library is licensed under the MIT-0 License. See the [LICENSE](https://gith
 Thanks to all the contributors for building, reviewing and testing.
 
 [![Contributors](https://contrib.rocks/image?repo=aws-samples/awsome-inference)](https://github.com/aws-samples/awsome-inference/graphs/contributors)
+
+## Star History
+[![Star History Chart](https://api.star-history.com/svg?repos=aws-samples/awsome-inference&type=Date)](https://star-history.com/#aws-samples/awsome-awsome-inference&Date)
+
