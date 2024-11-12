@@ -66,4 +66,14 @@ Recent advances in large language models (LLMs) have shown substantial capabilit
 ### Files & Directories
 1. [2.projects/mixture-of-agents/mixture-of-agents(MoA).ipynb](/2.projects/mixture-of-agents/mixture-of-agents(MoA).ipynb): Notebook that illustrates the MoA architecture and evaluation mechanism.
 2. [2.projects/mixture-of-agents/outputs/](/2.projects/mixture-of-agents/outputs/): This directory consists of output of 2-layers MoA.
-3. [2.projects/mixture-of-agents/alpaca_eval](/2.projects/mixture-of-agents/alpaca_eval/): This directory is from AlpacaEval GitHub repository and consists of results of Anthropic Claude 3.5 Sonnet. These results are used during evaluation. 
+3. [2.projects/mixture-of-agents/alpaca_eval](/2.projects/mixture-of-agents/alpaca_eval/): This directory is from AlpacaEval GitHub repository and consists of results of Anthropic Claude 3.5 Sonnet. These results are used during evaluation.
+
+## MIG
+These days, the challenge with ML Inference workloads, is that not all workloads require the same amount of compute resources. With accelerated instances like the Amazon EC2 P5 (p5.48xlarge / p5e.48xlarge), or the Amazon EC2 P4 (p4d.24xlarge / p4de.24xlarge), customers would need to pay for the full instance of 8 GPUs. Additionally, some workloads may be too small to even run on a single GPU! To learn more about the specifics of GPU EC2 instances, check out this developer guide.
+
+In 2020, NVIDIA released Multi-Instance GPU (MIG), alongside the Ampere Architecture that powers the NVIDIA A100 (EC2 P4) and NVIDIA A10G (EC2 G5) GPUs. With MIG, administrators can partition a single GPU into multiple smaller GPU units (called “MIG devices”). Each of these smaller GPU units are fully isolated, with their own high-bandwidth memory, cache, and compute cores.
+
+### Files & Directories
+1. [README.md](https://github.com/aws-samples/awsome-inference/blob/main/2.projects/mig-gpu-partitioning/README.md): Yes, this process is simple enough to only have a README! Note: This project only shows you how to set MIG up, and assumes you already have the cluster(s) set up, and your deployment ready to go.
+
+
