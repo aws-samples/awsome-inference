@@ -31,10 +31,10 @@ Run the following command to add label and taints:
 
 ```
 # Add label
-kubectl label nodes $(kubectl get nodes -L node.kubernetes.io/instance-type | grep p5 | cut -d ‘ ‘ -f 1) nvidia.com/gpu=present
+kubectl label nodes $(kubectl get nodes -L node.kubernetes.io/instance-type | grep p5 | cut -f 1 -d ‘ ‘) nvidia.com/gpu=present
 
 # Add taint
-kubectl taint nodes $(kubectl get nodes -L node.kubernetes.io/instance-type | grep p5 | cut -d ‘ ‘ -f 1) nvidia.com/gpu=present:NoSchedule
+kubectl taint nodes $(kubectl get nodes -L node.kubernetes.io/instance-type | grep p5 | cut -f 1 -d ‘ ‘) nvidia.com/gpu=present:NoSchedule
 ```
 
 Alternatively, you can add labels and taints in node groups under [EKS console](https://console.aws.amazon.com/eks/home).
