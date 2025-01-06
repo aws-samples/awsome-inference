@@ -253,15 +253,12 @@ helm repo add nvidia https://helm.ngc.nvidia.com/nvidia \
 
 helm upgrade gpu-operator \
     nvidia/gpu-operator \
-    --set driver.enabled=true \
     --set mig.strategy=mixed \
     --set devicePlugin.enabled=true \
     --set migManager.enabled=true \
     --set migManager.WITH_REBOOT=true \
-    --set toolkit.version=v1.13.1-centos7 \
     --set operator.defaultRuntime=containerd \
-    --set gfd.version=v0.8.0 \
-    --set devicePlugin.version=v0.13.0 \
+    --set devicePlugin.version=v0.17.0 \
     --set migManager.default=all-balanced
 ```
 
