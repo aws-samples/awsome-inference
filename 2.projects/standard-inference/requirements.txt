@@ -1,0 +1,5 @@
+datasets==2.19.1
+tqdm==4.66.4
+transformers==4.40.2
+vllm==0.4.2
+boto3
