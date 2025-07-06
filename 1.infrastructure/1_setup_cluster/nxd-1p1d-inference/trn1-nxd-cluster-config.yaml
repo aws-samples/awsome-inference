@@ -1,0 +1,85 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: nxdi-inference-cluster
+  region: $REGION
+  version: "1.00"
+
+vpc:
+  id: $PLACEHOLDER_VPC_ID
+  subnets:
+    private:
+      $AVAILABILITY_ZONE_1:
+        id: $PLACEHOLDER_SUBNET_PRIVATE_1
+      $AVAILABILITY_ZONE_2:
+        id: $PLACEHOLDER_SUBNET_PRIVATE_2
+    public:
+      $AVAILABILITY_ZONE_1:
+        id: $PLACEHOLDER_SUBNET_PUBLIC_1
+      $AVAILABILITY_ZONE_2:
+        id: $PLACEHOLDER_SUBNET_PUBLIC_2
+        
+  clusterEndpoints:
+    privateAccess: true
+    publicAccess: true
+      
+cloudwatch:
+  clusterLogging:
+    enableTypes: ["*"]  
+
+iam:
+  withOIDC: true
+
+# Adding additional section to Cluster (eksctl) for any controllers you may want to install. Uncomment as required. 
+wellKnownPolicies:
+#   ebsCSIController: true      # Adds policies for using the ebs-csi-controller
+  efsCSIController: true      # Adds policies for using the efs-csi-controller  
+
+addons:
+  - name: vpc-cni
+    version: 1.18.1-eksbuild.1
+    configurationValues: '{"env":{"ENABLE_PREFIX_DELEGATION":"true", "ENABLE_POD_ENI":"true", "POD_SECURITY_GROUP_ENFORCING_MODE":"standard"},"enableNetworkPolicy": "true"}'
+    resolveConflicts: overwrite      
+  - name: amazon-cloudwatch-observability
+    version: v1.16.4-eksbuild.1
+  # - name: aws-ebs-csi-driver
+  #   version: v1.26.0-eksbuild.1
+  - name: aws-efs-csi-driver     
+    version: v2.1.9-eksbuild.1  
+
+managedNodeGroups:
+  - name: trn-compute-node-group
+    instanceType: trn1.32xlarge
+    instancePrefix: trtllm-compute-node 
+    privateNetworking: true
+    efaEnabled: true
+    minSize: 0
+    desiredCapacity: 2
+    maxSize: 2
+    volumeSize: 500
+    # comment out capacityReservation if you do not need ODCR
+    #capacityReservation:
+      #capacityReservationTarget:
+        #capacityReservationID: "$CR_ID"
+    ami: ami-07c8bc6b0bb890e9e
+    amiFamily: AmazonLinux2
+    ssh:
+      publicKeyName: $PUBLIC_KEYPAIR_NAME
+      sourceSecurityGroupIds: [$SECURITY_GROUP_IDS]
+    updateConfig:
+      maxUnavailablePercentage: 50
+    iam:
+      withAddonPolicies:
+        externalDNS: true
+        certManager: true
+        autoScaler: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+        imageBuilder: true
+        xRay: true
+        awsLoadBalancerController: true
+        albIngress: true
+    
