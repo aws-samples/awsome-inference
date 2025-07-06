@@ -1,0 +1,308 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: disaggregated-server-scripts
+  namespace: neuron-inference
+data:
+  server.sh: |
+    #!/bin/bash
+    # Official tutorial server.sh with direct IP support
+    
+    # Parse command line arguments
+    while [[ $# -gt 0 ]]; do
+    case $1 in
+    --tp-degree)
+    TP_DEGREE="$2"
+    shift 2
+    ;;
+    --batch-size)
+    BATCH_SIZE="$2"
+    shift 2
+    ;;
+    --model-path)
+    MODEL_PATH="$2"
+    shift 2
+    ;;
+    --compiled-model-path)
+    COMPILED_MODEL_PATH="$2"
+    shift 2
+    ;;
+    --send-ip)
+    SEND_IP="$2"
+    shift 2
+    ;;
+    --recv-ip)
+    RECV_IP="$2"
+    shift 2
+    ;;
+    *)
+    echo "Unknown parameter: $1"
+    echo "Usage: $0 --tp-degree <value> --batch-size <value> --model-path <path> \
+    --compiled-model-path <path> --send-ip <ip> --recv-ip <ip>"
+    exit 1
+    ;;
+    esac
+    done
+
+    export NEURON_RT_ASYNC_SENDRECV_BOOTSTRAP_PORT=45645
+    export NEURON_RT_ASYNC_SENDRECV_EXPERIMENTAL_ENABLED=1
+    export NEURON_COMPILED_ARTIFACTS="$COMPILED_MODEL_PATH"
+    export NEURON_SEND_IP="$SEND_IP"
+    export NEURON_RECV_IP="$RECV_IP"
+    export NEURON_RT_ASYNC_EXEC_MAX_INFLIGHT_REQUESTS=2
+    
+    if [ "$SEND" = "1" ]; then
+    PORT=8100
+    if [ "$SINGLE_INSTANCE" = "1" ]; then
+    export NEURON_RT_VISIBLE_CORES=0-31
+    fi
+    TRANSFER_CONFIG='{
+    "kv_connector":"NeuronConnector",
+    "kv_buffer_device":"cpu",
+    "kv_role":"kv_producer",
+    "kv_rank":0,
+    "kv_parallel_size":2,
+    "kv_buffer_size":2e11,
+    "kv_ip":"'"$NEURON_SEND_IP"'",
+    "neuron_core_offset": 0
+    }'
+    else
+    PORT=8200
+    if [ "$SINGLE_INSTANCE" = "1" ]; then
+    NC_OFFSET=32
+    export NEURON_RT_VISIBLE_CORES=32-63
+    else
+    NC_OFFSET=0
+    fi
+    TRANSFER_CONFIG='{
+    "kv_connector":"NeuronConnector",
+    "kv_buffer_device":"cpu",
+    "kv_role":"kv_consumer",
+    "kv_rank":1,
+    "kv_parallel_size":2,
+    "kv_buffer_size":2e11,
+    "kv_ip":"'"$NEURON_SEND_IP"'",
+    "neuron_core_offset": "'"$NC_OFFSET"'"
+    }'
+    fi
+    
+    python3 -m vllm.entrypoints.openai.api_server \
+    --model "$MODEL_PATH" \
+    --max-num-seqs "$BATCH_SIZE" \
+    --max-model-len 8192 \
+    --tensor-parallel-size "$TP_DEGREE" \
+    --device neuron \
+    --use-v2-block-manager \
+    --override-neuron-config "{}" \
+    --kv-transfer-config "$TRANSFER_CONFIG" \
+    --port "$PORT"
+
+  entrypoint.sh: |
+    #!/bin/bash
+    set -e
+    
+    # Determine role: pod-0 = prefill, pod-1 = decode
+    POD_ORDINAL=$(echo $POD_NAME | grep -o '[0-9]*$')
+    if [ "$POD_ORDINAL" = "0" ]; then
+        export SEND=1
+        echo "Pod-0: Prefill + Router"
+    else
+        echo "Pod-1: Decode"
+    fi
+    
+    # Setup environment
+    source ~/aws_neuronx_venv_pytorch_2_7_nxd_inference/bin/activate
+    cd /shared
+    
+    # Install vLLM once
+    if [ ! -d "upstreaming-to-vllm" ]; then
+        git clone -b neuron-2.24-vllm-v0.7.2 https://github.com/aws-neuron/upstreaming-to-vllm.git
+        cd upstreaming-to-vllm
+        pip install -r requirements-neuron.txt
+        VLLM_TARGET_DEVICE="neuron" pip install -e .
+        cd /shared
+    fi
+    
+    # Find peer pod IP
+    PEER_ORDINAL=$((1 - POD_ORDINAL))
+    while true; do
+        PEER_IP=$(kubectl get pod neuron-disaggregated-${PEER_ORDINAL} -o jsonpath='{.status.podIP}' 2>/dev/null || echo "")
+        [ -n "$PEER_IP" ] && [ "$PEER_IP" != "null" ] && break
+        sleep 5
+    done
+    echo "Peer IP: $PEER_IP"
+    
+    # Start inference server
+    /scripts/server.sh \
+        --tp-degree $TP_DEGREE \
+        --batch-size $BATCH_SIZE \
+        --model-path $MODEL_PATH \
+        --compiled-model-path $COMPILED_MODEL_PATH \
+        --send-ip $POD_IP \
+        --recv-ip $PEER_IP &
+    
+    # Start router (only on pod-0)
+    if [ "$POD_ORDINAL" = "0" ]; then
+        pip install quart
+        
+        # Wait for both servers
+        while ! curl -s http://localhost:8100/health; do sleep 5; done
+        while ! curl -s http://$PEER_IP:8200/health; do sleep 5; done
+        
+        echo "Starting router..."
+        neuron-proxy-server \
+            --prefill-ip localhost \
+            --decode-ip $PEER_IP \
+            --prefill-port 8100 \
+            --decode-port 8200 &
+    fi
+    
+    # Wait for all background processes
+    wait
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: neuron-disaggregated
+  namespace: neuron-inference
+spec:
+  serviceName: neuron-disaggregated-headless
+  replicas: 2  # Exactly 1 prefill + 1 decode
+  selector:
+    matchLabels:
+      app: neuron-disaggregated
+  template:
+    metadata:
+      labels:
+        app: neuron-disaggregated
+    spec:
+      # Use separate nodes for better EFA performance
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: neuron-disaggregated
+            topologyKey: kubernetes.io/hostname
+      
+      nodeSelector:
+        workload-type: "neuron-inference"
+      tolerations:
+      - key: aws.amazon.com/neuron
+        operator: Exists
+        effect: NoSchedule
+      
+      serviceAccountName: neuron-pod-reader  # Need to read pod IPs
+      
+      containers:
+      - name: inference-server
+        image: public.ecr.aws/neuron/pytorch-inference-neuronx:2.1.2-neuronx-py310-sdk2.21.0-ubuntu20.04
+        command: ["/bin/bash", "/scripts/entrypoint.sh"]
+        ports:
+        - containerPort: 8100
+          name: prefill-port
+        - containerPort: 8200
+          name: decode-port
+        - containerPort: 8000
+          name: router-port  # Router port (only used by pod-0)
+        resources:
+          limits:
+            aws.amazon.com/neuroncore: "32"
+            vpc.amazonaws.com/efa: "1"  # Request EFA interface
+            memory: "64Gi"
+            cpu: "32"
+          requests:
+            aws.amazon.com/neuroncore: "32"
+            memory: "32Gi"
+            cpu: "16"
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /shared
+        - name: server-scripts
+          mountPath: /scripts
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: TP_DEGREE
+          value: "32"
+        - name: BATCH_SIZE
+          value: "4"
+        - name: MODEL_PATH
+          value: "/shared/models/Llama-3.3-70B-Instruct"
+        - name: COMPILED_MODEL_PATH
+          value: "/shared/di_traced_model_tp64_b4/"
+        - name: FI_PROVIDER
+          value: "efa"  # Force EFA provider
+        - name: FI_EFA_USE_DEVICE_RDMA
+          value: "1"    # Enable RDMA over EFA
+        
+        # Health checks
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - |
+              # Check if the appropriate services are running based on pod ordinal
+              POD_ORDINAL=$(echo $POD_NAME | grep -o '[0-9]*$')
+              if [ "$POD_ORDINAL" = "0" ]; then
+                  # Prefill pod: check both prefill server and router
+                  curl -f http://localhost:8100/health && curl -f http://localhost:8000/ 
+              else
+                  # Decode pod: check decode server
+                  curl -f http://localhost:8200/health
+              fi
+          initialDelaySeconds: 240  # Longer wait for router startup
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - |
+              # Check if the appropriate port is responding based on pod ordinal
+              POD_ORDINAL=$(echo $POD_NAME | grep -o '[0-9]*$')
+              if [ "$POD_ORDINAL" = "0" ]; then
+                  # Prefill pod: both server and router must be ready
+                  curl -f http://localhost:8100/health && curl -f http://localhost:8000/
+              else
+                  # Decode pod: just the decode server
+                  curl -f http://localhost:8200/health
+              fi
+          initialDelaySeconds: 180  # Wait for router startup
+          periodSeconds: 15
+      
+      volumes:
+      - name: shared-storage
+        persistentVolumeClaim:
+          claimName: efs-models-pvc
+      - name: server-scripts
+        configMap:
+          name: disaggregated-server-scripts
+          defaultMode: 0755
+  
+  podManagementPolicy: OrderedReady  # Start pods in order
+
+---
+# Service to expose the router (running on pod-0)
+apiVersion: v1
+kind: Service
+metadata:
+  name: neuron-router-service
+  namespace: neuron-inference
+spec:
+  selector:
+    app: neuron-disaggregated
+    statefulset.kubernetes.io/pod-name: neuron-disaggregated-0  # Only target prefill pod
+  ports:
+  - name: router-port
+    port: 8000
+    targetPort: 8000
+  type: LoadBalancer
