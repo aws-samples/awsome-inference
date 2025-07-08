@@ -76,7 +76,6 @@ spec:
           --mlp-kernel-enabled \
           --cc-pipeline-tiling-factor 1 \
           --pad-token-id 2 \
-          --logical-neuron-cores 2 \
           --context-encoding-buckets 256 512 1024 2048 4096 8192 \
           --token-generation-buckets 512 1024 2048 4096 8192 \
           --apply-seq-ids-mask \
@@ -93,9 +92,9 @@ spec:
           chmod +x /shared/compile.sh
           
           # Compile for multi-instance (TP=32)
-          echo "Compiling model for multi-instance deployment (TP=64)..."
+          echo "Compiling model for multi-instance deployment (TP=32)..."
           cd /shared
-          ./compile.sh --tp-degree 64 --batch-size 4 --model-path /shared/models/Llama-3.3-70B-Instruct
+          ./compile.sh --tp-degree 32 --batch-size 4 --model-path /shared/models/Llama-3.3-70B-Instruct
       
           # Create metadata file
           cat > /shared/compilation_metadata.json << EOL
@@ -106,11 +105,6 @@ spec:
             "vllm_version": "0.7.2",
             "configurations": {
               "multi_instance": {
-                "tp_degree": 64,
-                "batch_size": 4,
-                "compiled_path": "di_traced_model_tp64_b4/"
-              },
-              "single_instance": {
                 "tp_degree": 32,
                 "batch_size": 4,
                 "compiled_path": "di_traced_model_tp32_b4/"
