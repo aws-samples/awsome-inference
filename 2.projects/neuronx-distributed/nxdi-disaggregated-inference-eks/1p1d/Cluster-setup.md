@@ -1,0 +1,1 @@
+update ConfigMap to update all pods, or add to .env at start

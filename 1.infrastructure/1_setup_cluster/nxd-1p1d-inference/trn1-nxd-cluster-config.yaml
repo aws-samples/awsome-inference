@@ -12,8 +12,6 @@ vpc:
     private:
       $AVAILABILITY_ZONE_1:
         id: $PLACEHOLDER_SUBNET_PRIVATE_1
-      $AVAILABILITY_ZONE_2:
-        id: $PLACEHOLDER_SUBNET_PRIVATE_2
     public:
       $AVAILABILITY_ZONE_1:
         id: $PLACEHOLDER_SUBNET_PUBLIC_1
@@ -52,6 +50,8 @@ managedNodeGroups:
   - name: trn-compute-node-group
     instanceType: trn1.32xlarge
     instancePrefix: trtllm-compute-node 
+    subnets:
+      - $PLACEHOLDER_SUBNET_PRIVATE_1
     privateNetworking: true
     efaEnabled: true
     minSize: 0
