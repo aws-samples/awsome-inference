@@ -1,0 +1,191 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neuron-compile-scripts
+  namespace: nxd-inference
+data:
+  compile_model.sh: |
+    #!/bin/bash
+    set -e
+    
+    # Model paths
+    MODEL_PATH="/shared/models/Llama-3.3-70B-Instruct/"
+    COMPILED_MODEL_PATH="/shared/traced_model/Llama-3.3-70B-Instruct/"
+    
+    # Optional: For speculative decoding
+    DRAFT_MODEL_PATH="/shared/models/Llama-3.2-1B-Instruct/"
+    
+    # Neuron configuration
+    NUM_CORES=128
+    TP_DEGREE=64
+    LNC=2
+    
+    export NEURON_RT_VIRTUAL_CORE_SIZE=$LNC
+    export NEURON_RT_NUM_CORES=$((NUM_CORES/NEURON_RT_VIRTUAL_CORE_SIZE))
+    export NEURON_RT_EXEC_TIMEOUT=600
+    export XLA_DENSE_GATHER_FACTOR=0
+    export NEURON_RT_INSPECT_ENABLE=0
+    
+    # Standard compilation (without speculative decoding)
+    if [ "$ENABLE_SPECULATIVE" != "true" ]; then
+        echo "Compiling standard model..."
+        inference_demo \
+        --model-type llama \
+        --task-type causal-lm \
+        run \
+        --model-path $MODEL_PATH \
+        --compiled-model-path $COMPILED_MODEL_PATH \
+        --torch-dtype bfloat16 \
+        --start_rank_id 0 \
+        --local_ranks_size $TP_DEGREE \
+        --tp-degree $TP_DEGREE \
+        --batch-size ${BATCH_SIZE} \
+        --max-context-length 12288 \
+        --seq-len 12800 \
+        --on-device-sampling \
+        --top-k 1 \
+        --do-sample \
+        --fused-qkv \
+        --sequence-parallel-enabled \
+        --qkv-kernel-enabled \
+        --attn-kernel-enabled \
+        --mlp-kernel-enabled \
+        --cc-pipeline-tiling-factor 1 \
+        --pad-token-id 2 \
+        --enable-bucketing \
+        --context-encoding-buckets 2048 4096 8192 12288 \
+        --token-generation-buckets 2048 4096 8192 12800 \
+        --prompt "What is annapurna labs?" 2>&1 | tee /shared/compile.log
+    else
+        # Compilation with speculative decoding
+        echo "Compiling with speculative decoding..."
+        inference_demo \
+        --model-type llama \
+        --task-type causal-lm \
+        run \
+        --model-path $MODEL_PATH \
+        --compiled-model-path $COMPILED_MODEL_PATH \
+        --torch-dtype bfloat16 \
+        --start_rank_id 0 \
+        --local_ranks_size $TP_DEGREE \
+        --tp-degree $TP_DEGREE \
+        --batch-size ${BATCH_SIZE} \
+        --max-context-length 12288 \
+        --seq-len 12800 \
+        --on-device-sampling \
+        --top-k 1 \
+        --fused-qkv \
+        --sequence-parallel-enabled \
+        --qkv-kernel-enabled \
+        --attn-kernel-enabled \
+        --mlp-kernel-enabled \
+        --cc-pipeline-tiling-factor 1 \
+        --draft-model-path $DRAFT_MODEL_PATH \
+        --enable-fused-speculation \
+        --speculation-length 7 \
+        --pad-token-id 2 \
+        --enable-bucketing \
+        --context-encoding-buckets 2048 4096 8192 12288 \
+        --token-generation-buckets 2048 4096 8192 12800 \
+        --prompt "What is annapurna labs?" 2>&1 | tee /shared/compile_speculative.log
+    fi
+    
+    echo "Compilation completed successfully!"
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: neuron-model-compilation
+  namespace: neuron-inference
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      nodeSelector:
+        workload-type: "neuron-inference"
+      tolerations:
+      - key: aws.amazon.com/neuron
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: model-compiler
+        image: public.ecr.aws/neuron/pytorch-inference-vllm-neuronx:0.7.2-neuronx-py310-sdk2.24.0-ubuntu22.04
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          set -e
+          echo "Setting up Neuron environment..."
+          
+          # Activate virtual environment
+          source ~/aws_neuronx_venv_pytorch_2_5_nxd_inference/bin/activate
+          
+          # Install vLLM Neuron fork
+          cd /shared
+          if [ ! -d "upstreaming-to-vllm" ]; then
+            git clone -b neuron-2.24-vllm-v0.7.2 https://github.com/aws-neuron/upstreaming-to-vllm.git
+            cd upstreaming-to-vllm
+            pip install -r requirements-neuron.txt
+            VLLM_TARGET_DEVICE="neuron" pip install -e .
+            cd /shared
+          fi
+          
+          # Download models (if not already present)
+          if [ ! -d "/shared/models/Llama-3.3-70B-Instruct" ]; then
+            echo "Downloading Llama-3.3-70B-Instruct model..."
+            mkdir -p /shared/models
+            # Note: Requires HuggingFace token for gated model
+            huggingface-cli download meta-llama/Llama-3.3-70B-Instruct --local-dir /shared/models/Llama-3.3-70B-Instruct
+          fi
+          
+          # Optional: Download draft model for speculative decoding
+          if [ "$ENABLE_SPECULATIVE" = "true" ] && [ ! -d "/shared/models/Llama-3.2-1B-Instruct" ]; then
+            echo "Downloading draft model..."
+            huggingface-cli download meta-llama/Llama-3.2-1B-Instruct --local-dir /shared/models/Llama-3.2-1B-Instruct
+          fi
+          
+          # Run compilation
+          chmod +x /scripts/compile_model.sh
+          /scripts/compile_model.sh
+          
+        resources:
+          limits:
+            aws.amazon.com/neuroncore: "128"
+            memory: "128Gi"
+            cpu: "64"
+          requests:
+            aws.amazon.com/neuroncore: "128"
+            memory: "64Gi"
+            cpu: "32"
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /shared
+        - name: compile-scripts
+          mountPath: /scripts
+        env:
+        - name: BATCH_SIZE
+          value: "1"  # Can be 1-4
+        - name: ENABLE_SPECULATIVE
+          value: "false"  # Set to "true" for speculative decoding
+      volumes:
+      - name: shared-storage
+        persistentVolumeClaim:
+          claimName: efs-models-pvc
+      - name: compile-scripts
+        configMap:
+          name: neuron-compile-scripts
+          defaultMode: 0755
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: efs-models-pvc
+  namespace: neuron-inference
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 500Gi
