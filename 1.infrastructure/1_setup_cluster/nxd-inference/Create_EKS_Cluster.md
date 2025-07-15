@@ -1,39 +1,5 @@
 # Steps to create EKS cluster with EFS
 
-## 1. Install CLIs
-
-### a. Install AWS CLI (steps [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html))
-
-```
-sudo apt install unzip
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
-```
-
-### b. Install Kubernetes CLI (steps [here](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html))
-
-```
-curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.30.0/2024-05-12/bin/linux/amd64/kubectl
-chmod +x ./kubectl
-mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH
-echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
-```
-
-### c. Install EKS CLI (steps [here](https://eksctl.io/installation/))
-
-```
-ARCH=amd64
-PLATFORM=$(uname -s)_$ARCH
-curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
-curl -sL "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt" | grep $PLATFORM | sha256sum --check
-tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
-sudo mv /tmp/eksctl /usr/local/bin
-```
-
-
-## 2. Create an EKS cluster
-
 In this example we create an EKS cluster consisting of two `trn1.32xlarge` compute nodes. We also setup EFA between the compute nodes.
 
 ### a. Configure AWS CLI
@@ -44,7 +10,7 @@ aws configure
 
 ### b. Create a config file for EKS cluster creation
 
-We have provided an example file here: [p5-trtllm-cluster-config.yaml](./trn1-nxd-cluster-config.yaml)
+We have provided an example file here: [trn1-nxd-cluster-config..yaml](./trn1-nxd-cluster-config.yaml)
 
 ```
 apiVersion: eksctl.io/v1alpha5
