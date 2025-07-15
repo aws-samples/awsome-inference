@@ -64,8 +64,8 @@ managedNodeGroups:
     #capacityReservation:
       #capacityReservationTarget:
         #capacityReservationID: "$CR_ID"
-    ami: ami-07c8bc6b0bb890e9e
-    amiFamily: AmazonLinux2
+    ami: ami-052f325f7962a1734
+    amiFamily: AmazonLinux2023
     ssh:
       publicKeyName: $PUBLIC_KEYPAIR_NAME
       sourceSecurityGroupIds: [$SECURITY_GROUP_IDS]
