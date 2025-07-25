@@ -6,6 +6,7 @@ The major components of this directory are:
 ```bash
 |-- nims-inference/                      
 |-- trtllm-inference/ 
+|-- sglang-inference/
 |-- ray-service/                
 |-- multinode-triton-trtllm-inference/
 |-- mixture-of-agents/
@@ -33,6 +34,17 @@ This project aims to reduce the effort required to set up optimized inference wo
 2. `ec2-deployment/`: This directory consists of all the deployment files needed to get started with deploying NIM on EC2
 3. `nim-on-sagemaker/`: This directory consists of all the deployment files and example plug-and-play notebooks needed to get started with deploying NIM on SageMaker
 4. `nim-deploy/`: This directory, provided by NVIDIA, contains helm charts and templates to get inference with NIMs set up quickly and efficiently.
+
+## SGLANG-INFERENCE
+
+This project provides a complete AWS CDK solution for deploying [SGLang](https://github.com/sgl-project/sglang), a high-performance LLM serving framework. Unlike the Kubernetes-based deployments above, this uses native EC2 Auto Scaling Groups with pre-built AMIs for rapid scaling. The solution includes automated model downloading during AMI creation, warm pools for fast instance startup, and CloudWatch integration for monitoring. It's particularly well-suited for high-throughput inference workloads requiring cost optimization and rapid scaling. See [sglang-inference](https://github.com/aws-samples/awsome-inference/blob/main/2.projects/sglang-inference/README.md) for more information.
+
+### Files & Directories
+1. `cdk/`: AWS CDK infrastructure code including VPC, router, workers, and auto-scaling configuration
+2. `src/`: Runtime scripts for router and worker services, monitoring, and configuration
+3. `tests/`: Integration and performance testing scripts, including OpenAI API compatibility tests
+4. `app.py`: Main CDK application entry point
+5. Model support includes various quantization methods (AWQ, AWQ-Marlin, FP8) and tensor parallelism
 
 ## RAY-SERVICE
 

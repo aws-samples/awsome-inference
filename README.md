@@ -16,6 +16,7 @@ README                                # Project Summaries
 2.project/
 |-- nims-inference/
 |-- trtllm-inference/
+|-- sglang-inference/
 |-- ray-service/ 
 |-- multinode-triton-trtllm-inference/
 |-- mixture-of-agents/
@@ -41,6 +42,10 @@ This project aims to reduce the effort required to set up optimized inference wo
 This project aims at optimizing inference on GPU based AWS Accelerated Computing instances by demonstrating an example of running the Llama3-8B model on P5 instances and optimizing inference using NVIDIA's TensorRT-LLM. Scaling is demonstrated using Amazon Elastic Kubernetes Service (EKS).
 See [trtllm-inference](https://github.com/aws-samples/awsome-inference/blob/main/2.projects/trtllm-inference/README.md) for more information.
 
+### SGLANG-INFERENCE
+
+This project provides a CDK-based deployment of [SGLang](https://github.com/sgl-project/sglang), a high-performance LLM serving framework, on AWS infrastructure. It features auto-scaling GPU workers, pre-built AMIs for fast startup, and a load-balancing router. The solution supports various quantization methods and is optimized for high-throughput, cost-effective deployments on EC2 instances (G4dn, G5, G6, P4d, P5).
+See [sglang-inference](https://github.com/aws-samples/awsome-inference/blob/main/2.projects/sglang-inference/README.md) for more information.
 
 ### RAY SERVICE
 

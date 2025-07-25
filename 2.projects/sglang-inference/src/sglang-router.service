@@ -1,0 +1,17 @@
+[Unit]
+Description=SGLang Router Service
+After=network.target cloud-final.service
+Wants=cloud-final.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/sglang
+ExecStart=/usr/bin/python3 /opt/app/run_router.py --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=10
+StandardOutput=append:/opt/sglang/logs/sglang.log
+StandardError=append:/opt/sglang/logs/sglang.log
+
+[Install]
+WantedBy=multi-user.target
