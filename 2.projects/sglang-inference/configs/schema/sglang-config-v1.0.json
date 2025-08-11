@@ -1,0 +1,310 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SGLang CDK Configuration",
+  "description": "Configuration schema for SGLang deployment with AWS CDK",
+  "type": "object",
+  "required": ["version", "model", "instances"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Configuration schema version"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Configuration name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Configuration description"
+        },
+        "created_by": {
+          "type": "string",
+          "description": "Author of the configuration"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date",
+          "description": "Creation date"
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Hugging Face model ID"
+        },
+        "revision": {
+          "type": "string",
+          "description": "Model revision (branch/tag/commit)",
+          "default": "main"
+        }
+      }
+    },
+    "instances": {
+      "type": "object",
+      "required": ["workers"],
+      "properties": {
+        "workers": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "EC2 instance type for workers",
+              "pattern": "^(g4dn|g5|g5g|g6|g6e|gr6|p4d|p5)\\.[0-9]*xlarge$"
+            },
+            "min_capacity": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "max_capacity": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 3
+            },
+            "desired_capacity": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          }
+        },
+        "router": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "EC2 instance type for router",
+              "default": "t3.medium"
+            },
+            "ip": {
+              "type": "string",
+              "format": "ipv4",
+              "description": "Private IP address for router",
+              "default": "10.0.0.100"
+            }
+          }
+        }
+      }
+    },
+    "sglang": {
+      "type": "object",
+      "description": "SGLang runtime parameters",
+      "properties": {
+        "tokenizer_path": {"type": "string"},
+        "tokenizer_mode": {"type": "string"},
+        "skip_tokenizer_init": {"type": "boolean"},
+        "load_format": {"type": "string"},
+        "trust_remote_code": {"type": "boolean"},
+        "dtype": {
+          "type": "string",
+          "enum": ["auto", "half", "float16", "bfloat16", "float", "float32"]
+        },
+        "kv_cache_dtype": {
+          "type": "string",
+          "enum": ["auto", "fp8_e5m2", "fp8_e4m3", "fp16", "fp32"]
+        },
+        "quantization_param_path": {"type": "string"},
+        "quantization": {
+          "type": "string",
+          "enum": ["awq", "awq_marlin", "gptq", "gptq_marlin", "marlin", "exl2", "bitsandbytes"]
+        },
+        "context_length": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "device": {"type": "string"},
+        "served_model_name": {"type": "string"},
+        "chat_template": {"type": "string"},
+        "is_embedding": {"type": "boolean"},
+        "revision": {"type": "string"},
+        "mem_fraction_static": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_running_requests": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_total_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "chunked_prefill_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_prefill_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "schedule_policy": {
+          "type": "string",
+          "enum": ["lpm", "random", "fcfs", "dfs-weight"]
+        },
+        "schedule_conservativeness": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "cpu_offload_gb": {
+          "type": "number",
+          "minimum": 0
+        },
+        "prefill_only_one_req": {"type": "boolean"},
+        "tensor_parallel_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "stream_interval": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "random_seed": {"type": "integer"},
+        "constrained_json_whitespace_pattern": {"type": "string"},
+        "watchdog_timeout": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "download_dir": {"type": "string"},
+        "base_gpu_id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "log_level": {
+          "type": "string",
+          "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        },
+        "log_level_http": {
+          "type": "string",
+          "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        },
+        "log_requests": {"type": "boolean"},
+        "show_time_cost": {"type": "boolean"},
+        "enable_metrics": {"type": "boolean"},
+        "decode_log_interval": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "api_key": {"type": "string"},
+        "file_storage_pth": {"type": "string"},
+        "enable_cache_report": {"type": "boolean"},
+        "data_parallel_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "load_balance_method": {"type": "string"},
+        "expert_parallel_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "dist_init_addr": {"type": "string"},
+        "nnodes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "node_rank": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "json_model_override_args": {"type": "string"},
+        "lora_paths": {"type": "string"},
+        "max_loras_per_batch": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "attention_backend": {"type": "string"},
+        "sampling_backend": {"type": "string"},
+        "grammar_backend": {"type": "string"},
+        "speculative_algorithm": {"type": "string"},
+        "speculative_draft_model_path": {"type": "string"},
+        "speculative_num_steps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "speculative_num_draft_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "speculative_eagle_topk": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "enable_double_sparsity": {"type": "boolean"},
+        "ds_channel_config_path": {"type": "string"},
+        "ds_heavy_channel_num": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ds_heavy_token_num": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ds_heavy_channel_type": {"type": "string"},
+        "ds_sparse_decode_threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "disable_radix_cache": {"type": "boolean"},
+        "disable_jump_forward": {"type": "boolean"},
+        "disable_cuda_graph": {"type": "boolean"},
+        "disable_cuda_graph_padding": {"type": "boolean"},
+        "disable_outlines_disk_cache": {"type": "boolean"},
+        "disable_custom_all_reduce": {"type": "boolean"},
+        "disable_mla": {"type": "boolean"},
+        "disable_overlap_schedule": {"type": "boolean"},
+        "enable_mixed_chunk": {"type": "boolean"},
+        "enable_dp_attention": {"type": "boolean"},
+        "enable_ep_moe": {"type": "boolean"},
+        "enable_torch_compile": {"type": "boolean"},
+        "torch_compile_max_bs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "cuda_graph_max_bs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "cuda_graph_bs": {"type": "string"},
+        "torchao_config": {"type": "string"},
+        "enable_nan_detection": {"type": "boolean"},
+        "enable_p2p_check": {"type": "boolean"},
+        "triton_attention_reduce_in_fp32": {"type": "boolean"},
+        "triton_attention_num_kv_splits": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "num_continuous_decode_steps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "delete_ckpt_after_loading": {"type": "boolean"},
+        "enable_memory_saver": {"type": "boolean"},
+        "allow_auto_truncate": {"type": "boolean"},
+        "enable_custom_logit_processor": {"type": "boolean"}
+      }
+    },
+    "disaggregated": {
+      "type": "object",
+      "description": "Reserved for future disaggregated serving support",
+      "properties": {
+        "prefill": {
+          "type": "object"
+        },
+        "decode": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

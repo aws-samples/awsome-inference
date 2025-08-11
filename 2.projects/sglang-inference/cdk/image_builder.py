@@ -41,7 +41,7 @@ class ImageBuilder(Construct):
         
         # Create instance profile that will be used by the build instance
         instance_profile = iam.CfnInstanceProfile(self, "InstanceProfileImageBuilder",
-            instance_profile_name="InstanceProfileImageBuilder",
+            instance_profile_name=f"InstanceProfileImageBuilder-{scope.node.id}",
             roles=[imagebuilder_role.role_name]
         )
 
@@ -54,7 +54,7 @@ class ImageBuilder(Construct):
     
         # Configure the build infrastructure settings
         infra_config = imagebuilder.CfnInfrastructureConfiguration(self, "InfraConfig",
-            name="ImageBuilderInfraConfig",
+            name=f"ImageBuilderInfraConfig-{scope.node.id}",
             instance_profile_name=instance_profile.instance_profile_name,
             instance_types=[instance_type], # GPU instance type
             subnet_id=vpc.vpc.public_subnets[0].subnet_id,
@@ -81,7 +81,7 @@ class ImageBuilder(Construct):
         
         # Define build steps to install dependencies and application code
         install_component = imagebuilder.CfnComponent(self, "InstallComponent",
-            name="InstallDependencies",
+            name=f"InstallDependencies-{scope.node.id}",
             platform="Linux",
             version="1.0.0",
             data=f"""
@@ -95,16 +95,24 @@ class ImageBuilder(Construct):
                     action: ExecuteBash
                     inputs:
                       commands:
-                        - mkdir -p /opt/sglang/pip_packages /opt/sglang/logs
-                        # Install packages with CUDA support
-                        - pip3 install --upgrade setuptools==67.6.0
-                        - pip3 install --index-url https://download.pytorch.org/whl/cu124 torch
-                        - pip3 install "sglang[all]" --find-links https://flashinfer.ai/whl/cu124/torch2.4/flashinfer/
+                        - mkdir -p /opt/sglang/logs
+                        # Install system packages
+                        - apt update
+                        - DEBIAN_FRONTEND=noninteractive apt install -y ninja-build python3-venv
+                        # Create virtual environment
+                        - python3 -m venv /opt/sglang/venv
+                        # Upgrade pip in venv
+                        - /opt/sglang/venv/bin/pip install --upgrade pip
+                        # Install basic dependencies
+                        - /opt/sglang/venv/bin/pip install nixl huggingface-hub
+                        # Clone sglang main branch and install
+                        - git clone https://github.com/sgl-project/sglang.git /opt/sglang/source
+                        - cd /opt/sglang/source && /opt/sglang/venv/bin/pip install -e "python[all]"
                         # Install vllm for awq_marlin quantization support
-                        - pip3 install vllm==0.9.0.1
+                        # Remove vllm for the time being to avoid conflicts with newest build of sglang /opt/sglang/venv/bin/pip install vllm==0.9.0.1
                         # Download model from Hugging Face and create a model directory
                         - mkdir -p /opt/sglang/models/{self.model_name}
-                        - python3 -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='{self.hf_model_id}', revision='main', local_dir='/opt/sglang/models/{self.model_name}')"
+                        - /opt/sglang/venv/bin/python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='{self.hf_model_id}', revision='main', local_dir='/opt/sglang/models/{self.model_name}')"
                         # Prep cache for torch compile
                         - mkdir -p /opt/sglang/torch_compile_cache/
                         - export TORCHINDUCTOR_CACHE_DIR=/opt/sglang/torch_compile_cache/
@@ -120,14 +128,13 @@ class ImageBuilder(Construct):
 
         # Configure the AMI recipe with base image and storage
         recipe = imagebuilder.CfnImageRecipe(self, "ImageRecipe",
-            name="SGLangImageRecipe",
+            name=f"SGLangImageRecipe-{scope.node.id}",
             version="1.0.0",
             components=[{
                 "componentArn": install_component.attr_arn
             }],
-            #parent_image="ami-081f526a977142913",
             parent_image=ec2.MachineImage.lookup(
-                name="Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 22.04)*",
+                name="Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 24.04) 20250722",
                 owners=["amazon"]
             ).get_image(self).image_id,
             block_device_mappings=[{
@@ -150,7 +157,8 @@ class ImageBuilder(Construct):
                 "timeoutMinutes": 60
             },
             tags={
-                "Name": "sglang-image",
-                "CreatedBy": "ImageBuilder"
+                "Name": f"sglang-image-{scope.node.id}",
+                "CreatedBy": "ImageBuilder",
+                "Stack": scope.node.id
             },
         )

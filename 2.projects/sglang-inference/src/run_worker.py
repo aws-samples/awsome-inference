@@ -1,3 +1,4 @@
+#!/opt/sglang/venv/bin/python
 import time
 import subprocess
 import requests
@@ -19,7 +20,7 @@ def launch_worker(host: str, port: int, model_name: str, gpu_id: int, extra_args
     # Open log file in append mode
     log_file = open("/opt/sglang/logs/sglang.log", "a")
     command = [
-        "python3",
+        "/opt/sglang/venv/bin/python",
         "-m",
         "sglang.launch_server",
         "--model-path",

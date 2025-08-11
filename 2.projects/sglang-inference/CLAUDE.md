@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is an AWS CDK application that deploys SGLang (a high-performance LLM serving framework) on AWS infrastructure. It creates a distributed inference system with auto-scaling GPU workers and a load-balancing router.
+This is an AWS CDK application that deploys SGLang (a high-performance LLM serving framework) on AWS infrastructure. It creates a distributed inference system with auto-scaling GPU workers and a prompt cache aware load-balancing router.
 
 ## Common Commands
 

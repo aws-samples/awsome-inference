@@ -8,7 +8,8 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/opt/sglang
 Environment="TORCHINDUCTOR_CACHE_DIR=/opt/sglang/torch_compile_cache/"
-ExecStart=/usr/bin/python3 /opt/app/run_worker.py --gpu-id 0 --model MODEL_PATH --router-url http://10.0.0.100:8000 EXTRA_ARGS
+Environment="PYTHONPATH=/opt/sglang/source:$PYTHONPATH"
+ExecStart=/opt/sglang/venv/bin/python /opt/app/run_worker.py --gpu-id 0 --model MODEL_PATH --router-url http://10.0.0.100:8000 EXTRA_ARGS
 Restart=always
 RestartSec=10
 StandardOutput=append:/opt/sglang/logs/sglang.log

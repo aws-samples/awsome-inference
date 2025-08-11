@@ -1,0 +1,30 @@
+# Basic SGLang Configuration Example
+# This example shows a minimal configuration for deploying SGLang with AWS CDK
+
+version: "1.0"
+
+metadata:
+  name: "basic-sglang-config"
+  description: "A basic configuration example for SGLang deployment"
+  created_by: "jonaevau"
+  created_at: "2025-08-08"
+
+# Model configuration
+model:
+  id: "openai/gpt-oss-20b"  # Hugging Face model ID
+  # revision: "main"  # Optional: specify a specific revision
+
+# Instance configuration
+instances:
+  workers:
+    type: "g6e.xlarge"      # GPU instance type for workers
+    min_capacity: 1         # Minimum number of workers
+    max_capacity: 3         # Maximum number of workers
+    desired_capacity: 1     # Initial number of workers
+  
+  router:
+    # type: "t3.medium"     # Optional: defaults to t3.medium
+    ip: "10.0.0.100"        # Private IP for the router
+
+# SGLang runtime parameters (all optional)
+sglang:

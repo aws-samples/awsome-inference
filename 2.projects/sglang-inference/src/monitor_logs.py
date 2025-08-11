@@ -22,6 +22,8 @@ class LogMetricsPublisher:
         self.cloudwatch = boto3.client('cloudwatch', region_name=region)
         # Get EC2 instance ID for metric dimensions
         self.instance_id = self._get_instance_id()
+        # Use fixed ASG name for metrics
+        self.asg_name = 'sglang-workers'
         
         # Update patterns to match new log format
         self.patterns = {

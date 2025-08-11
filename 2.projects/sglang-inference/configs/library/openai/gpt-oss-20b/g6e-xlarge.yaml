@@ -1,0 +1,25 @@
+# Configuration for GPT-OSS-20B on g6e.xlarge instances
+# 1x L40S GPU (48GB)
+
+version: "1.0"
+
+metadata:
+  name: "gpt-oss-20b-g6e-xlarge"
+  description: "Configuration for OpenAI GPT-OSS-20B on g6e.xlarge instances"
+  provider: "openai"
+  model_family: "gpt-oss"
+
+model:
+  id: "openai/gpt-oss-20b"
+
+instances:
+  workers:
+    type: "g6e.xlarge"        # 1x L40S GPU (48GB)
+    min_capacity: 1
+    max_capacity: 3
+    desired_capacity: 1
+  
+  router:
+    ip: "10.0.0.100"
+
+sglang:

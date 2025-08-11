@@ -34,11 +34,12 @@ def get_asg_instance_ips() -> list[str]:
     ec2 = boto3.client('ec2', region_name=region)
     autoscaling = boto3.client('autoscaling', region_name=region)
     
-    # Get ASG name from instance tags
+    # Get ASG name by looking for Workers ASG pattern
     response = autoscaling.describe_auto_scaling_groups()
     asg_name = None
     for asg in response['AutoScalingGroups']:
-        if asg['AutoScalingGroupName'].startswith('CdkStack'):  # Matches CDK-generated name
+        # Look for ASG names containing "Workers" (matches CDK-generated pattern)
+        if 'Workers' in asg['AutoScalingGroupName'] and 'ASG' in asg['AutoScalingGroupName']:
             asg_name = asg['AutoScalingGroupName']
             break
     

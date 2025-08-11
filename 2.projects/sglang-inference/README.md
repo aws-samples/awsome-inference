@@ -49,29 +49,40 @@ This project provides a CDK application that deploys a distributed inference sys
 
 2. **Deploy with default model:**
    ```bash
+   # Option 1: Deploy with default DeepSeek model
    cdk deploy
    ```
    This deploys DeepSeek-R1-Distill-Qwen-32B-AWQ on g6e.xlarge instances.
 
-3. **Deploy with custom model:**
+   **Or deploy with OpenAI GPT model:**
    ```bash
-   cdk deploy --context model_id=hugging-quants/Meta-Llama-3.1-8B-Instruct-AWQ-INT4 \
-              --context instance_type=g6e.xlarge
+   # Option 2: Deploy using OpenAI GPT-OSS-20B configuration
+   cdk deploy --context config_file=configs/examples/basic-config.yaml
    ```
+   This deploys OpenAI's GPT-OSS-20B model on g6e.xlarge instances.
 
 ## Configuration
 
-### Environment Variables
+### Configuration File System (Recommended)
 
-Create a `.env` file based on `.env.example`:
+The project now supports YAML configuration files for easier deployment management:
 
 ```bash
-SGLANG_ROUTER_URL=http://your-router-ip:8000
-AWS_REGION=us-west-2
-MODEL_NAME=meta-llama/Meta-Llama-3.1-8B-Instruct
+# Deploy using the OpenAI GPT example configuration
+cdk deploy --context config_file=configs/examples/basic-config.yaml
+
+# Deploy using a pre-built library configuration
+cdk deploy --context config_file=configs/library/openai/gpt-oss-120b/g6e-12xlarge.yaml
+
+# Override specific parameters
+cdk deploy --context config_file=configs/examples/basic-config.yaml \
+           --context instance_type=g6e.2xlarge \
+           --context max_capacity=5
 ```
 
-### CDK Context Parameters
+See the [Configuration Documentation](configs/README.md) for detailed information about the configuration system.
+
+### CDK Context Parameters (Traditional Method)
 
 - `model_id`: Hugging Face model ID (default: Valdemardi/DeepSeek-R1-Distill-Qwen-32B-AWQ)
 - `instance_type`: EC2 instance type (default: g6e.xlarge)
@@ -100,17 +111,6 @@ python3 tests/test_oai.py
 # Run benchmarks
 python3 tests/stress_test.py
 ```
-
-## Monitoring
-
-- CloudWatch Logs: `/aws/ec2/sglang`
-- Metrics namespace: `SGLang/Workers`
-- Key metrics: NewTokens, RunningRequests, TokensProcessed
-
-## Supported Instance Types
-
-- G4dn, G5, G5g, G6, G6e (default), GR6
-- P4d, P5
 
 ## Clean Up
 
