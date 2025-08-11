@@ -1,0 +1,25 @@
+# Configuration for GPT-OSS-120B on p4d.24xlarge instances
+
+version: "1.0"
+
+metadata:
+  name: "gpt-oss-120b-p4d.24xlarge"
+  description: "Configuration for OpenAI GPT-OSS-120B on p4d.24xlarge instances"
+  provider: "openai"
+  model_family: "gpt-oss"
+
+model:
+  id: "openai/gpt-oss-120b"
+
+instances:
+  workers:
+    type: "p4d.24xlarge"      # 8x L40S GPUs (384GB total)
+    min_capacity: 1
+    max_capacity: 2
+    desired_capacity: 1
+  
+  router:
+    ip: "10.0.0.100"
+
+sglang:
+  tp-size: 8

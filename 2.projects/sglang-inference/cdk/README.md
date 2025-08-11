@@ -21,6 +21,15 @@ This directory contains all AWS CDK infrastructure code for deploying SGLang on 
 
 - **[connections.py](./connections.py)** - Security group rules and network connections between components.
 
+### Configuration Management
+
+- **[config_loader.py](./config_loader.py)** - Configuration loader that handles YAML config files and CDK context parameters. Provides:
+  - YAML configuration file loading from [../configs/](../configs/)
+  - Schema validation against [JSON schema](../configs/schema/sglang-config-v1.0.json)
+  - Merging of file configs with CLI context parameters (CLI takes precedence)
+  - Default configuration with `openai/gpt-oss-20b` model
+  - Backward compatibility with existing CDK context parameters
+
 ## Architecture Flow
 
 1. **VPC** provides network isolation

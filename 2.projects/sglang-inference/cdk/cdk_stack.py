@@ -53,7 +53,7 @@ class CdkStack(Stack):
             "schedule_conservativeness": self.node.try_get_context("schedule_conservativeness"),
             "cpu_offload_gb": self.node.try_get_context("cpu_offload_gb"),
             "prefill_only_one_req": self.node.try_get_context("prefill_only_one_req"),
-            "tensor_parallel_size": self.node.try_get_context("tensor_parallel_size"),
+            "tp-size": self.node.try_get_context("tp-size"),
             "stream_interval": self.node.try_get_context("stream_interval"),
             "random_seed": self.node.try_get_context("random_seed"),
             "constrained_json_whitespace_pattern": self.node.try_get_context("constrained_json_whitespace_pattern"),
@@ -141,7 +141,7 @@ class CdkStack(Stack):
         # Create Image to bootstrap an AMI for fast worker startup
         image_builder = ImageBuilder(self, "ImageBuilder", vpc, logs, model_id, instance_type=instance_type)
         # Create worker Auto Scaling Group and router instance
-        workers = Workers(self, "Workers", vpc, image_builder, extra_args=extra_args_str, router_ip=router_ip)
+        workers = Workers(self, "Workers", vpc, image_builder, instance_type=instance_type, extra_args=extra_args_str, router_ip=router_ip)
         router = Router(self, "Router", vpc, logs, router_ip=router_ip)
         
         # Configure security group rules between components

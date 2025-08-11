@@ -32,10 +32,28 @@ class Workers(Construct):
     - Configures auto-scaling based on inference load
     - Handles graceful worker deregistration during scale-in
     """
-    def __init__(self, scope: Construct, construct_id: str, vpc: ec2.Vpc, image_builder: ImageBuilder, extra_args: str = "", router_ip: str = "10.0.0.100") -> None:
+    def __init__(self, scope: Construct, construct_id: str, vpc: ec2.Vpc, image_builder: ImageBuilder, instance_type: str = "g6e.xlarge", extra_args: str = "", router_ip: str = "10.0.0.100") -> None:
         super().__init__(scope, construct_id)
         
-        # Configure user data to run worker process on instance launch
+        # Create IAM role for worker instances
+        role = iam.Role(self, "WorkerEC2Role", 
+            assumed_by=iam.ServicePrincipal("ec2.amazonaws.com")
+        )
+        role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore")
+        )
+        role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchAgentServerPolicy")
+        )
+        role.add_to_policy(iam.PolicyStatement(
+            actions=[
+                "ec2:DescribeInstances",
+                "autoscaling:DescribeAutoScalingGroups",
+            ],
+            resources=["*"]
+        ))
+        
+        # Configure user data first
         user_data = ec2.MultipartUserData()
         
         # Ensure cloud-init runs user scripts on every boot
@@ -65,6 +83,7 @@ class Workers(Construct):
             'else',
             # Start SGLang worker and connect to router with extra args
             '  export TORCHINDUCTOR_CACHE_DIR=/opt/sglang/torch_compile_cache/',
+            '  export PYTHONPATH=/opt/sglang/source:$PYTHONPATH',
             f'  python3 /opt/app/run_worker.py --gpu-id 0 --model /opt/sglang/models/{image_builder.model_name} --router-url http://{router_ip}:8000 {extra_args}',
             'fi'
         )
@@ -73,37 +92,19 @@ class Workers(Construct):
             "text/x-shellscript; charset=\"us-ascii\""
         ))
         
-        # Create IAM role for worker instances
-        role = iam.Role(self, "WorkerEC2Role", 
-            assumed_by=iam.ServicePrincipal("ec2.amazonaws.com")
-        )
-        role.add_managed_policy(
-            iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore")
-        )
-        role.add_managed_policy(
-            iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchAgentServerPolicy")
-        )
-        role.add_to_policy(iam.PolicyStatement(
-            actions=[
-                "ec2:DescribeInstances",
-                "autoscaling:DescribeAutoScalingGroups",
-            ],
-            resources=["*"]
-        ))
-        
-        # Create Auto Scaling Group for worker nodes
+        # Create Auto Scaling Group with user data
         self.asg = autoscaling.AutoScalingGroup(self, "ASG",
             vpc=vpc.vpc,
-            instance_type=ec2.InstanceType("g6e.xlarge"),  # GPU instance for ML inference
+            instance_type=ec2.InstanceType(instance_type),  # GPU instance for ML inference
             machine_image=ec2.MachineImage.generic_linux({Stack.of(self).region: image_builder.image.attr_image_id}),
             role=role,
-            user_data=user_data,
             min_capacity=1,
             max_capacity=3,
             desired_capacity=1,
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
             associate_public_ip_address=False,
             group_metrics=[autoscaling.GroupMetrics.all()],
+            user_data=user_data,
         )
         
         # Configure warm pool to maintain pre-initialized instances

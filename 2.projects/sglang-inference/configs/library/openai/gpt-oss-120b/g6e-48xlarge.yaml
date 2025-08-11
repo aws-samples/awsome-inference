@@ -1,0 +1,26 @@
+# Configuration for GPT-OSS-120B on g6e.48xlarge instances
+# 8x L40S GPUs (384GB total)
+
+version: "1.0"
+
+metadata:
+  name: "gpt-oss-120b-g6e-48xlarge"
+  description: "Configuration for OpenAI GPT-OSS-120B on g6e.48xlarge instances"
+  provider: "openai"
+  model_family: "gpt-oss"
+
+model:
+  id: "openai/gpt-oss-120b"
+
+instances:
+  workers:
+    type: "g6e.48xlarge"      # 8x L40S GPUs (384GB total)
+    min_capacity: 1
+    max_capacity: 2
+    desired_capacity: 1
+  
+  router:
+    ip: "10.0.0.100"
+
+sglang:
+  tp-size: 8

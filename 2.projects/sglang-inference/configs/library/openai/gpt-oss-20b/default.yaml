@@ -1,0 +1,25 @@
+# Default configuration for GPT-OSS-20B
+# Provider: OpenAI
+
+version: "1.0"
+
+metadata:
+  name: "gpt-oss-20b-default"
+  description: "Default configuration for OpenAI GPT-OSS-20B model"
+  provider: "openai"
+  model_family: "gpt-oss"
+
+model:
+  id: "openai/gpt-oss-20b"
+
+instances:
+  workers:
+    type: "g6e.12xlarge"      # 4x L40S GPUs (192GB total)
+    min_capacity: 1
+    max_capacity: 5
+    desired_capacity: 2
+  
+  router:
+    ip: "10.0.0.100"
+
+sglang:
