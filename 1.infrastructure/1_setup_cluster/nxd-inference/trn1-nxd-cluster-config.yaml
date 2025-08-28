@@ -4,7 +4,11 @@ kind: ClusterConfig
 metadata:
   name: nxdi-inference-cluster
   region: $REGION
+<<<<<<< HEAD
   version: "1.30"
+=======
+  version: "1.00"
+>>>>>>> nxdi-benchmarking-profiling
 
 vpc:
   id: $PLACEHOLDER_VPC_ID
@@ -57,7 +61,11 @@ managedNodeGroups:
     privateNetworking: true
     efaEnabled: true
     minSize: 0
+<<<<<<< HEAD
     desiredCapacity: 1
+=======
+    desiredCapacity: 2
+>>>>>>> nxdi-benchmarking-profiling
     maxSize: 2
     volumeSize: 500
     # comment out capacityReservation if you do not need ODCR
