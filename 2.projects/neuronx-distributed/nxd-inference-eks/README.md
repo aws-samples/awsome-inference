@@ -1,6 +1,6 @@
 # NeuronX Distributed Inference on EKS
 
-This example demonstrates deploying Large Language Models using **NeuronX Distributed Inference (NxDI)** on Amazon EKS with AWS Trainium instances. The deployment supports both standard inference and speculative decoding for improved performance.
+This example demonstrates deploying Large Language Models using **NeuronX Distributed Inference (NxDI)** on Amazon EKS with AWS Trainium instances. The deployment supports both standard inference and speculative decoding with prefix caching across both
 
 ## Architecture Overview
 
@@ -9,226 +9,225 @@ This example demonstrates deploying Large Language Models using **NeuronX Distri
 │                    Amazon EKS Cluster                       │
 │                                                             │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
-│  │   Compilation   │  │   Inference     │  │   Monitoring │ │
-│  │      Job        │  │   Deployment    │  │   DaemonSet  │ │
-│  │                 │  │                 │  │              │ │
-│  │ • Model Download│  │ • vLLM Server   │  │ • Neuron     │ │
-│  │ • NxDI Compile  │  │ • Load Balancer │  │   Monitor    │ │
-│  │ • Optimization  │  │ • Auto-scaling  │  │ • Metrics    │ │
+│  │  Download Job   │  │   Compilation   │  │   Monitoring │ │
+│  │  (HF → EFS)     │  │      Job        │  │   DaemonSet  │ │
+│  │  • Target model │  │  • NxDI compile │  │  • Neuron    │ │
+│  │  • Draft model  │  │  • Spec / NoSpec│  │    Monitor   │ │
 │  └─────────────────┘  └─────────────────┘  └──────────────┘ │
+│                                                             │
+│  ┌─────────────────┐                                        │
+│  │  Inference      │                                        │
+│  │  Deployment     │                                        │
+│  │  • vLLM Server  │                                        │
+│  │  • LoadBalancer │                                        │
+│  └─────────────────┘                                        │
 │                                                             │
 │  ┌─────────────────────────────────────────────────────────┐│
 │  │              Shared EFS Storage                         ││
-│  │  • Model artifacts  • Compiled models  • Logs           ││
+│  │  • /shared/model_hub/* (downloads)                      ││
+│  │  • /shared/compiled_models/Llama-3.3-70B/* (neffs)      ││
+│  │  • Logs                                                 ││
 │  └─────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## Features
 
-- **Kubernetes-native deployment** with auto-scaling capabilities
-- **Speculative decoding support** for improved latency
-- **Shared EFS storage** for model artifacts and compiled models
-- **Load balancing** with Kubernetes services
-- **Monitoring and observability** with Neuron Monitor
-- **Easy configuration switching** between standard and speculative modes
+- **Kubernetes-native** jobs for **download** and **compile**
+- **Speculative decoding** toggle via `ENABLE_SPECULATIVE`
+- **Separate compiled outputs** for spec / non-spec (no overwrites)
+- **Shared EFS storage** for models, artifacts, and logs
+- **Load balancing** and **monitoring** with Neuron Monitor
 
 ## Prerequisites
 
-### 1. Infrastructure Setup
+- `kubectl`, `aws` CLI, and `helm`
+- EKS cluster with Trainium nodes and EFS PVC
+- A Hugging Face token with access to the target repos
 
-Before deploying the NXD inference service, ensure you have:
+Install Neuron device plugin and (optionally) the scheduler extension:
 
-1. **VPC Setup**: Deploy the VPC using the provided CloudFormation template:
-   ```bash
-   aws cloudformation create-stack \
-     --stack-name neuron-vpc \
-     --template-body file://awsome-inference/1.infrastructure/0_setup_vpc/trn-vpc-example.yaml
-   ```
+```bash
+helm upgrade --install neuron-helm-chart oci://public.ecr.aws/neuron/neuron-helm-chart --set "npd.enabled=false"
+kubectl get ds neuron-device-plugin -n kube-system
 
-2. **EKS Cluster**: Create the EKS cluster with Trainium nodes:
-   ```bash
-   eksctl create cluster -f awsome-inference/1.infrastructure/1_setup_cluster/nxd-inference/trn1-nxd-cluster-config.yaml
-   ```
+helm upgrade --install neuron-helm-chart oci://public.ecr.aws/neuron/neuron-helm-chart \
+  --set "scheduler.enabled=true" \
+  --set "npd.enabled=false"
+```
 
-3. **EFS Setup**: Follow the EFS setup instructions in the cluster creation guide.
+## Setup
 
-### 2. Required Tools
+### 1) Clone & Navigate
 
-- `kubectl` configured for your EKS cluster
-- `envsubst` for template substitution
-- `aws` CLI configured with appropriate permissions
+```bash
+git clone https://github.com/aws-samples/awsome-inference.git
+cd awsome-inference/2.projects/neuronx-distributed/nxd-inference-eks/
+```
 
-### 3. Access Requirements
+### 2) Label Trainium Nodes
 
-- **HuggingFace Token**: Required for downloading gated models like Llama
-- **Container Registry Access**: Ensure nodes can pull from public ECR
+```bash
+kubectl label nodes -l node.kubernetes.io/instance-type=trn1.32xlarge workload-type=neuron-inference
+kubectl taint nodes -l node.kubernetes.io/instance-type=trn1.32xlarge aws.amazon.com/neuron=:NoSchedule
+kubectl get nodes -L workload-type,node.kubernetes.io/instance-type
+```
+
+### 3) Namespace, Storage, and Secrets
+
+```bash
+kubectl create namespace neuron-inference
+
+# Apply EFS storage configuration
+kubectl apply -f fused-SD/manifests/storage.yaml -n neuron-inference
+
+# Create HF token secret once
+# replace YOUR_HF_TOKEN with your actual token (starts with hf_)
+kubectl -n neuron-inference create secret generic hf-token \
+  --from-literal=HF_TOKEN='YOUR_HF_TOKEN' \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+```
 
 ## Configuration
 
-### Environment Variables
-
-The deployment is configured through the `.env` file. Copy and customize it:
+Use an env file to keep things tidy (example shows Llama-3.3 target + Llama-3.2 draft):
 
 ```bash
-cp .env.example .env
-```
-
-Key configuration options:
-
-```bash
-# Hugging Face Configuration
-HF_TOKEN=your_huggingface_token_here
+cat > fused-SD/.env <<'EOF'
+# HF
 HF_MODEL_ID=meta-llama/Llama-3.3-70B-Instruct
 HF_DRAFT_MODEL_ID=meta-llama/Llama-3.2-1B-Instruct
-MODEL_NAME=llama-3-70B-inst
 
-# Inference Configuration
-MAX_MODEL_LEN=12800
-SEQ_LEN=12800
-MAX_CONTEXT_LEN=12288
+# Paths (EFS)
+MODEL_ROOT=/shared/model_hub
+MODEL_DIRNAME=Llama-3.3-70B-Instruct
+DRAFT_DIRNAME=Llama-3.2-1B-Instruct
+COMPILED_ROOT=/shared/compiled_models/Llama-3.3-70B
 
-# Neuron Configuration
-TENSOR_PARALLEL_SIZE=32
-TP_DEGREE=32
-NAMESPACE=neuron-inference
-BATCH_SIZE=1
-MAX_NUM_SEQS=1
-
-# Speculative Decoding Configuration
-ENABLE_SPECULATIVE=false  # Set to true to enable speculative decoding
+# NxDI compile
+ENABLE_SPECULATIVE=false
 SPECULATION_LENGTH=7
+TP_DEGREE=32
+BATCH_SIZE=1
+SEQ_LEN=8192
+MAX_CONTEXT_LEN=8192
+EOF
 
-# Storage Paths
-MODEL_PATH=/shared/models/Llama-3.3-70B-Instruct
-COMPILED_MODEL_PATH=/shared/traced_model/Llama-3.3-70B-Instruct
-DRAFT_MODEL_PATH=/shared/models/Llama-3.2-1B-Instruct
+source fused-SD/.env
 ```
 
-## Deployment Guide
+## Workflow
 
-### Step 1: Create Namespace and Storage
+> **Two steps:** (1) **Download** both models to EFS, (2) **Compile** with or without speculation.  
+> Compiles write to **separate directories** so you can keep both.
+
+### Create a secret once for your HF token:
+
+kubectl -n neuron-inference create secret generic hf-token \
+  --from-literal=HF_TOKEN='YOUR_HF_TOKEN'
+
+
+### Step 1 — Download both models (target + draft)
+
+Apply the **download job** manifest:
 
 ```bash
-# Create namespace
-kubectl create namespace $NAMESPACE
-
-# Apply EFS storage configuration
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: efs-models-pvc
-  namespace: $NAMESPACE
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: efs-sc
-  resources:
-    requests:
-      storage: 500Gi
-EOF
+kubectl apply -n neuron-inference -f fused-SD/manifests/model_download.yaml
+kubectl -n neuron-inference wait --for=condition=complete job/neuron-model-download --timeout=3600s
+kubectl -n neuron-inference logs job/neuron-model-download --tail=200
 ```
 
-### Initial Deployment (Without Speculation)
-```
-# 1. Make sure ENABLE_SPECULATIVE=false in .env
-vim .env  # Set ENABLE_SPECULATIVE=false
-
-# 2. Load env vars and deploy
-source .env
-kubectl create namespace $NAMESPACE
-
-# 3. Apply storage (if not already done)
-envsubst < storage.template.yaml | kubectl apply -f -
-
-# 4. Compile model
-envsubst < compile.template.yaml | kubectl apply -f -
-kubectl wait --for=condition=complete job/neuron-model-compilation -n $NAMESPACE --timeout=3600s
-
-# 5. Deploy inference server
-envsubst < deployment.template.yaml | kubectl apply -f -
-kubectl wait --for=condition=available deployment/neuron-llama-inference -n $NAMESPACE --timeout=600s
-
-# 6. Check status
-kubectl get all -n $NAMESPACE
-```
-### Compile for and Enable FSD (Fused SD)
+Expected locations after success:
 
 ```
-# 1. Update .env to enable speculation
-vim .env  # Change ENABLE_SPECULATIVE=true
-
-# 2. Reload env vars
-source .env
-
-# 3. Delete old compilation
-kubectl delete job neuron-model-compilation -n $NAMESPACE
-
-# 4. Recompile with speculation enabled
-envsubst < compile.template.yaml | kubectl apply -f -
-kubectl wait --for=condition=complete job/neuron-model-compilation -n $NAMESPACE --timeout=3600s
-
-# 5. Update deployment
-envsubst < deployment.template.yaml | kubectl apply -f -
-
-# 6. Restart deployment to pick up changes
-kubectl rollout restart deployment/neuron-llama-inference -n $NAMESPACE
-kubectl wait --for=condition=available deployment/neuron-llama-inference -n $NAMESPACE --timeout=600s
+/shared/model_hub/${MODEL_DIRNAME}/config.json
+/shared/model_hub/${DRAFT_DIRNAME}/config.json
 ```
 
-### Switch back to standard 
+Quick verify:
 
-```
-# 1. Update .env
-vim .env  # Change ENABLE_SPECULATIVE=false
-
-# 2. Reload and recompile
-source .env
-kubectl delete job neuron-model-compilation -n $NAMESPACE
-envsubst < compile.template.yaml | kubectl apply -f -
-kubectl wait --for=condition=complete job/neuron-model-compilation -n $NAMESPACE --timeout=3600s
-
-# 3. Update deployment
-envsubst < deployment.template.yaml | kubectl apply -f -
-kubectl rollout restart deployment/neuron-llama-inference -n $NAMESPACE
+```bash
+kubectl -n neuron-inference exec -it <any-running-pod> -- ls -l /shared/model_hub/${MODEL_DIRNAME} | head
 ```
 
-### Example Usage
+### Step 2 — Compile (separate outputs for spec vs non-spec)
 
+Apply the **compile job** manifest. Control speculation by editing the `ENABLE_SPECULATIVE` environment variable in the manifest:
+
+```bash
+# Non-spec compile (kept in /shared/compiled_models/Llama-3.3-70B/nospec_tp32)
+kubectl apply -n neuron-inference -f fused-SD/manifests/compile.yaml
+kubectl -n neuron-inference wait --for=condition=complete job/neuron-model-compilation --timeout=3600s
+kubectl -n neuron-inference logs job/neuron-model-compilation --tail=200
+
+# For speculative compile, edit the manifest to set ENABLE_SPECULATIVE=true, then:
+kubectl -n neuron-inference delete job neuron-model-compilation --ignore-not-found
+kubectl apply -n neuron-inference -f fused-SD/manifests/compile.yaml
+kubectl -n neuron-inference wait --for=condition=complete job/neuron-model-compilation --timeout=3600s
+kubectl -n neuron-inference logs job/neuron-model-compilation --tail=200
 ```
-# Check compilation logs
-kubectl logs -l job-name=neuron-model-compilation -n $NAMESPACE --tail=100
 
-# Check deployment logs
-kubectl logs deployment/neuron-llama-inference -n $NAMESPACE --tail=100
-
-# Port forward for testing
-kubectl port-forward service/neuron-llama-service 8000:8000 -n $NAMESPACE
-
-# Test inference
-curl -X POST http://localhost:8000/v1/completions \
-  -H 'Content-Type: application/json' \
-  -d '{"model": "'$MODEL_PATH'", "prompt": "Hello", "max_tokens": 50}'
+**Output layout (no overwrites):**
 ```
+/shared/compiled_models/Llama-3.3-70B/
+  ├─ nospec_tp32/
+  └─ spec_slen7_tp32/
+```
+
+### Step 3 — Deploy Inference
+
+Point your inference deployment at the compiled directory you want:
+
+- Non-spec: `/shared/compiled_models/Llama-3.3-70B/nospec_tp32`
+- Spec: `/shared/compiled_models/Llama-3.3-70B/spec_slen7_tp32`
+
+Apply your inference deployment/service manifests and wait for readiness, then test via port-forward or load balancer as usual.
+
+## Troubleshooting
+
+**Downloads didn’t happen**
+- Check the download job logs:
+  ```bash
+  kubectl -n neuron-inference logs job/neuron-model-download --tail=200
+  ```
+- Ensure the HF token secret exists and is referenced:
+  ```bash
+  kubectl -n neuron-inference get secret hf-token
+  ```
+- Verify the EFS PVC is bound and writable:
+  ```bash
+  kubectl -n neuron-inference get pvc
+  ```
+
+**Compile fails immediately saying “Unrecognized model … config.json”**
+- The download likely didn’t complete or the path is wrong. Verify:
+  ```bash
+  kubectl -n neuron-inference exec -it <pod> -- test -f /shared/model_hub/${MODEL_DIRNAME}/config.json && echo OK
+  ```
+
+**Spec compile overwrote non-spec?**
+- With the provided manifests, outputs are separated per mode (`nospec_*` vs `spec_*`). If you see overwrites, confirm your `COMPILED_ROOT` and job env vars.
+
+**Neuron compiler errors**
+- These are model/hardware/SDK specific. Re-run with smaller `TP_DEGREE`, confirm SDK image version, or inspect `/shared/compile*.log`. Consider filing an issue with logs.
 
 ## Cleanup
 
 ```bash
-# Delete the deployment
-kubectl delete -f fused-SD/manifests/fsd-deploy.yaml
-kubectl delete -f fused-SD/manifests/compile.yaml
-
-# Delete the namespace
-kubectl delete namespace $NAMESPACE
-
-# Delete monitoring
-kubectl delete namespace neuron-monitor
+kubectl -n neuron-inference delete job neuron-model-download --ignore-not-found
+kubectl -n neuron-inference delete job neuron-model-compilation --ignore-not-found
+kubectl -n neuron-inference delete deployment neuron-llama-inference service neuron-llama-service --ignore-not-found
+kubectl -n neuron-inference delete pvc efs-models-pvc --ignore-not-found
+kubectl delete namespace neuron-inference
 ```
 
-## Support and Resources
+## References
 
-- [AWS Neuron Documentation](https://awsdocs-neuron.readthedocs-hosted.com/)
-- [NeuronX Distributed Inference Guide](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/libraries/nxd-inference/)
-- [vLLM Documentation](https://docs.vllm.ai/)
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
+- [AWS Neuron Documentation](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/) – NxDI & compiler guidance
+- [NeuronX Distributed Inference Guide](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/libraries/neuronx-distributed/index.html)
+- [vLLM Documentation](https://docs.vllm.ai/) – Server flags and deployment considerations
+- [Kubernetes Jobs Documentation](https://kubernetes.io/docs/concepts/workloads/controllers/job/)
+- [Kubernetes Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
+- [AWS Neuron Helm Charts](https://github.com/aws-neuron/aws-neuron-helm-charts)
+- [AWS Trainium Instance Types](https://aws.amazon.com/ec2/instance-types/trn1/)

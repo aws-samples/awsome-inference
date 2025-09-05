@@ -20,6 +20,7 @@ README                                # Project Summaries
 |-- ray-service/ 
 |-- multinode-triton-trtllm-inference/
 |-- mixture-of-agents/
+|-- neuronx-distributed/
 |-- mig/
 3.use-cases/
 |-- nims-inference/
@@ -63,6 +64,14 @@ Recent advances in large language models (LLMs) have shown substantial capabilit
 ### TRITON TRT-LLM SAGEMAKER
 
 These examples shows how to deploy LLMs like T5, Mistral using NVIDIA Triton TRT-LLM on Amazon SageMaker. See [triton-trtllm-sagemaker](2.projects/triton-trtllm-sagemaker) for more information.
+
+### NEURONX DISTRIBUTED INFERENCE - FUSED SD on EKS
+
+This project demonstrates deploying Large Language Models using NeuronX Distributed Inference (NxDI) and vllm-neuronx on Amazon EKS with trn1.32xlarge instances. It features a Kubernetes-native deployment with prefix-caching and fused draft speculative decoding support for optimized inference on Neuron, shared EFS storage for compiled model artifacts, and comprehensive monitoring with Neuron Monitor. The solution supports both standard inference and speculative decoding modes with easy configuration switching. See [neuronx-distributed/nxd-inference-eks](2.projects/neuronx-distributed/nxd-inference-eks) for more information.
+
+### NEURONX DISTRIBUTED INFERENCE - Profiling and Benchmarking Guide
+
+This example on EC2 walks through deploying, profiling, and benchmarking LLMs on EC2 with NxDI. See [neuronx-distributed/nxd-inference-ec2](2.projects/neuronx-distributed/nxdi-ec2-vllm) for more information.
 
 ### MIG 
 

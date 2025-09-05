@@ -117,6 +117,7 @@ If you have Capacity Blocks for P5 or P4 instances, you can follow the [steps he
 To enable multiple pods deployed to multiple nodes to load shards of the same model so that they can used in coordination to serve inference request too large to loaded by a single GPU, we'll need a common, shared storage location. In Kubernetes, these common, shared storage locations are referred to as persistent volumes. Persistent volumes can be volume mapped in to any number of pods and then accessed by processes running inside of said pods as if they were part of the pod's file system. We will be using EFS as persistent volume.
 
 Additionally, we will need to create a persistent-volume claim which can use to assign the persistent volume to a pod.
+
 ### a. Create an IAM role
 
 Follow the steps to create an IAM role for your EFS file system: https://docs.aws.amazon.com/eks/latest/userguide/efs-csi.html#efs-create-iam-resources. This role will be used later when you install the EFS CSI Driver.
@@ -129,34 +130,38 @@ Install the EFS CSI Driver through the Amazon EKS add-on in AWS console: https:/
 
 ### Create EFS Filesystem
 ```bash
-# Create EFS filesystem
-aws efs create-file-system \
-    --creation-token neuron-models-$(date +%s) \
-    --performance-mode generalPurpose \
-    --throughput-mode provisioned \
-    --provisioned-throughput-in-mibps 1000 \
-    --tags Key=Name,Value=neuron-disaggregated-efs
+# Create EFS filesystem (Elastic, encrypted)
+EFS_JSON=$(aws efs create-file-system \
+  --region us-west-2 \
+  --creation-token "neuron-models-$(date +%s)" \
+  --performance-mode generalPurpose \
+  --throughput-mode elastic \
+  --encrypted \
+  --tags Key=Name,Value=neuron-inference)
 
-# Get the filesystem ID
-EFS_ID=$(aws efs describe-file-systems \
-    --query 'FileSystems[?Tags[?Key==`Name`&&Value==`neuron-disaggregated-efs`]].FileSystemId' \
-    --output text)
+EFS_ID=$(echo "$EFS_JSON" | jq -r '.FileSystemId')
 
-# Create mount targets in each subnet
-for subnet in subnet-xxx subnet-yyy subnet-zzz; do
-    aws efs create-mount-target \
-        --file-system-id $EFS_ID \
-        --subnet-id $subnet \
-        --security-groups sg-your-efs-security-group
+# Wait until available (avoids race)
+until [ "$(aws efs describe-file-systems \
+            --region us-west-2 \
+            --file-system-id "$EFS_ID" \
+            --query 'FileSystems[0].LifeCycleState' \
+            --output text)" = "available" ]; do
+  echo "waiting for EFS $EFS_ID ..."
+  sleep 3
 done
+echo "EFS is available."
+
+# Create mount targets (one per AZ your nodes use)
+for subnet in subnet-xxx subnet-yyy subnet-zzz; do
+  aws efs create-mount-target \
+    --region us-west-2 \
+    --file-system-id "$EFS_ID" \
+    --subnet-id "$subnet" \
+    --security-groups sg-your-efs-security-group
+done
+
 ```
-
-
-### EFS CSI Driver Installation
-```bash
-# Install EFS CSI Driver
-kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.7"
-
 # Create StorageClass
 cat <<EOF | kubectl apply -f -
 apiVersion: storage.k8s.io/v1
@@ -168,5 +173,9 @@ parameters:
   provisioningMode: efs-ap
   fileSystemId: ${EFS_ID}
   directoryPerms: "0755"
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
 EOF
+
 ```
