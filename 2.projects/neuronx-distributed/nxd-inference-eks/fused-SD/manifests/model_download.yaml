@@ -8,11 +8,11 @@ data:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    : "${HF_MODEL_ID:=meta-llama/Llama-3.3-70B-Instruct}"
-    : "${HF_DRAFT_MODEL_ID:=meta-llama/Llama-3.2-1B-Instruct}"
+    : "${HF_MODEL_ID:=Qwen/Qwen3-32B}"
+    : "${HF_DRAFT_MODEL_ID:=Qwen/Qwen3-0.6B}"
 
-    : "${MODEL_DIRNAME:=Llama-3.3-70B-Instruct}"
-    : "${DRAFT_DIRNAME:=Llama-3.2-1B-Instruct}"
+    : "${MODEL_DIRNAME:=Qwen3-32B}"
+    : "${DRAFT_DIRNAME:=Qwen3-0.6B}"
 
     : "${MODEL_ROOT:=/shared/model_hub}"
     MODEL_PATH="${MODEL_ROOT}/${MODEL_DIRNAME}"
@@ -69,13 +69,13 @@ spec:
         env:
         # Set/override these as needed:
         - name: HF_MODEL_ID
-          value: "meta-llama/Llama-3.3-70B-Instruct"
+          value: "Qwen/Qwen3-32B"
         - name: HF_DRAFT_MODEL_ID
-          value: "meta-llama/Llama-3.2-1B-Instruct"
+          value: "Qwen/Qwen3-0.6B"
         - name: MODEL_DIRNAME
-          value: "Llama-3.3-70B-Instruct"
+          value: "Qwen3-32B"
         - name: DRAFT_DIRNAME
-          value: "Llama-3.2-1B-Instruct"
+          value: "Qwen3-0.6B"
         - name: HF_TOKEN
           valueFrom:
             secretKeyRef:

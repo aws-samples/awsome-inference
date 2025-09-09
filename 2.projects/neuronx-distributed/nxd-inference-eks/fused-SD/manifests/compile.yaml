@@ -17,15 +17,15 @@ data:
     : "${SEQ_LEN:=8192}"
 
     # Where the downloader put things
-    : "${MODEL_DIRNAME:=Llama-3.3-70B-Instruct}"
-    : "${DRAFT_DIRNAME:=Llama-3.2-1B-Instruct}"
+    : "${MODEL_DIRNAME:=Qwen3-32B}"
+    : "${DRAFT_DIRNAME:=Qwen3-0.6B}"
     : "${MODEL_ROOT:=/shared/model_hub}"
 
     MODEL_PATH="${MODEL_ROOT}/${MODEL_DIRNAME}"
     DRAFT_MODEL_PATH="${MODEL_ROOT}/${DRAFT_DIRNAME}"
 
     # Option 1: separate compiled outputs per configuration
-    : "${COMPILED_ROOT:=/shared/compiled_models/Llama-3.3-70B}"
+    : "${COMPILED_ROOT:=/shared/compiled_models/Qwen3-32B}"
     if [[ "${ENABLE_SPECULATIVE}" == "true" ]]; then
       COMPILED_MODEL_PATH="${COMPILED_ROOT}/spec_slen${SPECULATION_LENGTH}_tp${TP_DEGREE}"
     else
@@ -45,7 +45,7 @@ data:
     echo "COMPILED_MODEL_PATH=${COMPILED_MODEL_PATH}"
 
     BASE_ARGS=(
-      --model-type llama
+      --model-type qwen3
       --task-type causal-lm
       run
       --model-path "${MODEL_PATH}"
@@ -56,24 +56,15 @@ data:
       --tp-degree "${TP_DEGREE}"
       --batch-size "${BATCH_SIZE}"
       --max-context-length "${MAX_CONTEXT_LEN}"
-      --seq-len "${SEQ_LEN}"
+      --seq-len "${SEQ_LEN}" 
       --on-device-sampling
       --top-k 1
       --do-sample
-      --fused-qkv
       --sequence-parallel-enabled
-      --qkv-kernel-enabled
-      --attn-kernel-enabled
-      --mlp-kernel-enabled
       --cc-pipeline-tiling-factor 1
       --enable-bucketing
-      --enable-block-kv-layout
-      --pa-num-blocks 2048
-      --pa-block-size 32
-      --enable-prefix-caching
-      --context-encoding-buckets 512 1024 2048 4096 8192
-      --token-generation-buckets 512 1024 2048 4096 8192
-      --prefix-buckets 512 1024 2048
+      --context-encoding-buckets 512 1024 2048 4096 8192 
+      --token-generation-buckets 512 1024 2048 4096 8192 
       --compile-only
       --prompt "What is annapurna labs?"
     )
@@ -110,9 +101,6 @@ spec:
         - |
           set -euxo pipefail
           df -h /shared || true
-          # flip this to true when you want SD compile:
-          : "${ENABLE_SPECULATIVE:=false}"
-          export ENABLE_SPECULATIVE
           bash /scripts/compile_model.sh
         env:
         # tune/override as needed:
@@ -123,11 +111,11 @@ spec:
         - name: TP_DEGREE
           value: "32"
         - name: MODEL_DIRNAME
-          value: "Llama-3.3-70B-Instruct"
+          value: "Qwen3-0.6B"
         - name: DRAFT_DIRNAME
-          value: "Llama-3.2-1B-Instruct"
+          value: "Qwen3-0.6B"
         - name: COMPILED_ROOT
-          value: "/shared/compiled_models/Llama-3.3-70B"
+          value: "/shared/compiled_models/Qwen3-32B"
         resources:
           limits:
             aws.amazon.com/neuroncore: "32"

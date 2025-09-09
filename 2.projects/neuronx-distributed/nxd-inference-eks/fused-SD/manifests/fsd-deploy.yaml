@@ -8,55 +8,73 @@ data:
     #!/bin/bash
     set -euo pipefail
 
-    # ---- Set defaults ----
-    
+    # ---- Inputs / defaults ----
     : "${ENABLE_SPECULATIVE:=false}"
+    : "${SPECULATION_LENGTH:=7}"
     : "${TP_DEGREE:=32}"
     : "${BATCH_SIZE:=1}"
     : "${MAX_CONTEXT_LEN:=8192}"
     : "${SEQ_LEN:=8192}"
-    : "${SPECULATION_LENGTH:=7}"
-    : "${MODEL_PATH:=/shared/models/Llama-3.3-70B-Instruct}"
-    : "${COMPILED_MODEL_PATH:=/shared/compiled/Llama-3.3-70B}"
-    : "${DRAFT_MODEL_PATH:=/shared/models/Llama-3.2-1B-Instruct}"
-    : "${HF_MODEL_ID:=meta-llama/Llama-3.3-70B-Instruct}"
-    : "${HF_DRAFT_MODEL_ID:=meta-llama/Llama-3.2-1B-Instruct}"
 
-    echo "Speculative: ${ENABLE_SPECULATIVE} | TP=${TP_DEGREE} | BS=${BATCH_SIZE} | SEQ=${SEQ_LEN}"
+    # Where the downloader put things
+    : "${MODEL_DIRNAME:=Qwen3-32B}"
+    : "${DRAFT_DIRNAME:=Qwen3-0.6B}"
+    : "${MODEL_ROOT:=/shared/model_hub}"
+    
+    MODEL_PATH="${MODEL_ROOT}/${MODEL_DIRNAME}"
+    DRAFT_MODEL_PATH="${MODEL_ROOT}/${DRAFT_DIRNAME}"
+
+    # Separate compiled artifact roots (produced by your two compile jobs)
+    : "${COMPILED_MODEL_PATH_STD:=/shared/compiled_models/Qwen3-32B/spec_slen7_tp32}"
+    : "${COMPILED_MODEL_PATH_SPEC:=/shared/compiled_models/Qwen3-32B/nospec_tp32}"
+
+    : "${SPECULATION_LENGTH:=7}"
+
+    # -------- Select compiled dir based on mode --------
+    if [[ "${ENABLE_SPECULATIVE}" == "true" ]]; then
+      export NEURON_COMPILED_ARTIFACTS="${COMPILED_MODEL_PATH_SPEC}"
+    else
+      export NEURON_COMPILED_ARTIFACTS="${COMPILED_MODEL_PATH_STD}"
+    fi
+
+    # Sanity checks so we fail early if users forgot to compile
+    if [[ ! -d "${NEURON_COMPILED_ARTIFACTS}" ]] || ! compgen -G "${NEURON_COMPILED_ARTIFACTS}/**/*.neff" > /dev/null; then
+      echo "ERROR: No compiled artifacts found in ${NEURON_COMPILED_ARTIFACTS}. Compile first (matching SD mode)." >&2
+      ls -R "${NEURON_COMPILED_ARTIFACTS}" || true
+      exit 2
+    fi
+
+    echo "Mode: ${ENABLE_SPECULATIVE} | TP=${TP_DEGREE} | MAX_NUM_SEQS=${MAX_NUM_SEQS} | MAX_LEN=${SEQ_LEN}"
+    echo "Using NEURON_COMPILED_ARTIFACTS=${NEURON_COMPILED_ARTIFACTS}"
 
     export VLLM_NEURON_FRAMEWORK="neuronx-distributed-inference"
-    export NEURON_COMPILED_ARTIFACTS="$COMPILED_MODEL_PATH"
 
-    if [ "$ENABLE_SPECULATIVE" = "false" ]; then
-      echo "Starting vLLM server (standard mode)..."
+    if [[ "${ENABLE_SPECULATIVE}" == "true" ]]; then
+      echo "Starting vLLM (speculative decoding)…"
       VLLM_RPC_TIMEOUT=100000 python -m vllm.entrypoints.openai.api_server \
-        --model "$MODEL_PATH" \
-        --max-num-seqs "${MAX_NUM_SEQS:-1}" \
-        --max-model-len "$SEQ_LEN" \
-        --tensor-parallel-size "$TP_DEGREE" \
+        --model "${MODEL_PATH}" \
+        --speculative-model "${DRAFT_MODEL_PATH}" \
+        --num-speculative-tokens "${SPECULATION_LENGTH}" \
+        --max-model-len "${SEQ_LEN}" \
+        --use-v2-block-manager \
+        --max-num-seqs "${MAX_NUM_SEQS}" \
+        --tensor-parallel-size "${TP_DEGREE}" \
+        --device neuron \
+        --override-neuron-config '{"enable_fused_speculation": true, "is_block_kv_layout": true, "is_prefix_caching": true}' \
+        --port 8000
+    else
+      echo "Starting vLLM (standard)…"
+      VLLM_RPC_TIMEOUT=100000 python -m vllm.entrypoints.openai.api_server \
+        --model "${MODEL_PATH}" \
+        --max-model-len "${SEQ_LEN}" \
+        --max-num-seqs "${MAX_NUM_SEQS}" \
+        --tensor-parallel-size "${TP_DEGREE}" \
         --device neuron \
         --use-v2-block-manager \
         --num-gpu-blocks-override 2048 \
         --enable-prefix-caching \
         --block-size 32 \
         --override-neuron-config '{"is_block_kv_layout": true, "is_prefix_caching": true}' \
-        --port 8000
-    else
-      echo "Starting vLLM server (speculative decoding mode)..."
-      VLLM_RPC_TIMEOUT=100000 python -m vllm.entrypoints.openai.api_server \
-        --model "$MODEL_PATH" \
-        --max-num-seqs "${MAX_NUM_SEQS:-1}" \
-        --max-model-len "$SEQ_LEN" \
-        --tensor-parallel-size "$TP_DEGREE" \
-        --device neuron \
-        --speculative-max-model-len "$SEQ_LEN" \
-        --speculative-model "$DRAFT_MODEL_PATH" \
-        --num-speculative-tokens "$SPECULATION_LENGTH" \
-        --use-v2-block-manager \
-        --num-gpu-blocks-override 2048 \
-        --enable-prefix-caching \
-        --block-size 32 \
-        --override-neuron-config '{"enable_fused_speculation": true, "is_block_kv_layout": true, "is_prefix_caching": true}' \
         --port 8000
     fi
 ---
@@ -85,18 +103,17 @@ spec:
       containers:
       - name: vllm-server
         image: public.ecr.aws/neuron/pytorch-inference-vllm-neuronx:0.9.1-neuronx-py310-sdk2.25.0-ubuntu22.04
-        command: ["/bin/bash", "-lc"]
+        command: ["/bin/bash","-lc"]
         args:
         - |
           set -euo pipefail
-          cd /shared
           exec /scripts/start_vllm.sh
         ports:
         - containerPort: 8000
           name: http
         resources:
           limits:
-            aws.amazon.com/neuroncore: "32"   # trn1.32xlarge has 64 NeuronCores total
+            aws.amazon.com/neuroncore: "32"
             memory: "500Gi"
             cpu: "128"
           requests:
@@ -104,5 +121,41 @@ spec:
             memory: "500Gi"
             cpu: "64"
         env:
+        # Toggle SD on/off here (must match which compiled dir you built)
+        - name: ENABLE_SPECULATIVE
+          value: "false"   # set "true" to use /spec artifacts + draft model
+        - name: TP_DEGREE
+          value: "32"
         - name: MAX_NUM_SEQS
           value: "1"
+        - name: SEQ_LEN
+          value: "8192"
+
+        # Base & draft model locations (download job writes these)
+        - name: MODEL_PATH
+          value: "/shared/models/Llama-3.3-70B-Instruct"
+        - name: DRAFT_MODEL_PATH
+          value: "/shared/models/Llama-3.2-1B-Instruct"
+
+        # Compiled artifact roots for each mode (compile jobs write these)
+        - name: COMPILED_MODEL_PATH_STD
+          value: "/shared/compiled/Llama-3.3-70B/std"
+        - name: COMPILED_MODEL_PATH_SPEC
+          value: "/shared/compiled/Llama-3.3-70B/spec"
+
+        - name: SPECULATION_LENGTH
+          value: "7"
+
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /shared
+        - name: vllm-scripts
+          mountPath: /scripts
+      volumes:
+      - name: shared-storage
+        persistentVolumeClaim:
+          claimName: efs-models-pvc
+      - name: vllm-scripts
+        configMap:
+          name: neuron-vllm-scripts
+          defaultMode: 0755

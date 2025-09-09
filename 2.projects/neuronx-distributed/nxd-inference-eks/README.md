@@ -25,7 +25,7 @@ This example demonstrates deploying Large Language Models using **NeuronX Distri
 │  ┌─────────────────────────────────────────────────────────┐│
 │  │              Shared EFS Storage                         ││
 │  │  • /shared/model_hub/* (downloads)                      ││
-│  │  • /shared/compiled_models/Llama-3.3-70B/* (neffs)      ││
+│  │  • /shared/compiled_models/Qwen3-32B/* (neffs)          ││
 │  │  • Logs                                                 ││
 │  └─────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────┘
@@ -91,19 +91,19 @@ kubectl -n neuron-inference create secret generic hf-token \
 
 ## Configuration
 
-Use an env file to keep things tidy (example shows Llama-3.3 target + Llama-3.2 draft):
+Use an env file to keep things tidy (example shows Qwen3-32B target + Qwen3-0.6B draft):
 
 ```bash
 cat > fused-SD/.env <<'EOF'
 # HF
-HF_MODEL_ID=meta-llama/Llama-3.3-70B-Instruct
-HF_DRAFT_MODEL_ID=meta-llama/Llama-3.2-1B-Instruct
+HF_MODEL_ID=Qwen/Qwen2.5-32B-Instruct
+HF_DRAFT_MODEL_ID=Qwen/Qwen2.5-0.5B-Instruct
 
 # Paths (EFS)
 MODEL_ROOT=/shared/model_hub
-MODEL_DIRNAME=Llama-3.3-70B-Instruct
-DRAFT_DIRNAME=Llama-3.2-1B-Instruct
-COMPILED_ROOT=/shared/compiled_models/Llama-3.3-70B
+MODEL_DIRNAME=Qwen3-32B
+DRAFT_DIRNAME=Qwen3-0.6B
+COMPILED_ROOT=/shared/compiled_models/Qwen3-32B
 
 # NxDI compile
 ENABLE_SPECULATIVE=false
@@ -170,7 +170,7 @@ kubectl -n neuron-inference logs job/neuron-model-compilation --tail=200
 
 **Output layout (no overwrites):**
 ```
-/shared/compiled_models/Llama-3.3-70B/
+/shared/compiled_models/Qwen3-32B/
   ├─ nospec_tp32/
   └─ spec_slen7_tp32/
 ```
@@ -179,8 +179,8 @@ kubectl -n neuron-inference logs job/neuron-model-compilation --tail=200
 
 Point your inference deployment at the compiled directory you want:
 
-- Non-spec: `/shared/compiled_models/Llama-3.3-70B/nospec_tp32`
-- Spec: `/shared/compiled_models/Llama-3.3-70B/spec_slen7_tp32`
+- Non-spec: `/shared/compiled_models/Qwen3-32B/nospec_tp32`
+- Spec: `/shared/compiled_models/Qwen3-32B/spec_slen7_tp32`
 
 Apply your inference deployment/service manifests and wait for readiness, then test via port-forward or load balancer as usual.
 
