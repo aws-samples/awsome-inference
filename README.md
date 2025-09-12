@@ -65,19 +65,11 @@ Recent advances in large language models (LLMs) have shown substantial capabilit
 
 These examples shows how to deploy LLMs like T5, Mistral using NVIDIA Triton TRT-LLM on Amazon SageMaker. See [triton-trtllm-sagemaker](2.projects/triton-trtllm-sagemaker) for more information.
 
-### NEURONX DISTRIBUTED INFERENCE - FUSED SPECULATIVE DECODING on EKS
+### NEURONX-DISTRIBUTED-INFERENCE EKS
 
-This project demonstrates deploying Large Language Models using **NeuronX Distributed Inference (NxDI)** with **vLLM-Neuron** on Amazon EKS with AWS Trainium instances (trn1.32xlarge). The solution showcases advanced inference optimization techniques including **fused draft speculative decoding**.
+This project demonstrates deploying Large Language Models using **NeuronX Distributed Inference (NxDI)** with **vLLM-Neuron** on Amazon EKS with AWS Trainium instances (trn1.32xlarge). The solution showcases advanced inference optimization techniques including **fused draft speculative decoding** and comprehensive performance monitoring including NeuronCore utilization, inference latency, and throughput metrics. See [neuronx-distributed/nxd-inference-eks](2.projects/neuronx-distributed/nxd-inference-eks) for more information.
 
-**Key Technical Features:**
-- **Fused Speculative Decoding**: Combines target model (e.g., Qwen3-32B) with draft model (e.g., Qwen3-0.6B) for accelerated token generation with maintained quality
-- **Kubernetes-Native Architecture**: Separate jobs for model download, compilation (spec/non-spec), and inference deployment with shared EFS storage
-- **Advanced Monitoring**: Neuron Monitor DaemonSet with Prometheus, Grafana, and CloudWatch integration for comprehensive observability
-- **Flexible Configuration**: Easy toggling between speculative and standard inference modes with configurable parameters
-
-The architecture features isolated artifact storage (no overwrites between spec/non-spec modes), tensor parallelism optimization (TP=32), and comprehensive performance monitoring including NeuronCore utilization, inference latency, and throughput metrics. See [neuronx-distributed/nxd-inference-eks](2.projects/neuronx-distributed/nxd-inference-eks) for more information.
-
-### NEURONX DISTRIBUTED INFERENCE - Profiling and Benchmarking Guide
+### NEURONX DISTRIBUTED INFERENCE - Profiling and Benchmarking Guide on EC2
 
 This example on EC2 walks through deploying, profiling, and benchmarking LLMs on EC2 with NxDI. See [neuronx-distributed/nxd-inference-ec2](2.projects/neuronx-distributed/nxdi-ec2-vllm) for more information.
 
