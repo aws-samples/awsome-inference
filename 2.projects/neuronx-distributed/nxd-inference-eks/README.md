@@ -374,7 +374,7 @@ spec:
       hostPID: true
       containers:
       - name: neuron-monitor
-        image: public.ecr.aws/neuron/neuron-monitor:2.20.0.0
+        image: #set latest image
         securityContext:
           privileged: true
         env:
