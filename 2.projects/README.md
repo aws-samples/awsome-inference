@@ -10,6 +10,8 @@ The major components of this directory are:
 |-- ray-service/                
 |-- multinode-triton-trtllm-inference/
 |-- mixture-of-agents/
+|-- neuronx-distributed/
+|-- mig-gpu-partitioning/
 `-- ...
 // Other directories
 ```
@@ -79,6 +81,39 @@ Recent advances in large language models (LLMs) have shown substantial capabilit
 1. [2.projects/mixture-of-agents/mixture-of-agents(MoA).ipynb](/2.projects/mixture-of-agents/mixture-of-agents(MoA).ipynb): Notebook that illustrates the MoA architecture and evaluation mechanism.
 2. [2.projects/mixture-of-agents/outputs/](/2.projects/mixture-of-agents/outputs/): This directory consists of output of 2-layers MoA.
 3. [2.projects/mixture-of-agents/alpaca_eval](/2.projects/mixture-of-agents/alpaca_eval/): This directory is from AlpacaEval GitHub repository and consists of results of Anthropic Claude 3.5 Sonnet. These results are used during evaluation.
+
+## NEURONX DISTRIBUTED INFERENCE - FUSED SPECULATIVE DECODING on EKS
+
+This project demonstrates deploying Large Language Models using **NeuronX Distributed Inference (NxDI)** with **vLLM-Neuron** on Amazon EKS with AWS Trainium instances (trn1.32xlarge). The solution showcases advanced inference optimization techniques including **fused draft speculative decoding** for enhanced performance.
+
+### Key Features & Technical Highlights
+
+**Inference Optimization:**
+- **Fused Speculative Decoding**: Combines target model (e.g., Qwen3-32B) with draft model (e.g., Qwen3-0.6B) for accelerated token generation
+
+**Kubernetes-Native Architecture:**
+- **Separate Compilation Jobs**: Independent jobs for downloading models and compiling with/without speculation
+- **Isolated Artifact Storage**: Separate directories for spec vs non-spec compiled models (no overwrites)
+- **Shared EFS Storage**: Persistent storage for models, compiled artifacts, and logs
+- **Load Balancing**: Application Load Balancer with health checks and auto-scaling support
+
+**Comprehensive Monitoring & Observability:**
+- **Neuron Monitor DaemonSet**: Hardware utilization, inference latency, and throughput metrics
+- **Multi-Platform Integration**: Prometheus, Grafana, and CloudWatch support
+- **Production-Ready Metrics**: NeuronCore utilization, memory usage, error rates, and performance indicators
+
+**Flexible Configuration:**
+- **Toggle Speculation**: Easy switching between speculative and standard inference modes
+- **Configurable Parameters**: Speculation length, batch size, sequence length, and context window
+- **Model Agnostic**: Supports various model architectures with proper configuration
+
+### Files & Directories
+1. `nxd-inference-eks/`: Complete EKS deployment guide with Kubernetes manifests
+2. `fused-SD/manifests/`: Kubernetes YAML files for download, compilation, deployment, and monitoring
+3. `fused-SD/.env`: Environment configuration for model paths, compilation parameters, and speculation settings
+4. Infrastructure setup guides for EKS cluster creation with Trainium node groups and EFS storage
+
+See [neuronx-distributed/nxd-inference-eks](https://github.com/aws-samples/awsome-inference/tree/main/2.projects/neuronx-distributed/nxd-inference-eks) for detailed implementation guide.
 
 ## MIG
 These days, the challenge with ML Inference workloads, is that not all workloads require the same amount of compute resources. With accelerated instances like the Amazon EC2 P5 (p5.48xlarge / p5e.48xlarge), or the Amazon EC2 P4 (p4d.24xlarge / p4de.24xlarge), customers would need to pay for the full instance of 8 GPUs. Additionally, some workloads may be too small to even run on a single GPU! To learn more about the specifics of GPU EC2 instances, check out this developer guide.

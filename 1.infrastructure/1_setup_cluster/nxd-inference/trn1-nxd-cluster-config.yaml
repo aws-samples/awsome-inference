@@ -10,14 +10,14 @@ vpc:
   id: $VPC_ID
   subnets:
     private:
-      $AVAILABILITY_ZONE_1:
+      us-west-2c:
         id: $PRIVATE_SUBNET_1
-      $AVAILABILITY_ZONE_2:
+      us-west-2d:
         id: $PRIVATE_SUBNET_2
     public:
-      $AVAILABILITY_ZONE_1:
+      us-west-2c:
         id: $PUBLIC_SUBNET_1
-      $AVAILABILITY_ZONE_2:
+      us-west-2d:
         id: $PUBLIC_SUBNET_2
   clusterEndpoints:
     privateAccess: true

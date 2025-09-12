@@ -13,7 +13,7 @@ README                                # Project Summaries
 |-- README                            # Setup for infrastructure (VPC, EKS cluster etc)
 |-- 0_setup_vpc/                      # CloudFormation templates for reference VPC
 |-- 1_setup_cluster/                  # Scripts to create your cluster using EKS
-2.project/
+2.projects/
 |-- nims-inference/
 |-- trtllm-inference/
 |-- sglang-inference/
@@ -21,7 +21,7 @@ README                                # Project Summaries
 |-- multinode-triton-trtllm-inference/
 |-- mixture-of-agents/
 |-- neuronx-distributed/
-|-- mig/
+|-- mig-gpu-partitioning/
 3.use-cases/
 |-- nims-inference/
 `-- ...
@@ -65,9 +65,17 @@ Recent advances in large language models (LLMs) have shown substantial capabilit
 
 These examples shows how to deploy LLMs like T5, Mistral using NVIDIA Triton TRT-LLM on Amazon SageMaker. See [triton-trtllm-sagemaker](2.projects/triton-trtllm-sagemaker) for more information.
 
-### NEURONX DISTRIBUTED INFERENCE - FUSED SD on EKS
+### NEURONX DISTRIBUTED INFERENCE - FUSED SPECULATIVE DECODING on EKS
 
-This project demonstrates deploying Large Language Models using NeuronX Distributed Inference (NxDI) and vllm-neuronx on Amazon EKS with trn1.32xlarge instances. It features a Kubernetes-native deployment with prefix-caching and fused draft speculative decoding support for optimized inference on Neuron, shared EFS storage for compiled model artifacts, and comprehensive monitoring with Neuron Monitor. The solution supports both standard inference and speculative decoding modes with easy configuration switching. See [neuronx-distributed/nxd-inference-eks](2.projects/neuronx-distributed/nxd-inference-eks) for more information.
+This project demonstrates deploying Large Language Models using **NeuronX Distributed Inference (NxDI)** with **vLLM-Neuron** on Amazon EKS with AWS Trainium instances (trn1.32xlarge). The solution showcases advanced inference optimization techniques including **fused draft speculative decoding**.
+
+**Key Technical Features:**
+- **Fused Speculative Decoding**: Combines target model (e.g., Qwen3-32B) with draft model (e.g., Qwen3-0.6B) for accelerated token generation with maintained quality
+- **Kubernetes-Native Architecture**: Separate jobs for model download, compilation (spec/non-spec), and inference deployment with shared EFS storage
+- **Advanced Monitoring**: Neuron Monitor DaemonSet with Prometheus, Grafana, and CloudWatch integration for comprehensive observability
+- **Flexible Configuration**: Easy toggling between speculative and standard inference modes with configurable parameters
+
+The architecture features isolated artifact storage (no overwrites between spec/non-spec modes), tensor parallelism optimization (TP=32), and comprehensive performance monitoring including NeuronCore utilization, inference latency, and throughput metrics. See [neuronx-distributed/nxd-inference-eks](2.projects/neuronx-distributed/nxd-inference-eks) for more information.
 
 ### NEURONX DISTRIBUTED INFERENCE - Profiling and Benchmarking Guide
 

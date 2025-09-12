@@ -25,7 +25,7 @@ This example demonstrates deploying Large Language Models using **NeuronX Distri
 │  ┌─────────────────────────────────────────────────────────┐│
 │  │              Shared EFS Storage                         ││
 │  │  • /shared/model_hub/* (downloads)                      ││
-│  │  • /shared/compiled_models/Qwen3-32B/* (neffs)          ││
+│  │  • /shared/compiled_models/Qwen3/* (neffs)              ││
 │  │  • Logs                                                 ││
 │  └─────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────┘
@@ -48,12 +48,14 @@ This example demonstrates deploying Large Language Models using **NeuronX Distri
 Install Neuron device plugin and (optionally) the scheduler extension:
 
 ```bash
+
 helm upgrade --install neuron-helm-chart oci://public.ecr.aws/neuron/neuron-helm-chart --set "npd.enabled=false"
 kubectl get ds neuron-device-plugin -n kube-system
 
 helm upgrade --install neuron-helm-chart oci://public.ecr.aws/neuron/neuron-helm-chart \
   --set "scheduler.enabled=true" \
   --set "npd.enabled=false"
+
 ```
 
 ## Setup
@@ -177,18 +179,450 @@ kubectl -n neuron-inference logs job/neuron-model-compilation --tail=200
 
 ### Step 3 — Deploy Inference
 
-Point your inference deployment at the compiled directory you want:
+**Important:** Before deploying, you must update the compiled model paths in `fused-SD/manifests/fsd-deploy.yaml` to match your compilation parameters.
 
-- Non-spec: `/shared/compiled_models/Qwen3-32B/nospec_tp32`
-- Spec: `/shared/compiled_models/Qwen3-32B/spec_slen7_tp32`
+The deployment manifest has hardcoded paths that need to match your compile job settings:
 
-Apply your inference deployment/service manifests and wait for readiness, then test via port-forward or load balancer as usual.
+```yaml
+# In fsd-deploy.yaml, update these env vars to match your compilation:
+- name: COMPILED_MODEL_PATH_STD
+  value: "/shared/compiled_models/Qwen3-32B/spec_slen7_tp32"  # for speculative
+- name: COMPILED_MODEL_PATH_SPEC  
+  value: "/shared/compiled_models/Qwen3-32B/nospec_tp32"      # for non-speculative
+```
+
+**Path format:** `/shared/compiled_models/{MODEL_NAME}/{mode}_{params}`
+
+Where:
+- `{MODEL_NAME}` = your `COMPILED_ROOT` basename (e.g., `Qwen3-32B`)
+- `{mode}` = `spec` or `nospec` 
+- `{params}` = `slen{SPECULATION_LENGTH}_tp{TP_DEGREE}` for spec, or just `tp{TP_DEGREE}` for nospec
+
+**Examples:**
+- TP=32, no speculation: `nospec_tp32`
+- TP=32, speculation length 7: `spec_slen7_tp32` 
+- TP=16, speculation length 5: `spec_slen5_tp16`
+
+**Quick update command:**
+```bash
+# For TP=32, SPECULATION_LENGTH=7 (adjust as needed)
+sed -i 's|/shared/compiled_models/Qwen3-32B/spec_slen7_tp32|/shared/compiled_models/Qwen3-32B/spec_slen7_tp32|g' fused-SD/manifests/fsd-deploy.yaml
+sed -i 's|/shared/compiled_models/Qwen3-32B/nospec_tp32|/shared/compiled_models/Qwen3-32B/nospec_tp32|g' fused-SD/manifests/fsd-deploy.yaml
+```
+
+Then apply your inference deployment:
+
+```bash
+kubectl apply -n neuron-inference -f fused-SD/manifests/fsd-deploy.yaml
+kubectl -n neuron-inference wait --for=condition=available deployment/neuron-llama-inference --timeout=600s
+```
+
+### Step 4 — Load Balancing with Application Load Balancer
+
+To expose your inference service externally and distribute traffic across multiple pods, you'll set up an Application Load Balancer (ALB) using the AWS Load Balancer Controller.
+
+#### 4.1 Install AWS Load Balancer Controller
+
+**Prerequisites:**
+- Your EKS cluster must have an IAM OIDC identity provider
+- The AWS Load Balancer Controller requires specific IAM permissions
+
+**Option A: Using Kubernetes Manifests (Recommended)**
+
+1. Create the IAM policy and service account:
+```bash
+# Download the IAM policy document
+curl -o iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.7.2/docs/install/iam_policy.json
+
+# Create the IAM policy
+aws iam create-policy \
+    --policy-name AWSLoadBalancerControllerIAMPolicy \
+    --policy-document file://iam_policy.json
+
+# Create service account with IAM role
+eksctl create iamserviceaccount \
+  --cluster=your-cluster-name \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --role-name AmazonEKSLoadBalancerControllerRole \
+  --attach-policy-arn=arn:aws:iam::ACCOUNT-ID:policy/AWSLoadBalancerControllerIAMPolicy \
+  --approve
+```
+
+2. Install the controller:
+```bash
+# Add the EKS chart repo
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update
+
+# Install AWS Load Balancer Controller
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=your-cluster-name \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller
+```
+
+3. Verify installation:
+```bash
+kubectl get deployment -n kube-system aws-load-balancer-controller
+kubectl logs -n kube-system deployment/aws-load-balancer-controller
+```
+
+**Option B: Using Helm (Alternative)**
+Follow the [AWS documentation for Helm installation](https://docs.aws.amazon.com/eks/latest/userguide/lbc-helm.html).
+
+#### 4.2 Deploy the Ingress
+
+Once the AWS Load Balancer Controller is installed and running:
+
+```bash
+# Apply the ingress configuration
+kubectl -n neuron-inference apply -f fused-SD/manifests/neuron-ingress.yaml
+
+# Monitor ingress creation (wait for ADDRESS to appear)
+kubectl -n neuron-inference get ingress neuron-qwen-ingress -w
+```
+
+The ingress will create an Application Load Balancer that:
+- Routes traffic to your inference service pods
+- Provides health checks on the `/health` endpoint
+- Supports both HTTP and HTTPS traffic
+- Automatically scales with your deployment
+
+#### 4.3 Test Your Deployment
+
+Once the ALB is provisioned (this can take 2-3 minutes):
+
+```bash
+# Get the ALB hostname
+ALB=$(kubectl -n neuron-inference get ing neuron-qwen-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+echo "ALB Endpoint: http://$ALB"
+
+# Test the health endpoint
+curl -i "http://$ALB/health"
+
+# List available models
+curl -i "http://$ALB/v1/models"
+
+# Test inference with a simple completion
+curl -s "http://$ALB/v1/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "/shared/model_hub/Qwen3-32B",
+    "prompt": "Say hi from vLLM on Neuron.",
+    "max_tokens": 64,
+    "temperature": 0.7
+  }'
+
+# Test with chat completions API
+curl -s "http://$ALB/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "/shared/model_hub/Qwen3-32B",
+    "messages": [{"role": "user", "content": "Hello! How are you?"}],
+    "max_tokens": 100
+  }'
+```
+Congratulation!
+
+#### 4.4 Production Considerations
+
+For production deployments, consider:
+
+- **HTTPS/TLS**: Configure SSL certificates using AWS Certificate Manager
+- **Custom Domain**: Set up Route 53 records pointing to your ALB
+- **WAF Integration**: Add AWS WAF for additional security
+- **Access Logging**: Enable ALB access logs for monitoring and debugging
+- **Target Group Settings**: Tune health check intervals and thresholds based on your model's startup time
+
+Example ingress with HTTPS:
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: neuron-qwen-ingress-https
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:region:account:certificate/cert-id
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+spec:
+  rules:
+  - host: your-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: neuron-llama-service
+            port:
+              number: 8000
+```
+
+### Step 5 — Deploy Neuron Monitor for Observability
+
+AWS Neuron Monitor provides comprehensive monitoring and observability for your Neuron workloads, including hardware utilization, model performance metrics, and system health indicators.
+
+#### 5.1 Understanding Neuron Monitor
+
+Neuron Monitor offers:
+- **Hardware Metrics**: NeuronCore utilization, memory usage, temperature
+- **Model Performance**: Inference latency, throughput, queue depth
+- **System Health**: Device status, error rates, compilation metrics
+- **Integration**: Works with Prometheus, Grafana, CloudWatch, and other monitoring systems
+
+#### 5.2 Deploy Neuron Monitor DaemonSet
+
+The Neuron Monitor runs as a DaemonSet to collect metrics from all Neuron devices across your cluster:
+
+```bash
+# Create the Neuron Monitor DaemonSet
+cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: neuron-monitor
+  namespace: neuron-inference
+  labels:
+    app: neuron-monitor
+spec:
+  selector:
+    matchLabels:
+      app: neuron-monitor
+  template:
+    metadata:
+      labels:
+        app: neuron-monitor
+    spec:
+      serviceAccount: neuron-monitor
+      hostNetwork: true
+      hostPID: true
+      containers:
+      - name: neuron-monitor
+        image: public.ecr.aws/neuron/neuron-monitor:2.20.0.0
+        securityContext:
+          privileged: true
+        env:
+        - name: NEURON_MONITOR_CW_REGION
+          value: "us-west-2"  # Change to your region
+        - name: NEURON_MONITOR_CW_LOG_GROUP
+          value: "/aws/eks/neuron-monitor"
+        ports:
+        - containerPort: 8080
+          name: http-metrics
+        - containerPort: 8082
+          name: http-health
+        volumeMounts:
+        - name: proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: sys
+          mountPath: /host/sys
+          readOnly: true
+        - name: neuron-devices
+          mountPath: /dev/neuron0
+        - name: tmp
+          mountPath: /tmp
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8082
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8082
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: proc
+        hostPath:
+          path: /proc
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: neuron-devices
+        hostPath:
+          path: /dev/neuron0
+      - name: tmp
+        hostPath:
+          path: /tmp
+      nodeSelector:
+        workload-type: neuron-inference
+      tolerations:
+      - key: aws.amazon.com/neuron
+        operator: Exists
+        effect: NoSchedule
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: neuron-monitor
+  namespace: neuron-inference
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT-ID:role/NeuronMonitorRole
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neuron-monitor-service
+  namespace: neuron-inference
+  labels:
+    app: neuron-monitor
+spec:
+  selector:
+    app: neuron-monitor
+  ports:
+  - name: http-metrics
+    port: 8080
+    targetPort: 8080
+  - name: http-health
+    port: 8082
+    targetPort: 8082
+  type: ClusterIP
+EOF
+```
+
+#### 5.3 Create IAM Role for CloudWatch Integration
+
+If you want to send metrics to CloudWatch, create an IAM role:
+
+```bash
+# Create IAM policy for CloudWatch access
+cat <<EOF > neuron-monitor-policy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "cloudwatch:PutMetricData",
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "logs:DescribeLogStreams"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+EOF
+
+# Create the policy
+aws iam create-policy \
+    --policy-name NeuronMonitorCloudWatchPolicy \
+    --policy-document file://neuron-monitor-policy.json
+
+# Create service account with IAM role (replace ACCOUNT-ID and CLUSTER-NAME)
+eksctl create iamserviceaccount \
+  --cluster=CLUSTER-NAME \
+  --namespace=neuron-inference \
+  --name=neuron-monitor \
+  --role-name=NeuronMonitorRole \
+  --attach-policy-arn=arn:aws:iam::ACCOUNT-ID:policy/NeuronMonito
+--approve
+```
+**Downloads didn’t happen**
+- Che5.4 Verify Neuron Monitor Deployment
+
+```bash
+# Check DaemonSet status
+kubectl -n neuron-inference get daemonset neuron-monitor
+kubectl -n neuron-inference get pods -l app=neuron-monitor
+
+# View logs
+kubectl -n neuron-inference logs -l app=neuron-monitor --tail=50
+```
+
+#### 5.5 Configure Prometheus Integration (Optional)
+
+To scrape metrics with Prometheus, add the following ServiceMonitor:
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: neuron-monitor
+  namespace: neuron-inference
+  labels:
+    app: neuron-monitor
+spec:
+  selector:
+    matchLabels:
+      app: neuron-monitor
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+    path: /metrics
+EOF
+```
+
+#### 5.6 Key Metrics to Monitor
+
+Neuron Monitor exposes several important metrics:
+
+**Hardware Metrics:**
+- `neuron_hardware_ecc_events_total`: ECC error events
+- `neuron_hardware_memory_used_bytes`: Memory utilization per NeuronCore
+- `neuron_hardware_utilization_ratio`: NeuronCore utilization percentage
+
+**Runtime Metrics:**
+- `neuron_runtime_inference_latency_seconds`: End-to-end inference latency
+- `neuron_runtime_queue_size`: Number of pending inference requests
+- `neuron_runtime_throughput_inferences_per_second`: Inference throughput
+
+**Model Metrics:**
+- `neuron_model_loaded`: Whether model is successfully loaded
+- `neuron_model_inference_errors_total`: Inference error count
+- `neuron_execution_latency_seconds`: Model execution time
+
+#### 5.7 Grafana Dashboard
+
+You can import pre-built Grafana dashboards for Neuron monitoring:
+
+```bash
+# Download the official Neuron dashboard
+curl -o neuron-dashboard.json https://raw.githubusercontent.com/aws-neuron/aws-neuron-samples/master/src/examples/pytorch/neuron_monitor/grafana-dashboard.json
+
+# Import into your Grafana instance via the UI or API
+```
+
+#### 5.8 CloudWatch Integration
+
+If using CloudWatch, metrics will appear under the `AWS/Neuron` namespace. You can create CloudWatch alarms for:
+
+- High NeuronCore utilization
+- Inference latency spikes  
+- Error rate thresholds
+- Memory usage alerts
+
+Example CloudWatch alarm:
+```bash
+aws cloudwatch put-metric-alarm \
+  --alarm-name "High-Neuron-Utilization" \
+  --alarm-description "Alert when NeuronCore utilization exceeds 90%" \
+  --metric-name neuron_hardware_utilization_ratio \
+  --namespace AWS/Neuron \
+  --statistic Average \
+  --period 300 \
+  --threshold 0.9 \
+  --comparison-operator GreaterThanThreshold \
+  --evaluation-periods 2
+```
 
 ## Troubleshooting
-
-**Downloads didn’t happen**
-- Check the download job logs:
-  ```bash
   kubectl -n neuron-inference logs job/neuron-model-download --tail=200
   ```
 - Ensure the HF token secret exists and is referenced:
@@ -208,6 +642,13 @@ Apply your inference deployment/service manifests and wait for readiness, then t
 
 **Spec compile overwrote non-spec?**
 - With the provided manifests, outputs are separated per mode (`nospec_*` vs `spec_*`). If you see overwrites, confirm your `COMPILED_ROOT` and job env vars.
+
+**Inference deployment can't find compiled artifacts**
+- Check that the paths in `fsd-deploy.yaml` match your actual compilation output:
+  ```bash
+  kubectl -n neuron-inference exec -it <pod> -- ls -la /shared/compiled_models/Qwen3-32B/
+  ```
+- Update the `COMPILED_MODEL_PATH_STD` and `COMPILED_MODEL_PATH_SPEC` env vars to match your TP degree and speculation length.
 
 **Neuron compiler errors**
 - These are model/hardware/SDK specific. Re-run with smaller `TP_DEGREE`, confirm SDK image version, or inspect `/shared/compile*.log`. Consider filing an issue with logs.

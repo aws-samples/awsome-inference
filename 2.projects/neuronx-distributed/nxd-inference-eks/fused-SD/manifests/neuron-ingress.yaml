@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: neuron-qwen-ingress
+  namespace: neuron-inference
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # Health checks
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-port: "8000"
+    alb.ingress.kubernetes.io/success-codes: "200"
+    # Ensure ALB is created in the AZs with your pods
+    alb.ingress.kubernetes.io/subnets: subnet-0186a8f2614f8c522, subnet-0ad9fdda1d6f7dc98 #replace with yours- min 2
+    # (Optional) Cross-zone LB
+    alb.ingress.kubernetes.io/load-balancer-attributes: load_balancing.cross_zone.enabled=true
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: neuron-qwen-svc
+                port:
+                  number: 8000
