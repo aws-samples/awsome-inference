@@ -1,6 +1,6 @@
 # NeuronX Distributed Inference on EKS
 
-This example demonstrates deploying Large Language Models using **NeuronX Distributed Inference (NxDI)** on Amazon EKS with AWS Trainium instances. The deployment supports both standard inference and speculative decoding with prefix caching across both
+This example demonstrates deploying Large Language Models using **NeuronX Distributed Inference (NxDI)** on Amazon EKS with AWS Trainium instances. The deployment supports both standard inference and speculative decoding. For the purpose of this example, we use the Qwen3 family of models but other popular model architectures are also supported with Neuron and can be used with this example and with supported kernels.
 
 ## Architecture Overview
 
@@ -91,34 +91,6 @@ kubectl -n neuron-inference create secret generic hf-token \
 
 ```
 
-## Configuration
-
-Use an env file to keep things tidy (example shows Qwen3-32B target + Qwen3-0.6B draft):
-
-```bash
-cat > fused-SD/.env <<'EOF'
-# HF
-HF_MODEL_ID=Qwen/Qwen2.5-32B-Instruct
-HF_DRAFT_MODEL_ID=Qwen/Qwen2.5-0.5B-Instruct
-
-# Paths (EFS)
-MODEL_ROOT=/shared/model_hub
-MODEL_DIRNAME=Qwen3-32B
-DRAFT_DIRNAME=Qwen3-0.6B
-COMPILED_ROOT=/shared/compiled_models/Qwen3-32B
-
-# NxDI compile
-ENABLE_SPECULATIVE=false
-SPECULATION_LENGTH=7
-TP_DEGREE=32
-BATCH_SIZE=1
-SEQ_LEN=8192
-MAX_CONTEXT_LEN=8192
-EOF
-
-source fused-SD/.env
-```
-
 ## Workflow
 
 > **Two steps:** (1) **Download** both models to EFS, (2) **Compile** with or without speculation.  
@@ -155,7 +127,7 @@ kubectl -n neuron-inference exec -it <any-running-pod> -- ls -l /shared/model_hu
 
 ### Step 2 — Compile (separate outputs for spec vs non-spec)
 
-Apply the **compile job** manifest. Control speculation by editing the `ENABLE_SPECULATIVE` environment variable in the manifest:
+Apply the **compile job** manifest. Control speculation by editing the `ENABLE_SPECULATIVE` environment variable in the manifest as well as other env vars you would like to set or toggle. The script sets a number of defaults in the ConfigMap:
 
 ```bash
 # Non-spec compile (kept in /shared/compiled_models/Llama-3.3-70B/nospec_tp32)
@@ -179,7 +151,7 @@ kubectl -n neuron-inference logs job/neuron-model-compilation --tail=200
 
 ### Step 3 — Deploy Inference
 
-**Important:** Before deploying, you must update the compiled model paths in `fused-SD/manifests/fsd-deploy.yaml` to match your compilation parameters.
+**Important:** Before deploying, you must update the compiled model paths in `fused-SD/manifests/fsd-deploy.yaml` to match your compilation parameters. Please make sure that the env vars being set and used by vLLM are consistent with your compile-time input shapes and configs.
 
 The deployment manifest has hardcoded paths that need to match your compile job settings:
 
@@ -533,8 +505,7 @@ eksctl create iamserviceaccount \
   --attach-policy-arn=arn:aws:iam::ACCOUNT-ID:policy/NeuronMonito
 --approve
 ```
-**Downloads didn’t happen**
-- Che5.4 Verify Neuron Monitor Deployment
+**Verify Neuron Monitor Deployment**
 
 ```bash
 # Check DaemonSet status
