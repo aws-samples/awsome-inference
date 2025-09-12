@@ -86,23 +86,12 @@ Recent advances in large language models (LLMs) have shown substantial capabilit
 
 This project demonstrates deploying Large Language Models using **NeuronX Distributed Inference (NxDI)** with **vLLM-Neuron** on Amazon EKS with AWS Trainium instances (trn1.32xlarge). The solution showcases advanced inference optimization techniques including **fused draft speculative decoding** for enhanced performance.
 
-### Key Features & Technical Highlights
+### Key Features 
 
 **Inference Optimization:**
 - **Fused Speculative Decoding**: Combines target model (e.g., Qwen3-32B) with draft model (e.g., Qwen3-0.6B) for accelerated token generation
 
-**Kubernetes-Native Architecture:**
-- **Separate Compilation Jobs**: Independent jobs for downloading models and compiling with/without speculation
-- **Isolated Artifact Storage**: Separate directories for spec vs non-spec compiled models (no overwrites)
-- **Shared EFS Storage**: Persistent storage for models, compiled artifacts, and logs
-- **Load Balancing**: Application Load Balancer with health checks and auto-scaling support
-
-**Comprehensive Monitoring & Observability:**
-- **Neuron Monitor DaemonSet**: Hardware utilization, inference latency, and throughput metrics
-- **Multi-Platform Integration**: Prometheus, Grafana, and CloudWatch support
-- **Production-Ready Metrics**: NeuronCore utilization, memory usage, error rates, and performance indicators
-
-**Flexible Configuration:**
+**Configuration:**
 - **Toggle Speculation**: Easy switching between speculative and standard inference modes
 - **Configurable Parameters**: Speculation length, batch size, sequence length, and context window
 - **Model Agnostic**: Supports various model architectures with proper configuration
@@ -110,8 +99,7 @@ This project demonstrates deploying Large Language Models using **NeuronX Distri
 ### Files & Directories
 1. `nxd-inference-eks/`: Complete EKS deployment guide with Kubernetes manifests
 2. `fused-SD/manifests/`: Kubernetes YAML files for download, compilation, deployment, and monitoring
-3. `fused-SD/.env`: Environment configuration for model paths, compilation parameters, and speculation settings
-4. Infrastructure setup guides for EKS cluster creation with Trainium node groups and EFS storage
+3. Infrastructure setup guides for EKS cluster creation with Trainium node groups and EFS storage
 
 See [neuronx-distributed/nxd-inference-eks](https://github.com/aws-samples/awsome-inference/tree/main/2.projects/neuronx-distributed/nxd-inference-eks) for detailed implementation guide.
 
