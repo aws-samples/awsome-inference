@@ -12,17 +12,16 @@ This directory contains two deployment approaches for different use cases:
 
 ### 1. EKS Deployment (`nxd-inference-eks/`)
 
-**Production-ready, scalable Kubernetes deployment**
+**Kubernetes deployment**
 
-- **Use Case**: Enterprise production workloads requiring high availability, auto-scaling, and load balancing
-- **Models**: Llama 3.3 70B, DeepSeek-R1-Distill-Llama-70B, and other large language models
+- **Models**: Qwen3, Llama3, and other large language models
 - **Instance Types**: `trn1.32xlarge`, `trn2.48xlarge`
 - **Key Features**:
-  - Kubernetes-native deployment with HPA/VPA scaling
+  - Kubernetes-native deployment 
   - EFS shared storage for model artifacts
   - Neuron monitoring and observability
   - Support for standard and speculative decoding modes
-  - Load balancing with AWS Application Load Balancer
+  - Load balancing with Application Load Balancer
 
 **[→ See EKS Deployment Guide](nxd-inference-eks/README.md)**
 
@@ -47,7 +46,6 @@ This directory contains two deployment approaches for different use cases:
 |-------------|----------------|----------------|
 | **Production workloads** | ✅ Recommended | ⚠️ Limited scalability |
 | **Development/Testing** | ⚠️ Complex setup | ✅ Recommended |
-| **Auto-scaling** | ✅ HPA/VPA support | ❌ Manual scaling |
 | **High availability** | ✅ Multi-AZ support | ❌ Single instance |
 | **Setup complexity** | ⚠️ Moderate | ✅ Simple |
 | **Cost optimization** | ✅ Scale to zero | ❌ Always running |
