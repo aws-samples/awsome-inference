@@ -160,8 +160,9 @@ for subnet in subnet-xxx subnet-yyy subnet-zzz; do
     --security-groups sg-your-efs-security-group
 done
 
-```bash
+
 # Create StorageClass
+```bash
 cat <<EOF | kubectl apply -f -
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
