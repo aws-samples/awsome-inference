@@ -1,7 +1,6 @@
 # Steps to create EKS cluster with EFS
 
-In this example we create an EKS cluster consisting of two `trn1.32xlarge` compute nodes. We also setup EFA between the compute nodes.
-
+In this example we create an EKS cluster consisting of one `trn1.32xlarge` compute node. 
 ### a. Configure AWS CLI
 
 ```
