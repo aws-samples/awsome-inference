@@ -150,8 +150,9 @@ until [ "$(aws efs describe-file-systems \
   sleep 3
 done
 echo "EFS is available."
-
+```
 # Create mount targets (one per AZ your nodes use)
+```
 for subnet in subnet-xxx subnet-yyy subnet-zzz; do
   aws efs create-mount-target \
     --region us-west-2 \
@@ -159,8 +160,7 @@ for subnet in subnet-xxx subnet-yyy subnet-zzz; do
     --subnet-id "$subnet" \
     --security-groups sg-your-efs-security-group
 done
-
-
+```
 # Create StorageClass
 ```bash
 cat <<EOF | kubectl apply -f -
