@@ -41,6 +41,7 @@ This example demonstrates deploying Large Language Models using **NeuronX Distri
 
 ## Prerequisites
 
+- Follow the steps in `1.infrastructure/0_setup_vpc/vpc-cf-example.yaml` and `1.infrastructure/1_setup_cluster/nxd-inference/Create_EKS_Cluster.md` first to setup your infrastructure.
 - `kubectl`, `aws` CLI, and `helm`
 - EKS cluster with Trainium nodes and EFS PVC
 - A Hugging Face token with access to the target repos
@@ -81,7 +82,7 @@ kubectl get nodes -L workload-type,node.kubernetes.io/instance-type
 kubectl create namespace neuron-inference
 
 # Apply EFS storage configuration
-kubectl apply -f fused-SD/manifests/storage.yaml -n neuron-inference
+kubectl apply -f fused-SD/manifests/storage.yaml -n neuron-inference #this uses the efs filesystem and the storage class you created previously
 
 # Create HF token secret once
 # replace YOUR_HF_TOKEN with your actual token (starts with hf_)
