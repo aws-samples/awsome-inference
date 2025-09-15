@@ -111,7 +111,7 @@ spec:
         - name: TP_DEGREE
           value: "32"
         - name: MODEL_DIRNAME
-          value: "Qwen3-0.6B"
+          value: "Qwen3-32B"
         - name: DRAFT_DIRNAME
           value: "Qwen3-0.6B"
         - name: COMPILED_ROOT
