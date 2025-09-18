@@ -7,6 +7,7 @@ The major components of this directory are:
 |-- nims-inference/                      
 |-- trtllm-inference/ 
 |-- sglang-inference/
+|-- sglang-sagemaker/
 |-- ray-service/                
 |-- multinode-triton-trtllm-inference/
 |-- mixture-of-agents/
@@ -66,6 +67,13 @@ This example shows how to use K8s LeaderWorketSet for multi-node deployment of L
 1. `1.infrastructure/1_setup_cluster/trtllm_multinode_sample`: This directory contains the guide [Create_EKS_Cluster.md](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/Create_EKS_Cluster.md) to setup 2x P5.48xlarge EKS cluster as well as example cluster config yaml file [`p5-trtllm-cluster-config.yaml`](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/p5-trtllm-cluster-config.yaml) and EFS Persistent Volume Claim files in directory [pvc](/1.infrastructure/1_setup_cluster/multinode-triton-trtllm-inference/pvc)
 2. The [Configure_EKS_Cluster.md](https://github.com/aws-samples/awsome-inference/blob/main/2.projects/multinode-triton-trtllm-inference/Configure_EKS_Cluster.md) guide to install necessary components like Prometheus Kubernetes Stack, EFA Plugin, LeaderWorkerSet, etc within the EKS cluster.
 3. The [Deploy_Triton.md](https://github.com/aws-samples/awsome-inference/blob/main/2.projects/multinode-triton-trtllm-inference/Deploy_Triton.md) guide to build TRT-LLM engines for LLama 3.1 405B model, setup Triton model repository and install the multi-node deployment helm chart. This guide also covers testing the Horizontal Pod Autoscaler and Cluster Autoscaler and benchmarking LLM inference performance using genai-perf.
+
+## SGLANG-SAGEMAKER
+
+This project demonstrates deploying large language models like Qwen3-Next-80B-A3B-Instruct on Amazon SageMaker using SGLang, a high-performance LLM serving framework. The example shows how to build a SageMaker-compatible SGLang container, deploy models on multi-GPU instances (e.g., ml.p5.48xlarge), and expose an OpenAI-compatible API for chat completions. SGLang provides high-throughput inference with continuous batching, Radix Attention, and smart scheduling optimizations. See [sglang-sagemaker](https://github.com/aws-samples/awsome-inference/blob/main/2.projects/sglang-sagemaker/README.md) for more information.
+
+### Files & Directories
+1. `qwen3_next_80b_instruct_sglang_sagemaker.ipynb`: Complete notebook demonstrating end-to-end deployment of Qwen3-Next-80B model on SageMaker with SGLang, including model download, container building, and endpoint creation.
 
 ## TRITON TRT-LLM SAGEMAKER
 

@@ -17,6 +17,7 @@ README                                # Project Summaries
 |-- nims-inference/
 |-- trtllm-inference/
 |-- sglang-inference/
+|-- sglang-sagemaker/
 |-- ray-service/ 
 |-- multinode-triton-trtllm-inference/
 |-- mixture-of-agents/
@@ -59,6 +60,10 @@ This example shows how to use [K8s LeaderWorketSet](https://github.com/kubernete
 ### MIXTURE OF AGENTS (MoA)
 
 Recent advances in large language models (LLMs) have shown substantial capabilities, but harnessing the collective expertise of multiple LLMs is an open direction. [Mixture-of-Agents (MoA)](https://github.com/togethercomputer/MoA) approach to leverages the collective strengths of multiple LLMs through a layered architecture. Each layer comprises multiple LLMs, and each model uses outputs from the previous layer's agents as auxiliary information. See [Mixture-of-Agents (MoA) on Amazon bedrock](/2.projects/mixture-of-agents) for more information.
+
+### SGLANG-SAGEMAKER
+
+This project demonstrates deploying large language models like Qwen3-Next-80B-A3B-Instruct on Amazon SageMaker using SGLang, a high-performance LLM serving framework. The example provides a complete notebook showing how to build SageMaker-compatible SGLang containers, deploy models on multi-GPU instances, and expose OpenAI-compatible APIs. SGLang offers high-throughput inference with continuous batching, Radix Attention, and distributed inference capabilities across multiple GPUs. See [sglang-sagemaker](https://github.com/aws-samples/awsome-inference/blob/main/2.projects/sglang-sagemaker/README.md) for more information.
 
 ### TRITON TRT-LLM SAGEMAKER
 
