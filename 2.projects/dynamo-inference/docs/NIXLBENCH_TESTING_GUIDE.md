@@ -411,7 +411,7 @@ After successful nixlbench run:
 2. **Test Different Backends**: Run tests with LIBFABRIC backend
 3. **Test Different Memory Types**: Try DRAM-to-DRAM transfers
 4. **Document Findings**: Update EFA_TEST_RESULTS.md with nixlbench metrics
-5. **Production Deployment**: Use validated configuration for real workloads
+5. **Deployment**: Use validated configuration for real workloads
 
 ================================================================================
 # End of NIXL Benchmark Testing Guide

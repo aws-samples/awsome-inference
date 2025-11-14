@@ -50,12 +50,12 @@ For testing with ECR (requires valid AWS credentials):
 aws ecr create-repository --repository-name dynamo-vllm --region us-east-2
 
 # 2. Tag and push image
-docker tag dynamo-vllm:slim 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
-docker push 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
+docker tag dynamo-vllm:slim <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
 
 # 3. Update vllm-test-pod.yaml to use ECR image
 # Change image line to:
-#   image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
+#   image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
 
 # 4. Deploy and test (same as Option 1)
 kubectl apply -f examples/vllm-test-pod.yaml
@@ -131,7 +131,7 @@ kubectl logs vllm-test
 ```bash
 # If using ECR, check authentication
 aws ecr get-login-password --region us-east-2 | \
-  docker login --username AWS --password-stdin 058264135704.dkr.ecr.us-east-2.amazonaws.com
+  docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com
 ```
 
 ### GPU not detected
@@ -174,5 +174,5 @@ Once vLLM testing is complete, you can test with NIXL networking:
 
 ```bash
 # Deploy vLLM with NIXL coordination (multi-node)
-# See BENCHMARKING_GUIDE.md for production deployment
+# See BENCHMARKING_GUIDE.md for deployment
 ```

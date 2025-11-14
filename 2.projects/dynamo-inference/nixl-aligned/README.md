@@ -149,16 +149,16 @@ docker run --rm --gpus all nixl-aligned:latest nvidia-smi
 
 ```bash
 # Tag
-docker tag nixl-aligned:0.7.1 058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
-docker tag nixl-aligned:0.7.1 058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:latest
+docker tag nixl-aligned:0.7.1 <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
+docker tag nixl-aligned:0.7.1 <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:latest
 
 # Login
 aws ecr get-login-password --region us-east-2 | \
-    docker login --username AWS --password-stdin 058264135704.dkr.ecr.us-east-2.amazonaws.com
+    docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com
 
 # Push
-docker push 058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
-docker push 058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:latest
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:latest
 ```
 
 ### Use in Kubernetes
@@ -171,7 +171,7 @@ metadata:
 spec:
   containers:
   - name: nixl
-    image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
+    image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
     command: ["python", "-c", "import nixl; print(nixl.__version__)"]
     resources:
       limits:
@@ -196,7 +196,7 @@ spec:
     spec:
       containers:
       - name: vllm
-        image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
+        image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
         command:
           - vllm
           - serve

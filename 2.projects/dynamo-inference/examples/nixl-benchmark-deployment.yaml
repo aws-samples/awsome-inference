@@ -18,7 +18,7 @@ spec:
       hostIPC: true
       containers:
       - name: nixl-test
-        image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1-bench
+        image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1-bench
         command: ["/bin/bash", "-c", "sleep infinity"]
         env:
         - name: NIXL_ETCD_ENDPOINTS

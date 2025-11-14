@@ -95,18 +95,18 @@ docker run --rm nixl-aligned:latest \
 ```bash
 # Tag
 docker tag nixl-aligned:0.7.1 \
-    058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
+    <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
 
 # Login
 aws ecr get-login-password --region us-east-2 | \
     docker login --username AWS --password-stdin \
-    058264135704.dkr.ecr.us-east-2.amazonaws.com
+    <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com
 
 # Create repository (if needed)
 aws ecr create-repository --repository-name nixl-aligned --region us-east-2
 
 # Push
-docker push 058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
 ```
 
 ---
@@ -161,7 +161,7 @@ RUN meson setup -Dlibfabric_path=/usr/local build/
 Deploy pod and test NIXL on single node:
 ```bash
 kubectl run nixl-test --rm -it \
-    --image=058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1 \
+    --image=<AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1 \
     -- python -c "import nixl; print('OK')"
 ```
 

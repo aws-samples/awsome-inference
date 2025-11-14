@@ -11,7 +11,7 @@ spec:
   containers:
   - name: vllm-test
     # Use ECR image
-    image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
+    image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
     # Alternative: Use local image tag (requires image on node)
     # image: dynamo-vllm:slim
     imagePullPolicy: IfNotPresent
