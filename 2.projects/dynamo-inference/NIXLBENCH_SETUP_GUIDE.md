@@ -31,7 +31,7 @@ kubectl get nodes
 
 Your nixl-aligned:0.7.1-bench image should be available in ECR:
 ```
-058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1-bench
+<AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1-bench
 ```
 
 If not yet pushed, wait for the background push operations to complete (check logs with `tail -f push-nixl-aligned*.log`).
@@ -164,7 +164,7 @@ spec:
       hostIPC: true
       containers:
       - name: nixl-test
-        image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1-bench
+        image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1-bench
         command: ["/bin/bash", "-c", "sleep infinity"]
         env:
         - name: NIXL_ETCD_ENDPOINTS

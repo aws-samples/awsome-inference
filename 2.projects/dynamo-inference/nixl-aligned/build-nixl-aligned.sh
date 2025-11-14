@@ -17,7 +17,7 @@ echo -e "${BLUE}═════════════════════�
 echo ""
 
 # Configuration
-DOCKER_REGISTRY="${DOCKER_REGISTRY:-058264135704.dkr.ecr.us-east-2.amazonaws.com}"
+DOCKER_REGISTRY="${DOCKER_REGISTRY:-<AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com}"
 IMAGE_NAME="${IMAGE_NAME:-nixl-aligned}"
 TAG="${TAG:-0.7.1}"
 FULL_IMAGE="${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG}"

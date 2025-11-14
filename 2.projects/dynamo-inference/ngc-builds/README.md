@@ -114,7 +114,7 @@ All existing deployments work with new images:
 ## Build Targets
 
 ### Runtime
-- Production-ready
+- Deployment-ready
 - Minimal size
 - No dev tools
 

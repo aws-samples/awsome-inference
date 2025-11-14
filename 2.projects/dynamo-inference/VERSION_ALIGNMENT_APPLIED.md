@@ -210,7 +210,7 @@ pip install "ai-dynamo[sglang]"
 - Integrated service mesh in base
 - EFA optimizations for AWS
 
-### ✅ Production Ready
+### ✅ Deployment Ready
 - Tested versions from Dynamo team
 - Known-good dependency matrix
 - Reproducible builds from source
