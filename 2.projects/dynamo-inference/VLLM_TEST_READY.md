@@ -44,8 +44,8 @@ The vLLM container with Dynamo runtime is built and ready for testing. We've cre
 ```bash
 # 1. Create ECR repository and push image
 aws ecr create-repository --repository-name dynamo-vllm --region us-east-2
-docker tag dynamo-vllm:slim 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
-docker push 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
+docker tag dynamo-vllm:slim <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
 
 # 2. Deploy test pod to Kubernetes
 kubectl apply -f examples/vllm-test-pod.yaml
@@ -96,7 +96,7 @@ python /workspace/test-vllm-local.py microsoft/phi-2
 ```
 - Model: Phi-2 (~2.7GB)
 - High-quality outputs
-- Representative of production workloads
+- Representative of deployment workloads
 
 ## Expected Output
 
@@ -147,14 +147,14 @@ export AWS_SESSION_TOKEN="..."
 ### If ECR repository already exists:
 ```bash
 # Just push the image (skip create-repository)
-docker push 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
 ```
 
 ### If pod fails to pull image:
 ```bash
 # Authenticate Docker to ECR
 aws ecr get-login-password --region us-east-2 | \
-  docker login --username AWS --password-stdin 058264135704.dkr.ecr.us-east-2.amazonaws.com
+  docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com
 ```
 
 ### If GPU not available:
@@ -184,9 +184,9 @@ Once vLLM testing is complete, you can:
 1. **Test Multi-Node Setup**: Deploy vLLM with tensor parallelism across multiple nodes
 2. **Benchmark Performance**: Use scripts in `benchmarks/` for throughput testing
 3. **Test NIXL Integration**: Enable Dynamo's NIXL networking for distributed inference
-4. **Production Deployment**: Use `scripts/deploy-dynamo-vllm.sh` for full production setup
+4. **Deployment**: Use `scripts/deploy-dynamo-vllm.sh` for full production setup
 
-See **BENCHMARKING_GUIDE.md** for complete production deployment workflow.
+See **BENCHMARKING_GUIDE.md** for complete deployment workflow.
 
 ## Questions?
 

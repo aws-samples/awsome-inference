@@ -1,6 +1,6 @@
 # NVIDIA Dynamo + NIXL Container Suite for AWS
 
-Production-ready containers for high-performance distributed ML workloads on AWS with EFA support, optimized for H100, A100, and A10G GPU instances.
+Deployment-ready containers for high-performance distributed ML workloads on AWS with EFA support, optimized for H100, A100, and A10G GPU instances.
 
 ## Overview
 
@@ -565,4 +565,4 @@ For issues, questions, or contributions:
 
 ---
 
-**Built for AWS | Optimized for H100/A100/A10G | Production-Ready**
+**Built for AWS | Optimized for H100/A100/A10G | Deployment-Ready**

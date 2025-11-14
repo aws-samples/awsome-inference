@@ -57,7 +57,7 @@ cd ../scripts && ./build-all.sh runtime
 
 #### Before (Custom Image)
 ```yaml
-image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
+image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
 ```
 
 #### After (NGC-Based)
@@ -169,7 +169,7 @@ If you need to rollback:
 ```bash
 # Rollback deployment
 kubectl set image deployment/my-deployment \
-  container=058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
+  container=<AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:slim
 ```
 
 ## Benefits Summary

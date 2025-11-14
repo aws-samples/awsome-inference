@@ -28,7 +28,7 @@ After comprehensive troubleshooting and root cause analysis, **nixlbench is now 
 - Components: UCX 1.19.0, libfabric 2.3.0, NIXL 0.7.1, GDRCopy
 - Features: nixlbench benchmark tool included
 - Status: Built and pushed to ECR
-- Image: `058264135704.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1`
+- Image: `<AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1`
 
 **Dynamo Containers (Building)**
 - dynamo-base:0.7.1 - Building
@@ -168,7 +168,7 @@ Multiple build processes are running in parallel:
 
 1. **nixl-aligned:0.7.1**
    - Shell IDs: f01bd5, dec950
-   - Target: 058264135704.dkr.ecr.us-east-2.amazonaws.com
+   - Target: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com
    - Status: Pushing
 
 2. **dynamo-base:0.7.1**
@@ -310,7 +310,7 @@ Based on UCX baseline, expected nixlbench results:
    - Push final images to ECR
    - Update deployment manifests
 
-2. **Production Deployment Preparation**
+2. **Deployment Preparation**
    - Test vLLM with Dynamo runtime
    - Configure optimal networking parameters
    - Create deployment guides
