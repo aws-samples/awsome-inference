@@ -9,7 +9,7 @@ docker build -f nixl-aligned/Dockerfile.nixl-aligned
 # Time: ~15 minutes, Size: 14.2 GB
 
 # Stage 2: dynamo-base (Dynamo dependencies)
-docker build -f Dockerfile.production --target dynamo-base
+docker build -f Dockerfile.base --target dynamo-base
 # Time: ~20 minutes, Size: 22.8 GB
 
 # Stage 3: dynamo-vllm (vLLM integration)
@@ -68,7 +68,7 @@ Total:                   17.0 GB
 | **Dynamo** | 0.6.1 | 0.6.1 | ✅ |
 | **libfabric** | 1.21.0 | Not included | ⚠️ |
 
-**Note:** libfabric not needed in production (UCX sufficient)
+**Note:** libfabric not needed in deployment (UCX sufficient)
 
 ## Build Time Comparison
 

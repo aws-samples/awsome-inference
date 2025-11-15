@@ -111,7 +111,7 @@ docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
 
 ---
 
-## What Changed from Our Production Build
+## What Changed from Our Base Build
 
 ### Versions
 - NIXL: 0.6.0 → **0.7.1**
@@ -251,9 +251,9 @@ python -c "import nixl"
 2. **Validate**: `docker run --rm nixl-aligned:latest validate-nixl`
 3. **Push to ECR**
 4. **Test in Kubernetes**
-5. **Compare with production image**
+5. **Compare with base image**
 
-Once validated, this becomes the new production image that fixes all the issues we discovered in Experiments 1-6!
+Once validated, this becomes the new base image that fixes all the issues we discovered in Experiments 1-6!
 
 ---
 

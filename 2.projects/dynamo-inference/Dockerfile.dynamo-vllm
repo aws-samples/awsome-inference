@@ -425,7 +425,7 @@ ENTRYPOINT ["/opt/nvidia/nvidia_entrypoint.sh"]
 CMD ["/bin/bash"]
 
 # ============================================================================
-# Stage 5: Slim Image (Debloated for Production)
+# Stage 5: Slim Image (Debloated for Deployment)
 # ============================================================================
 FROM runtime AS slim
 
