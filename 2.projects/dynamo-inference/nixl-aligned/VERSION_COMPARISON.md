@@ -1,6 +1,6 @@
 # Version and Approach Comparison
 
-## ai-dynamo/nixl Official Dockerfile vs Our Production Dockerfile
+## ai-dynamo/nixl Official Dockerfile vs Our Base Dockerfile
 
 **Date**: 2025-11-09
 **Goal**: Align our container build with official NIXL approach
@@ -9,7 +9,7 @@
 
 ## Key Version Differences
 
-| Component | Official NIXL | Our Production | Decision |
+| Component | Official NIXL | Our Build | Decision |
 |-----------|---------------|----------------|----------|
 | **NIXL Version** | 0.7.1 (latest) | 0.6.0 | ✅ **Upgrade to 0.7.1** |
 | **Base Image** | cuda-dl-base:25.06-cuda12.9 | pytorch:25.06-py3 | ✅ **Use cuda-dl-base** |
@@ -40,7 +40,7 @@ RUN wget "https://github.com/ofiwg/libfabric/releases/download/${LIBFABRIC_VERSI
                 --with-cuda=/usr/local/cuda
 ```
 
-**Our Production**: Uses EFA installer which puts libfabric in `/opt/amazon/efa`
+**Our Build**: Uses EFA installer which puts libfabric in `/opt/amazon/efa`
 ```dockerfile
 ARG LIBFABRIC_INSTALL_PATH="/opt/amazon/efa"
 # EFA installer installs libfabric + EFA provider
@@ -77,7 +77,7 @@ ARG BASE_IMAGE="nvcr.io/nvidia/cuda-dl-base"
 ARG BASE_IMAGE_TAG="25.06-cuda12.9-devel-ubuntu24.04"
 ```
 
-**Our Production**: Uses `pytorch` (includes full ML stack)
+**Our Build**: Uses `pytorch` (includes full ML stack)
 ```dockerfile
 FROM nvcr.io/nvidia/pytorch:25.06-py3
 ```
@@ -94,7 +94,7 @@ RUN uv venv $VIRTUAL_ENV --python $DEFAULT_PYTHON_VERSION
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ```
 
-**Our Production**: System-wide Python packages
+**Our Build**: System-wide Python packages
 
 **Decision**: ✅ Use uv + virtual environment (cleaner, faster)
 
@@ -106,7 +106,7 @@ RUN apt-get install -y --no-install-recommends \
     doca-sdk-gpunetio libdoca-sdk-gpunetio-dev libdoca-sdk-verbs-dev
 ```
 
-**Our Production**: Not installed
+**Our Build**: Not installed
 
 **Decision**: ✅ Include DOCA for GPUNetIO support
 
@@ -119,7 +119,7 @@ RUN git clone https://github.com/nvidia/gusli.git && \
     make all BUILD_RELEASE=1
 ```
 
-**Our Production**: Not included
+**Our Build**: Not included
 
 **Decision**: ✅ Include gusli for storage backends
 
@@ -146,7 +146,7 @@ RUN git clone https://github.com/nvidia/gusli.git && \
 14. Install wheel
 ```
 
-### Our Production Approach
+### Our Build Approach
 
 ```
 1. Start with pytorch base

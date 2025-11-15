@@ -58,9 +58,9 @@ ARG TENSORRTLLM_PIP_WHEEL="tensorrt-llm==1.1.0rc5"
 
 ---
 
-## 3. Production Base (No Changes Needed)
+## 3. Base Container (No Changes Needed)
 
-**Dockerfile.production** already aligned:
+**Dockerfile.base** already aligned:
 - ✅ NIXL 0.6.0 (within `<=0.7.0` requirement)
 - ✅ CUDA 12.8
 - ✅ Python 3.12
@@ -109,7 +109,7 @@ tensorrt-llm==1.1.0rc5
 
 ## Build Commands (Updated)
 
-### 1. Build Production Base
+### 1. Build Base Container
 ```bash
 ./build.sh
 ```
@@ -162,7 +162,7 @@ docker run --rm dynamo-trtllm:latest python -c "import tensorrt_llm; print(f'Ten
 
 ### Check NIXL Version
 ```bash
-docker run --rm nixl-h100-efa:production python -c "import nixl; print(f'NIXL: {nixl.__version__}')"
+docker run --rm nixl-h100-efa:optimized python -c "import nixl; print(f'NIXL: {nixl.__version__}')"
 # Expected: NIXL: 0.6.0
 ```
 

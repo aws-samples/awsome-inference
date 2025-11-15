@@ -41,7 +41,7 @@ kubectl exec vllm-test -- bash -c "source /opt/venv/bin/activate && python /work
 kubectl delete pod vllm-test
 ```
 
-## Option 2: Production Test (With ECR)
+## Option 2: Deployment Test (With ECR)
 
 For testing with ECR (requires valid AWS credentials):
 

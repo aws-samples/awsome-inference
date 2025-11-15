@@ -1,5 +1,5 @@
 #!/bin/bash
-# build.sh - Production container build script
+# build.sh - Base container build script
 
 set -e
 
@@ -12,8 +12,8 @@ NC='\033[0m'
 
 # Configuration
 IMAGE_NAME="nixl-h100-efa"
-TAG="${TAG:-production}"
-DOCKERFILE="${DOCKERFILE:-Dockerfile.production}"
+TAG="${TAG:-optimized}"
+DOCKERFILE="${DOCKERFILE:-Dockerfile.base}"
 
 # Architecture options
 CUDA_ARCH="${CUDA_ARCH:-90}"

@@ -3,7 +3,7 @@
 set -e
 
 # Configuration
-NIXL_BASE_IMAGE="${NIXL_BASE_IMAGE:-nixl-h100-efa:production}"
+NIXL_BASE_IMAGE="${NIXL_BASE_IMAGE:-nixl-h100-efa:optimized}"
 DYNAMO_BASE_IMAGE="${DYNAMO_BASE_IMAGE:-nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.4.0}"
 PYTORCH_IMAGE="${PYTORCH_IMAGE:-nvcr.io/nvidia/pytorch}"
 PYTORCH_IMAGE_TAG="${PYTORCH_IMAGE_TAG:-25.06-py3}"
