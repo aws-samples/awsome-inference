@@ -278,7 +278,20 @@ RUN ldconfig && \
     ldconfig -p | grep -E "libucs|libfabric|libnccl|libnixl" && \
     echo "✅ All libraries ready for Python/PyTorch"
 
-# Set comprehensive environment variables
+# ============================================================================
+# Python and PyTorch Setup (AFTER all libraries are registered)
+# ============================================================================
+
+# Copy uv and entire virtual environment from vllm_builder FIRST
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=vllm_builder /opt/dynamo/venv /opt/dynamo/venv
+
+# Set virtual environment variables (BEFORE using VIRTUAL_ENV in other ENV statements)
+ENV VIRTUAL_ENV=/opt/dynamo/venv \
+    PATH="/opt/dynamo/venv/bin:${PATH}" \
+    UV_LINK_MODE=copy
+
+# Set comprehensive environment variables (AFTER VIRTUAL_ENV is defined)
 ENV DYNAMO_HOME=/workspace
 ENV LD_LIBRARY_PATH=\
 /usr/local/lib:\
@@ -294,19 +307,6 @@ $LD_LIBRARY_PATH
 
 ENV PATH="${VIRTUAL_ENV}/bin:/opt/hpcx/ompi/bin:/usr/local/ucx/bin:/usr/local/libfabric/bin:/usr/local/cuda/bin:/usr/local/cuda/nvvm/bin:$PATH"
 ENV OPAL_PREFIX=/opt/hpcx/ompi
-
-# ============================================================================
-# Python and PyTorch Setup (AFTER all libraries are registered)
-# ============================================================================
-
-# Copy uv and entire virtual environment from vllm_builder
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-COPY --from=vllm_builder /opt/dynamo/venv /opt/dynamo/venv
-
-# Set virtual environment variables
-ENV VIRTUAL_ENV=/opt/dynamo/venv \
-    PATH="/opt/dynamo/venv/bin:${PATH}" \
-    UV_LINK_MODE=copy
 
 # Copy PyTorch and dependencies from NGC (complete copy like NVIDIA does)
 ARG TORCH_VER=2.8.0a0+5228986c39.nv25.6

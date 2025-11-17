@@ -211,7 +211,19 @@ RUN ldconfig && \
     ldconfig -p | grep -E "libucs|libfabric|libnccl|libnixl" && \
     echo "✅ All libraries ready for Python/PyTorch"
 
-# Set comprehensive environment variables
+# ============================================================================
+# Python and PyTorch Setup (AFTER all libraries are registered)
+# ============================================================================
+
+# Setup Python virtual environment FIRST (before using it in PATH)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+RUN mkdir -p /opt/dynamo/venv && \
+    uv venv /opt/dynamo/venv --python $PYTHON_VERSION
+
+ENV VIRTUAL_ENV=/opt/dynamo/venv \
+    PATH="/opt/dynamo/venv/bin:${PATH}"
+
+# Set comprehensive environment variables (AFTER VIRTUAL_ENV is defined)
 ENV DYNAMO_HOME=/workspace
 ENV LD_LIBRARY_PATH=\
 /usr/local/lib:\
@@ -227,18 +239,6 @@ $LD_LIBRARY_PATH
 
 ENV PATH="${VIRTUAL_ENV}/bin:/opt/hpcx/ompi/bin:/usr/local/ucx/bin:/usr/local/libfabric/bin:/usr/local/cuda/bin:/usr/local/cuda/nvvm/bin:$PATH"
 ENV OPAL_PREFIX=/opt/hpcx/ompi
-
-# ============================================================================
-# Python and PyTorch Setup (AFTER all libraries are registered)
-# ============================================================================
-
-# Setup Python virtual environment
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-RUN mkdir -p /opt/dynamo/venv && \
-    uv venv /opt/dynamo/venv --python $PYTHON_VERSION
-
-ENV VIRTUAL_ENV=/opt/dynamo/venv \
-    PATH="/opt/dynamo/venv/bin:${PATH}"
 
 # Copy PyTorch and dependencies from NGC (complete copy like NVIDIA does)
 ARG TORCH_VER=2.8.0a0+5228986c39.nv25.6
