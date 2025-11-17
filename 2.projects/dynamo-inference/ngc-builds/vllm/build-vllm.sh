@@ -26,7 +26,7 @@ if [[ ! "$TARGET" =~ ^(runtime|dev|benchmark)$ ]]; then
     echo "Usage: $0 [runtime|dev|benchmark]"
     echo ""
     echo "Options:"
-    echo "  runtime   - Production runtime (~17GB)"
+    echo "  runtime   - Deployment runtime (~17GB)"
     echo "  dev       - Development image (~18GB)"
     echo "  benchmark - With benchmarking (~19GB)"
     exit 1

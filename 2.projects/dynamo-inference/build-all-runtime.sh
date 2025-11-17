@@ -28,7 +28,7 @@ echo "  Max Jobs:        ${MAX_JOBS}"
 echo "  Expected Size:   ~25GB per container"
 echo ""
 echo -e "${GREEN}Containers to build:${NC}"
-echo "  1. Production Base (nixl-h100-efa:production)"
+echo "  1. Base Container (nixl-h100-efa:optimized)"
 echo "  2. Dynamo + vLLM (dynamo-vllm:latest)"
 echo "  3. Dynamo + TensorRT-LLM (dynamo-trtllm:latest)"
 echo ""
@@ -47,24 +47,24 @@ START_TIME=$(date +%s)
 
 echo ""
 echo -e "${BLUE}════════════════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}Step 1/3: Building Production Base Container${NC}"
+echo -e "${BLUE}Step 1/3: Building Base Container${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════════════${NC}"
 echo ""
 
-# Build production base
+# Build base container
 CUDA_ARCH=$CUDA_ARCH \
 CUDA_ARCH_NAME=$CUDA_ARCH_NAME \
 NPROC=$MAX_JOBS \
-TAG=production \
+TAG=optimized \
 ./build.sh
 
 if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Production base build failed${NC}"
+    echo -e "${RED}❌ Base container build failed${NC}"
     exit 1
 fi
 
 echo ""
-echo -e "${GREEN}✅ Production base completed${NC}"
+echo -e "${GREEN}✅ Base container completed${NC}"
 echo ""
 
 echo -e "${BLUE}════════════════════════════════════════════════════════════════════${NC}"
@@ -120,7 +120,7 @@ echo -e "${GREEN}✅ ALL BUILDS COMPLETED SUCCESSFULLY${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "${GREEN}Built containers:${NC}"
-echo "  1. nixl-h100-efa:production       (base)"
+echo "  1. nixl-h100-efa:optimized       (base)"
 echo "  2. dynamo-vllm:latest             (~25GB)"
 echo "  3. dynamo-trtllm:latest           (~25GB)"
 echo ""

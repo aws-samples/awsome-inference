@@ -20,7 +20,7 @@ This container suite provides optimized Docker images for AWS GPU instances feat
 For H100 instances with 16+ CPU cores:
 
 ```bash
-# Production-optimized slim builds (~17GB each)
+# Deployment-optimized slim builds (~17GB each)
 ./build-all-slim.sh
 
 # Standard runtime builds (~25GB each)
@@ -28,7 +28,7 @@ For H100 instances with 16+ CPU cores:
 ```
 
 This builds all three containers:
-1. Production Base (nixl-h100-efa:production) - NIXL + EFA foundation
+1. Base Container (nixl-h100-efa:optimized) - NIXL + EFA foundation
 2. Dynamo + vLLM - High-performance LLM serving
 3. Dynamo + TensorRT-LLM - Optimized inference engine
 
@@ -36,7 +36,7 @@ This builds all three containers:
 
 ### Individual Container Builds
 
-#### 1. Production Base (NIXL + EFA)
+#### 1. Base Container (NIXL + EFA)
 
 ```bash
 # H100 (default)
@@ -52,7 +52,7 @@ CUDA_ARCH=86 CUDA_ARCH_NAME=A10G ./build.sh
 #### 2. Dynamo + vLLM
 
 ```bash
-# H100 slim (recommended for production)
+# H100 slim (recommended for deployment)
 BUILD_TARGET=slim CUDA_ARCH=90 ./build_vllm.sh
 
 # A100 runtime
@@ -65,7 +65,7 @@ BUILD_TARGET=slim CUDA_ARCH=86 CUDA_ARCH_NAME=A10G ./build_vllm.sh
 #### 3. Dynamo + TensorRT-LLM
 
 ```bash
-# H100 slim (recommended for production)
+# H100 slim (recommended for deployment)
 BUILD_TARGET=slim CUDA_ARCH=90 ./build_trtllm.sh
 
 # A100 runtime
@@ -89,7 +89,7 @@ BUILD_TARGET=slim CUDA_ARCH=86 CUDA_ARCH_NAME=A10G ./build_trtllm.sh
 
 | Target | Size | Use Case | Build Flag |
 |--------|------|----------|------------|
-| **slim** | ~17GB | Production deployments | `BUILD_TARGET=slim` |
+| **slim** | ~17GB | Deployment environments | `BUILD_TARGET=slim` |
 | **runtime** | ~25GB | Development, debugging | `BUILD_TARGET=runtime` (default) |
 | **dev** | ~27GB | Active development | `BUILD_TARGET=dev` |
 
@@ -114,7 +114,7 @@ See [DEBLOAT_GUIDE.md](DEBLOAT_GUIDE.md) for detailed optimization information.
 ```
 - Uses pre-built vLLM wheel
 - Works with all custom libraries (UCX, EFA, NIXL)
-- Recommended for production
+- Recommended for deployment
 
 **Source Build (Optional - Slow)**:
 ```bash
@@ -128,14 +128,14 @@ USE_SOURCE_BUILD=true MAX_JOBS=8 ./build_vllm.sh  # 60-90 minutes
 
 ### All Environment Variables
 
-#### Production Base (build.sh)
+#### Base Container (build.sh)
 ```bash
 CUDA_ARCH=90              # GPU architecture (90=H100, 80=A100, 86=A10G)
 CUDA_ARCH_NAME=H100       # GPU name for environment variables
 INSTALL_NCCL=1            # Install NCCL (1=yes, 0=no)
 INSTALL_NVSHMEM=0         # Install NVSHMEM (1=yes, 0=no)
 NPROC=12                  # Parallel build jobs (12 recommended for 16-core)
-TAG=production            # Docker tag
+TAG=optimized            # Docker tag
 ```
 
 #### vLLM Container (build_vllm.sh)
@@ -515,10 +515,10 @@ done
 
 ```
 dynamo-workshop/
-├── Dockerfile.production              # Base NIXL+EFA container
+├── Dockerfile.base              # Base NIXL+EFA container
 ├── Dockerfile.dynamo-vllm            # vLLM container
 ├── Dockerfile.dynamo-trtllm          # TensorRT-LLM container
-├── build.sh                          # Build production base
+├── build.sh                          # Build base container
 ├── build_vllm.sh                     # Build vLLM container
 ├── build_trtllm.sh                   # Build TensorRT-LLM container
 ├── build-all-slim.sh                 # Build all (optimized)

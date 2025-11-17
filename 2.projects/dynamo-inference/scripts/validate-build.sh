@@ -28,7 +28,7 @@ if [ -d "/opt/dynamo/venv" ] || python3 -c "import vllm" 2>/dev/null; then
 elif [ -d "/usr/local/lib/python3.12/dist-packages/tensorrt_llm" ] || python3 -c "import tensorrt_llm" 2>/dev/null; then
     CONTAINER_TYPE="trtllm"
 elif [ -d "/opt/nvidia/nvda_nixl" ]; then
-    CONTAINER_TYPE="production"
+    CONTAINER_TYPE="base"
 fi
 
 echo "  Detected container type: ${CONTAINER_TYPE}"
@@ -175,9 +175,9 @@ else
 fi
 check_ldcache "libefa.so"
 
-# PMIx (optional in production base, may be provided by HPC-X in vllm/trtllm)
+# PMIx (optional in base container, may be provided by HPC-X in vllm/trtllm)
 PMIX_VERSION="${PMIX_VERSION:-4.2.6}"
-if [ "$CONTAINER_TYPE" = "production" ]; then
+if [ "$CONTAINER_TYPE" = "base" ]; then
     check_optional "PMIx" "/opt/pmix-${PMIX_VERSION}" "/opt/pmix"
     check_optional "PMIx Library" "/opt/pmix-${PMIX_VERSION}/lib/libpmix.so" "/opt/pmix/lib/libpmix.so"
 elif [ "$CONTAINER_TYPE" = "vllm" ] || [ "$CONTAINER_TYPE" = "trtllm" ]; then
@@ -259,8 +259,8 @@ echo "5. SERVICE MESH DEPENDENCIES"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Service mesh components (critical in production, optional in derived containers)
-if [ "$CONTAINER_TYPE" = "production" ]; then
+# Service mesh components (critical in deployment environments, optional in derived containers)
+if [ "$CONTAINER_TYPE" = "base" ]; then
     # Full Dynamo needs these components
     check_critical "cpprestsdk" "/usr/local/lib/libcpprest.so"
     check_critical "gflags" "/usr/local/lib/libgflags.so"

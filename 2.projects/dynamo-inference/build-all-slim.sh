@@ -18,7 +18,7 @@ MAX_JOBS="${MAX_JOBS:-24}"  # 12 jobs for 16-core system (leave headroom)
 BUILD_TARGET="slim"
 
 echo -e "${BLUE}════════════════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}Building All Containers in SLIM Mode (Production Optimized)${NC}"
+echo -e "${BLUE}Building All Containers in SLIM Mode (Deployment Optimized)${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "${GREEN}Configuration:${NC}"
@@ -28,7 +28,7 @@ echo "  Max Jobs:        ${MAX_JOBS}"
 echo "  Expected Size:   ~17GB per container (vs 25GB standard)"
 echo ""
 echo -e "${GREEN}Containers to build:${NC}"
-echo "  1. Production Base (nixl-h100-efa:production)"
+echo "  1. Base Container (nixl-h100-efa:optimized)"
 echo "  2. Dynamo + vLLM (dynamo-vllm:slim)"
 echo "  3. Dynamo + TensorRT-LLM (dynamo-trtllm:slim)"
 echo ""
@@ -50,11 +50,11 @@ export DOCKER_BUILDKIT=1
 
 echo ""
 echo -e "${BLUE}════════════════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}Step 1/3: Building Production Base Container${NC}"
+echo -e "${BLUE}Step 1/3: Building Base Container${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════════════${NC}"
 echo ""
 
-# Build production base (this doesn't have a slim target, but it's already optimized)
+# Build base container (this doesn't have a slim target, but it's already optimized)
 docker build \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg CUDA_ARCH=$CUDA_ARCH \
@@ -62,17 +62,17 @@ docker build \
     --build-arg INSTALL_NCCL=1 \
     --build-arg INSTALL_NVSHMEM=0 \
     --build-arg NPROC=$MAX_JOBS \
-    -f Dockerfile.production \
-    -t nixl-h100-efa:production \
+    -f Dockerfile.base \
+    -t nixl-h100-efa:optimized \
     .
 
 if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Production base build failed${NC}"
+    echo -e "${RED}❌ Base container build failed${NC}"
     exit 1
 fi
 
 echo ""
-echo -e "${GREEN}✅ Production base completed${NC}"
+echo -e "${GREEN}✅ Base container completed${NC}"
 echo ""
 
 echo -e "${BLUE}════════════════════════════════════════════════════════════════════${NC}"
@@ -81,7 +81,7 @@ echo -e "${BLUE}═════════════════════�
 echo ""
 
 # Build vLLM slim
-NIXL_BASE_IMAGE=nixl-h100-efa:production \
+NIXL_BASE_IMAGE=nixl-h100-efa:optimized \
 BUILD_TARGET=$BUILD_TARGET \
 CUDA_ARCH=$CUDA_ARCH \
 CUDA_ARCH_NAME=$CUDA_ARCH_NAME \
@@ -104,7 +104,7 @@ echo -e "${BLUE}═════════════════════�
 echo ""
 
 # Build TensorRT-LLM slim
-NIXL_BASE_IMAGE=nixl-h100-efa:production \
+NIXL_BASE_IMAGE=nixl-h100-efa:optimized \
 BUILD_TARGET=$BUILD_TARGET \
 CUDA_ARCH=$CUDA_ARCH \
 CUDA_ARCH_NAME=$CUDA_ARCH_NAME \
@@ -130,7 +130,7 @@ echo -e "${GREEN}✅ ALL BUILDS COMPLETED SUCCESSFULLY${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "${GREEN}Built containers:${NC}"
-echo "  1. nixl-h100-efa:production       (base)"
+echo "  1. nixl-h100-efa:optimized        (base)"
 echo "  2. dynamo-vllm:slim               (~17GB)"
 echo "  3. dynamo-trtllm:slim             (~17GB)"
 echo ""

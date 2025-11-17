@@ -16,7 +16,7 @@ This is a from-scratch Docker build that combines:
 
 ---
 
-## What Changed from Our Production Build
+## What Changed from Our Base Build
 
 ### Base Image
 - **Before**: `pytorch:25.06-py3` (CUDA 12.8, Ubuntu 22.04)
@@ -287,8 +287,8 @@ python -c "import nixl"
 # Official NIXL
 cat /home/ubuntu/dynamo-experiment/nixl/contrib/Dockerfile
 
-# Our production
-cat /home/ubuntu/dynamo-workshop/Dockerfile.production
+# Our base
+cat /home/ubuntu/dynamo-workshop/Dockerfile.base
 
 # Aligned build
 cat /home/ubuntu/dynamo-experiment/Dockerfile.nixl-aligned
@@ -328,4 +328,4 @@ cat /home/ubuntu/dynamo-experiment/VERSION_COMPARISON.md
 **Validation**: ⏳ Pending
 **Testing**: ⏳ Pending
 
-Once built and validated, this will replace our production image with proper NIXL 0.7.1 + EFA support.
+Once built and validated, this will replace our base image with proper NIXL 0.7.1 + EFA support.
