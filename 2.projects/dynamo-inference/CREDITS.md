@@ -4,8 +4,8 @@
 
 This project was developed with contributions from:
 
-- **Anton Alexander** - Implementation and testing
-- **Alex Iankoulski** - Architecture and design
+- **Anton Alexander** - Sr. Specialist, WW Foundation Models
+- **Alex Iankoulski** - Principal WW Specialist SA GenAI
 
 ## Acknowledgments
 
