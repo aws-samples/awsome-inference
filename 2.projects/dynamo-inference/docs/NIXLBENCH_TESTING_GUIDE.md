@@ -7,7 +7,7 @@ Complete step-by-step instructions for running nixlbench on AWS SageMaker HyperP
 **Container**: nixl-aligned:0.7.1-bench
 
 ================================================================================
-## PREREQUISITES
+## Prerequisites
 ================================================================================
 
 1. **kubectl** access to the HyperPod cluster
@@ -16,7 +16,7 @@ Complete step-by-step instructions for running nixlbench on AWS SageMaker HyperP
 4. **Test pods** deployed (efa-test-prefill, efa-test-decode)
 
 ================================================================================
-## STEP 1: VERIFY CLUSTER ACCESS
+## Step 1: VERIFY CLUSTER ACCESS
 ================================================================================
 
 Run these commands in your kubectl terminal:
@@ -54,7 +54,7 @@ kubectl get pods -l app=efa-test -n default -o wide
 - If pods show "ImagePullBackOff" → ECR authentication issue, check AWS credentials
 
 ================================================================================
-## STEP 2: VERIFY NIXLBENCH IS INSTALLED
+## Step 2: VERIFY NIXLBENCH IS INSTALLED
 ================================================================================
 
 ```bash
@@ -78,7 +78,7 @@ kubectl exec -it efa-test-prefill -- nixlbench --help | head -n 5
 - If command works → nixlbench is ready
 
 ================================================================================
-## STEP 3: VERIFY ETCD CONNECTIVITY
+## Step 3: VERIFY ETCD CONNECTIVITY
 ================================================================================
 
 ```bash
@@ -101,7 +101,7 @@ kubectl exec -it efa-test-decode -- curl -s http://etcd-service:2379/version
 - If JSON returned → ETCD connectivity working
 
 ================================================================================
-## STEP 4: RUN NIXLBENCH - UCX BACKEND (GPU-to-GPU)
+## Step 4: RUN NIXLBENCH - UCX BACKEND (GPU-to-GPU)
 ================================================================================
 
 ### Option A: Launch Both Workers Simultaneously (Recommended)
@@ -213,7 +213,7 @@ Benchmark complete!
 ```
 
 ================================================================================
-## STEP 5: RUN NIXLBENCH - LIBFABRIC BACKEND (EFA)
+## Step 5: RUN NIXLBENCH - LIBFABRIC BACKEND (EFA)
 ================================================================================
 
 ```bash
@@ -245,7 +245,7 @@ nixlbench \
 ```
 
 ================================================================================
-## STEP 6: RUN NIXLBENCH - MULTI-THREADED TEST
+## Step 6: RUN NIXLBENCH - MULTI-THREADED TEST
 ================================================================================
 
 ```bash
@@ -283,7 +283,7 @@ nixlbench \
 ```
 
 ================================================================================
-## TROUBLESHOOTING
+## Troubleshooting
 ================================================================================
 
 ### Problem: "Failed to acquire lock: the target uri is not valid"
@@ -337,7 +337,7 @@ kubectl exec -it efa-test-prefill -- ucx_info -d
 - Ensure both pods use same --etcd_endpoints and --backend
 
 ================================================================================
-## INTERPRETING RESULTS
+## Interpreting Results
 ================================================================================
 
 ### UCX Performance Expectations (H100 + EFA)
@@ -356,7 +356,7 @@ UCX native tools (ucx_perftest) achieved: **284.98 GB/s** for 100MB transfers
 nixlbench should show similar performance for large block sizes.
 
 ================================================================================
-## CLEANUP
+## Cleanup
 ================================================================================
 
 ```bash
@@ -402,7 +402,7 @@ kubectl get pods -l app=etcd
 - Fix: Check ECR authentication, verify image exists
 
 ================================================================================
-## NEXT STEPS
+## Next Steps
 ================================================================================
 
 After successful nixlbench run:

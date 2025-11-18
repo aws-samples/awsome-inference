@@ -8,11 +8,11 @@
 ## Overview
 
 This is a from-scratch Docker build that combines:
-- ✅ Official NIXL 0.7.1 versions and approach
-- ✅ AWS EFA driver support for HyperPod/EKS
-- ✅ Fixes the libfabric segfault issue identified in Experiment 5
+- [Completed] Official NIXL 0.7.1 versions and approach
+- [Completed] AWS EFA driver support for HyperPod/EKS
+- [Completed] Fixes the libfabric segfault issue identified in Experiment 5
 
-**Key fix**: NIXL compiled with `-Dlibfabric_path=/usr/local` pointing to source-built libfabric v1.21.0
+**Key fix**: NIXL compiled with `-Dlibfabric_path=/usr/local` pointing to source-built libfabric v2.3.0
 
 ---
 
@@ -28,7 +28,7 @@ This is a from-scratch Docker build that combines:
 
 ### libfabric (CRITICAL CHANGE)
 - **Before**: v2.3.0 installed to `/opt/amazon/efa` (via EFA installer)
-- **After**: v1.21.0 built from source to `/usr/local`
+- **After**: v2.3.0 built from source to `/usr/local`
 - **Why**: NIXL's libfabric plugin must match the path, fixing segfault
 
 ### Python Environment
@@ -36,9 +36,9 @@ This is a from-scratch Docker build that combines:
 - **After**: Virtual environment at `/opt/venv` managed with `uv`
 
 ### New Components
-- ✅ DOCA (for GPUNetIO backend)
-- ✅ gusli (NVIDIA storage library)
-- ✅ Improved RDMA/verbs handling
+- [Completed] DOCA (for GPUNetIO backend)
+- [Completed] gusli (NVIDIA storage library)
+- [Completed] Improved RDMA/verbs handling
 
 ---
 
@@ -47,7 +47,7 @@ This is a from-scratch Docker build that combines:
 | Component | Version | Install Path |
 |-----------|---------|--------------|
 | NIXL | 0.7.1 | /usr/local/nixl |
-| libfabric | v1.21.0 | /usr/local |
+| libfabric | v2.3.0 | /usr/local |
 | UCX | v1.19.0 | /usr |
 | GDRCopy | v2.4.1 | /usr/local |
 | Python | 3.12 | /opt/venv |
@@ -101,7 +101,7 @@ Expected output:
 === NIXL Validation ===
 
 1. Python import:
-   ✅ NIXL 0.7.1
+   [Completed] NIXL 0.7.1
 
 2. libfabric linkage:
    libfabric.so.1 => /usr/local/lib/libfabric.so.1
@@ -218,11 +218,11 @@ spec:
 
 | Aspect | pip install nixl | This Build |
 |--------|------------------|------------|
-| libfabric | Bundled 2.3 | Source-built 1.21.0 |
+| libfabric | Bundled 2.3 | Source-built 2.3.0 |
 | libfabric path | In package | /usr/local |
-| EFA support | ❌ Segfaults | ✅ Works |
+| EFA support | [No] Segfaults | [Completed] Works |
 | NIXL version | 0.6.x | 0.7.1 |
-| vLLM disaggregation | ❌ Segfaults | ✅ Works |
+| vLLM disaggregation | [No] Segfaults | [Completed] Works |
 
 ---
 
@@ -248,7 +248,7 @@ dynamo-experiment/
 **Solution**:
 ```bash
 # Check version
-curl -I https://github.com/ofiwg/libfabric/releases/download/v1.21.0/libfabric-1.21.0.tar.bz2
+curl -I https://github.com/ofiwg/libfabric/releases/download/v2.3.0/libfabric-2.3.0.tar.bz2
 ```
 
 ### Build fails at DOCA
@@ -304,12 +304,12 @@ cat /home/ubuntu/dynamo-experiment/VERSION_COMPARISON.md
 
 ## Next Steps
 
-1. ✅ Build image: `./build-nixl-aligned.sh`
-2. ✅ Validate: `docker run --rm nixl-aligned:latest validate-nixl`
-3. ✅ Push to ECR
-4. ✅ Test in Kubernetes
-5. ✅ Test vLLM disaggregation (should not segfault)
-6. ✅ Run NIXL benchmarks
+1. [Completed] Build image: `./build-nixl-aligned.sh`
+2. [Completed] Validate: `docker run --rm nixl-aligned:latest validate-nixl`
+3. [Completed] Push to ECR
+4. [Completed] Test in Kubernetes
+5. [Completed] Test vLLM disaggregation (should not segfault)
+6. [Completed] Run NIXL benchmarks
 
 ---
 
@@ -324,8 +324,8 @@ cat /home/ubuntu/dynamo-experiment/VERSION_COMPARISON.md
 
 ## Status
 
-**Build**: ⏳ Pending
-**Validation**: ⏳ Pending
-**Testing**: ⏳ Pending
+**Build**: [Pending] Pending
+**Validation**: [Pending] Pending
+**Testing**: [Pending] Pending
 
 Once built and validated, this will replace our base image with proper NIXL 0.7.1 + EFA support.

@@ -52,9 +52,9 @@ TRT-LLM on Dynamo Cloud uses a disaggregated architecture that separates prefill
 
 | GPU Model | Support Status | Notes |
 |-----------|---------------|-------|
-| H100-80GB | ✅ Tested | Production ready |
-| A100-80GB | ✅ Supported | Compatible |
-| A10G | ✅ Supported | Workshop validated |
+| H100-80GB | [Completed] Tested | Production ready |
+| A100-80GB | [Completed] Supported | Compatible |
+| A10G | [Completed] Supported | Workshop validated |
 
 ### Container Image
 
@@ -418,4 +418,4 @@ Required for frontend:
 ---
 
 **Last Updated**: 2025-11-18
-**Status**: Production Ready ✓
+**Status**: Production Ready [Yes]

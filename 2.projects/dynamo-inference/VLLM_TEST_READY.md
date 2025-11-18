@@ -6,7 +6,7 @@ The vLLM container with Dynamo runtime is built and ready for testing. We've cre
 
 ## What's Ready
 
-### Container Build ✅
+### Container Build [Completed]
 - **Image**: `dynamo-vllm:slim`
 - **Status**: Built successfully locally
 - **Size**: ~17GB (optimized/debloated)
@@ -18,13 +18,13 @@ The vLLM container with Dynamo runtime is built and ready for testing. We've cre
   - NIXL networking stack
   - EFA drivers
 
-### Test Files ✅
+### Test Files [Completed]
 1. **test-vllm-local.py** - Python test script for vLLM inference
 2. **examples/vllm-test-pod.yaml** - Kubernetes pod manifest
 3. **examples/VLLM_TESTING.md** - Complete testing guide with troubleshooting
 
-### Test Script Features ✅
-- Syntax validated ✅
+### Test Script Features [Completed]
+- Syntax validated [Completed]
 - Supports multiple small models (OPT-125M, GPT-2, Phi-2, TinyLlama)
 - Command-line model selection
 - Memory-efficient configuration (50% GPU memory, 512 token context)
@@ -32,7 +32,7 @@ The vLLM container with Dynamo runtime is built and ready for testing. We've cre
 
 ## Current Blocker
 
-**AWS Credentials Expired** ❌
+**AWS Credentials Expired** [No]
 - Cannot push to ECR
 - Cannot create ECR repository
 - Need to refresh AWS credentials to proceed with cluster testing
@@ -108,7 +108,7 @@ Testing vLLM with facebook/opt-125m
 ================================================================================
 
 1. Loading model: facebook/opt-125m
-✅ Model loaded successfully
+[Completed] Model loaded successfully
 
 2. Running inference on 3 prompts...
 
@@ -119,7 +119,7 @@ Prompt: Hello, my name is
 Generated: [AI-generated text]
 --------------------------------------------------------------------------------
 
-✅ vLLM test completed successfully!
+[Completed] vLLM test completed successfully!
 ================================================================================
 ```
 

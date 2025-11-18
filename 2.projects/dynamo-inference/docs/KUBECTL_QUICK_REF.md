@@ -3,7 +3,7 @@
 **COPY AND PASTE THESE COMMANDS DIRECTLY INTO YOUR KUBECTL TERMINAL**
 
 ================================================================================
-## STEP 1: VERIFY EVERYTHING IS READY
+## Step 1: VERIFY EVERYTHING IS READY
 ================================================================================
 
 ```bash
@@ -20,7 +20,7 @@ kubectl get pods -l app=efa-test -o wide
 ```
 
 ================================================================================
-## STEP 2: VERIFY NIXLBENCH IS INSTALLED
+## Step 2: VERIFY NIXLBENCH IS INSTALLED
 ================================================================================
 
 ```bash
@@ -31,7 +31,7 @@ kubectl exec -it efa-test-prefill -- which nixlbench
 ```
 
 ================================================================================
-## STEP 3: TEST ETCD CONNECTIVITY  
+## Step 3: TEST ETCD CONNECTIVITY  
 ================================================================================
 
 ```bash
@@ -42,7 +42,7 @@ kubectl exec -it efa-test-prefill -- curl -s http://etcd-service:2379/version
 ```
 
 ================================================================================
-## STEP 4: RUN NIXLBENCH (CHOOSE ONE METHOD)
+## Step 4: RUN NIXLBENCH (CHOOSE ONE METHOD)
 ================================================================================
 
 ### METHOD A: TWO SEPARATE TERMINALS (RECOMMENDED)
@@ -74,7 +74,7 @@ kubectl exec -it efa-test-decode -- cat /tmp/nixlbench-decode.log
 ```
 
 ================================================================================
-## TROUBLESHOOTING COMMANDS
+## Troubleshooting COMMANDS
 ================================================================================
 
 ### If Error: "target uri is not valid"
@@ -126,7 +126,7 @@ kubectl exec -it efa-test-decode -- bash
 ```
 
 ================================================================================
-## EXPECTED RESULTS
+## Expected Results
 ================================================================================
 
 You should see output like:
@@ -157,37 +157,37 @@ Benchmark complete!
 Target bandwidth for large blocks: **280-285 GB/s** (similar to UCX perftest: 284.98 GB/s)
 
 ================================================================================
-## ALL POSSIBLE SCENARIOS
+## All Possible Scenarios
 ================================================================================
 
-### ✅ SUCCESS
+### [Completed] SUCCESS
 - Both workers connect to ETCD
 - Coordination succeeds  
 - Benchmark runs and completes
 - Bandwidth ~200-285 GB/s for large blocks
 
-### ⚠️ ETCD URI ERROR
+### [Warning] ETCD URI ERROR
 Error: "Failed to acquire lock: the target uri is not valid"
 Fix: Redeploy pods with correct ETCD configuration
 
-### ⚠️ TIMEOUT
+### [Warning] TIMEOUT
 Error: "Timeout waiting for workers"
 Fix: Launch both workers within 30 seconds, decode first
 
-### ⚠️ NO DEVICE
+### [Warning] NO DEVICE
 Error: "UCX device not found"
 Fix: Run `ucx_info -d` to list devices, specify with --device_list
 
-### ⚠️ NO GPU
+### [Warning] NO GPU
 Error: "CUDA error: no device found"
 Fix: Check pod GPU allocation, verify nvidia-smi works
 
-### ⚠️ IMAGE PULL ERROR
+### [Warning] IMAGE PULL ERROR
 Pods stuck in "ImagePullBackOff"
 Fix: Check ECR authentication, verify image exists
 
 ================================================================================
-## CLEANUP
+## Cleanup
 ================================================================================
 
 ```bash

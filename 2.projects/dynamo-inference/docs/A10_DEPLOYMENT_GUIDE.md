@@ -21,9 +21,9 @@ The Dynamo inference platform supports NVIDIA A10/A10G GPUs for both training an
 
 | GPU Model | CUDA Arch | Support Status | Use Case |
 |-----------|-----------|----------------|----------|
-| A10G | SM86 | ✅ Supported | AWS g5 instances, workshops |
-| A100 | SM80 | ✅ Supported | High-performance inference |
-| H100 | SM90 | ✅ Supported | Production deployments |
+| A10G | SM86 | [Completed] Supported | AWS g5 instances, workshops |
+| A100 | SM80 | [Completed] Supported | High-performance inference |
+| H100 | SM90 | [Completed] Supported | Production deployments |
 
 ---
 
@@ -166,11 +166,11 @@ Recommended models for A10 GPUs (24GB memory):
 
 | Model | Parameters | A10 Support | Notes |
 |-------|-----------|-------------|-------|
-| Qwen2.5-0.5B | 0.5B | ✅ Excellent | Workshop demos |
-| Qwen2.5-1.5B | 1.5B | ✅ Good | General purpose |
-| Qwen2.5-7B | 7B | ✅ Possible | Requires optimization |
-| Llama-3-8B | 8B | ✅ Possible | Requires optimization |
-| Llama-3-70B | 70B | ❌ Too large | Use tensor parallelism on multiple GPUs |
+| Qwen2.5-0.5B | 0.5B | [Completed] Excellent | Workshop demos |
+| Qwen2.5-1.5B | 1.5B | [Completed] Good | General purpose |
+| Qwen2.5-7B | 7B | [Completed] Possible | Requires optimization |
+| Llama-3-8B | 8B | [Completed] Possible | Requires optimization |
+| Llama-3-70B | 70B | [No] Too large | Use tensor parallelism on multiple GPUs |
 
 ### Batch Size Tuning
 
@@ -536,4 +536,4 @@ spec:
 ---
 
 **Last Updated**: 2025-11-18
-**Status**: Workshop Ready ✓
+**Status**: Workshop Ready [Yes]

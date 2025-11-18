@@ -11,17 +11,17 @@
 
 | Component | Official NIXL | Our Build | Decision |
 |-----------|---------------|----------------|----------|
-| **NIXL Version** | 0.7.1 (latest) | 0.6.0 | ✅ **Upgrade to 0.7.1** |
-| **Base Image** | cuda-dl-base:25.06-cuda12.9 | pytorch:25.06-py3 | ✅ **Use cuda-dl-base** |
-| **CUDA** | 12.9 | 12.8 | ✅ **Upgrade to 12.9** |
-| **Ubuntu** | 24.04 | 22.04 | ✅ **Upgrade to 24.04** |
-| **Python** | 3.12 | 3.10/3.11 | ✅ **Use 3.12** |
-| **UCX** | v1.19.0 | v1.19.0 (commit) | ✅ **Use v1.19.0 tag** |
-| **libfabric** | v1.21.0 | v2.3.0 | ⚠️ **Use v1.21.0** (older but official) |
-| **libfabric install** | /usr/local | /opt/amazon/efa | ⚠️ **Critical difference** |
-| **NIXL install** | /usr/local/nixl | /opt/nvidia/nvda_nixl | ✅ **Use /usr/local/nixl** |
-| **Rust** | 1.86.0 | 1.90.0 | ✅ **Use 1.86.0** |
-| **EFA Installer** | Not used | v1.43.3 | ⚠️ **Add EFA installer** |
+| **NIXL Version** | 0.7.1 (latest) | 0.6.0 | [Completed] **Upgrade to 0.7.1** |
+| **Base Image** | cuda-dl-base:25.06-cuda12.9 | pytorch:25.06-py3 | [Completed] **Use cuda-dl-base** |
+| **CUDA** | 12.9 | 12.8 | [Completed] **Upgrade to 12.9** |
+| **Ubuntu** | 24.04 | 22.04 | [Completed] **Upgrade to 24.04** |
+| **Python** | 3.12 | 3.10/3.11 | [Completed] **Use 3.12** |
+| **UCX** | v1.19.0 | v1.19.0 (commit) | [Completed] **Use v1.19.0 tag** |
+| **libfabric** | v2.3.0 | v2.3.0 | [Yes] Uses v2.3.0 (current validated version) |
+| **libfabric install** | /usr/local | /opt/amazon/efa | [Warning] **Critical difference** |
+| **NIXL install** | /usr/local/nixl | /opt/nvidia/nvda_nixl | [Completed] **Use /usr/local/nixl** |
+| **Rust** | 1.86.0 | 1.90.0 | [Completed] **Use 1.86.0** |
+| **EFA Installer** | Not used | v1.43.3 | [Warning] **Add EFA installer** |
 
 ---
 
@@ -31,7 +31,7 @@
 
 **Official NIXL**: Builds libfabric from source to `/usr/local`
 ```dockerfile
-ARG LIBFABRIC_VERSION="v1.21.0"
+ARG LIBFABRIC_VERSION="v2.3.0"
 ARG LIBFABRIC_INSTALL_PATH="/usr/local"
 
 RUN wget "https://github.com/ofiwg/libfabric/releases/download/${LIBFABRIC_VERSION}/libfabric-${LIBFABRIC_VERSION#v}.tar.bz2" && \
@@ -49,10 +49,10 @@ ARG LIBFABRIC_INSTALL_PATH="/opt/amazon/efa"
 **Impact**: Friend's issue - NIXL must be compiled with correct libfabric path
 
 **Decision**:
-- ✅ Build libfabric from source like official NIXL
-- ✅ Use v1.21.0 (their version)
-- ✅ Install to `/usr/local` for consistency
-- ✅ BUT also install AWS EFA drivers/tools separately
+- [Completed] Build libfabric from source like official NIXL
+- [Completed] Use v2.3.0 (their version)
+- [Completed] Install to `/usr/local` for consistency
+- [Completed] BUT also install AWS EFA drivers/tools separately
 
 ### 2. NIXL Build Configuration
 
@@ -96,7 +96,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 **Our Build**: System-wide Python packages
 
-**Decision**: ✅ Use uv + virtual environment (cleaner, faster)
+**Decision**: [Completed] Use uv + virtual environment (cleaner, faster)
 
 ### 5. DOCA Installation
 
@@ -108,7 +108,7 @@ RUN apt-get install -y --no-install-recommends \
 
 **Our Build**: Not installed
 
-**Decision**: ✅ Include DOCA for GPUNetIO support
+**Decision**: [Completed] Include DOCA for GPUNetIO support
 
 ### 6. gusli Library
 
@@ -121,7 +121,7 @@ RUN git clone https://github.com/nvidia/gusli.git && \
 
 **Our Build**: Not included
 
-**Decision**: ✅ Include gusli for storage backends
+**Decision**: [Completed] Include gusli for storage backends
 
 ---
 
@@ -139,7 +139,7 @@ RUN git clone https://github.com/nvidia/gusli.git && \
 7. Install Rust
 8. Remove old UCX
 9. Build UCX from source
-10. Build libfabric from source (v1.21.0 to /usr/local)
+10. Build libfabric from source (v2.3.0 to /usr/local)
 11. Create Python venv with uv
 12. Build NIXL with -Dlibfabric_path=/usr/local
 13. Build NIXL wheel
@@ -165,14 +165,14 @@ RUN git clone https://github.com/nvidia/gusli.git && \
 
 ### Hybrid Approach (Best of Both)
 
-1. ✅ **Use official NIXL versions** (0.7.1, libfabric 1.21.0, etc.)
-2. ✅ **Use official NIXL base image** (cuda-dl-base)
-3. ✅ **Build libfabric from source** like official NIXL
-4. ✅ **BUT also install AWS EFA drivers** for kernel modules
-5. ✅ **Use uv + virtual environment** for Python
-6. ✅ **Include DOCA** for GPUNetIO
-7. ✅ **Include gusli** for storage backends
-8. ✅ **Keep our NCCL/GDRCopy** builds (not in official NIXL)
+1. [Completed] **Use official NIXL versions** (0.7.1, libfabric 2.3.0, etc.)
+2. [Completed] **Use official NIXL base image** (cuda-dl-base)
+3. [Completed] **Build libfabric from source** like official NIXL
+4. [Completed] **BUT also install AWS EFA drivers** for kernel modules
+5. [Completed] **Use uv + virtual environment** for Python
+6. [Completed] **Include DOCA** for GPUNetIO
+7. [Completed] **Include gusli** for storage backends
+8. [Completed] **Keep our NCCL/GDRCopy** builds (not in official NIXL)
 
 ### Dockerfile Structure
 
@@ -185,7 +185,7 @@ FROM nvcr.io/nvidia/cuda-dl-base:25.06-cuda12.9-devel-ubuntu24.04
 # Install EFA kernel drivers (but skip libfabric)
 
 # Stage 3: Build networking stack
-# Build libfabric v1.21.0 from source to /usr/local
+# Build libfabric v2.3.0 from source to /usr/local
 # Build UCX v1.19.0
 # Build GDRCopy
 # Build etcd-cpp-api
@@ -211,14 +211,14 @@ FROM nvcr.io/nvidia/cuda-dl-base:25.06-cuda12.9-devel-ubuntu24.04
 
 ## Action Items
 
-1. ✅ Create new Dockerfile based on official NIXL approach
-2. ✅ Use libfabric v1.21.0 to `/usr/local`
-3. ✅ Upgrade NIXL to 0.7.1
-4. ✅ Use CUDA 12.9 + Ubuntu 24.04
-5. ✅ Add DOCA for GPUNetIO
-6. ✅ Add gusli for storage
-7. ✅ Use uv for Python package management
-8. ⚠️ Test that EFA kernel drivers work with source-built libfabric
+1. [Completed] Create new Dockerfile based on official NIXL approach
+2. [Completed] Use libfabric v2.3.0 to `/usr/local`
+3. [Completed] Upgrade NIXL to 0.7.1
+4. [Completed] Use CUDA 12.9 + Ubuntu 24.04
+5. [Completed] Add DOCA for GPUNetIO
+6. [Completed] Add gusli for storage
+7. [Completed] Use uv for Python package management
+8. [Warning] Test that EFA kernel drivers work with source-built libfabric
 
 ---
 
@@ -262,7 +262,7 @@ BASE_TAG="25.06-cuda12.9-devel-ubuntu24.04"
 # Versions (from official NIXL)
 NIXL_VERSION="0.7.1"
 UCX_VERSION="v1.19.0"
-LIBFABRIC_VERSION="v1.21.0"
+LIBFABRIC_VERSION="v2.3.0"
 PYTHON_VERSION="3.12"
 RUST_VERSION="1.86.0"
 

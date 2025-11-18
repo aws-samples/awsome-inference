@@ -93,7 +93,7 @@ Testing vLLM with facebook/opt-125m
 ================================================================================
 
 1. Loading model: facebook/opt-125m
-✅ Model loaded successfully
+[Completed] Model loaded successfully
 
 2. Running inference on 3 prompts...
 
@@ -112,7 +112,7 @@ Prompt: In a galaxy far far away,
 Generated: there lived a brave...
 --------------------------------------------------------------------------------
 
-✅ vLLM test completed successfully!
+[Completed] vLLM test completed successfully!
 ================================================================================
 ```
 
@@ -153,13 +153,13 @@ kubectl exec vllm-test -- nvidia-smi
 ## Current Status
 
 **Container Build Status:**
-- ✅ dynamo-vllm:slim built successfully locally
-- ❌ ECR push pending (AWS credentials expired)
-- ✅ Test script validated: test-vllm-local.py
+- [Completed] dynamo-vllm:slim built successfully locally
+- [No] ECR push pending (AWS credentials expired)
+- [Completed] Test script validated: test-vllm-local.py
 
 **Test Script:**
 - Location: `/home/ubuntu/dynamo-workshop/test-vllm-local.py`
-- Syntax: ✅ Validated
+- Syntax: [Completed] Validated
 - Default model: facebook/opt-125m (~250MB)
 
 **Next Steps:**

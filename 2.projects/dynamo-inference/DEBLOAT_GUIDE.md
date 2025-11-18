@@ -24,7 +24,7 @@ BUILD_TARGET=slim TAG=dynamo-trtllm:slim ./build_trtllm.sh
 
 ## What Gets Removed in Slim Builds?
 
-### ❌ Removed (Safe)
+### [No] Removed (Safe)
 - **Build artifacts**: `*.o`, `*.a`, CMake files
 - **Python cache**: `__pycache__`, `*.pyc`, `*.pyo`
 - **Static libraries**: All `.a` files (keeping `.so` shared libraries)
@@ -34,7 +34,7 @@ BUILD_TARGET=slim TAG=dynamo-trtllm:slim ./build_trtllm.sh
 - **APT cache**: All package cache and lists
 - **Source directories**: Git repos used for building
 
-### ✅ Kept (Essential)
+### [Completed] Kept (Essential)
 - **All runtime libraries**: UCX, EFA, libfabric, NIXL, NCCL, GDRCopy
 - **CUDA runtime and tools**
 - **Python packages**: vLLM, PyTorch, TensorRT-LLM
