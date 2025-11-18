@@ -61,7 +61,7 @@ TRT-LLM on Dynamo Cloud uses a disaggregated architecture that separates prefill
 Use the full image for TRT-LLM deployments:
 
 ```
-058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
+<AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
 ```
 
 **Note**: The slim image has known issues with NIXL segfaults. Always use the full image (29GB).
@@ -178,7 +178,7 @@ Frontend:
       value: "kv"  # CRITICAL: Enables disaggregated routing
   extraPodSpec:
     mainContainer:
-      image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
+      image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
   replicas: 1
 ```
 
@@ -198,7 +198,7 @@ TrtllmPrefillWorker:
       gpu: "1"
   extraPodSpec:
     mainContainer:
-      image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
+      image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
       command: ["/bin/bash", "-c"]
       args:
         - |
@@ -320,7 +320,7 @@ curl -X POST http://localhost:8000/v1/completions \
 
 **Solution**: Use full image instead of slim:
 ```yaml
-image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
+image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
 ```
 
 ### Issue #4: Argument Incompatibility
