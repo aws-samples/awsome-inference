@@ -116,7 +116,7 @@ spec:
         value: kv
       extraPodSpec:
         mainContainer:
-          image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
+          image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
           imagePullPolicy: IfNotPresent
           name: ""
           resources: {}
@@ -154,7 +154,7 @@ spec:
           command:
           - /bin/bash
           - -c
-          image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
+          image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
           imagePullPolicy: IfNotPresent
           name: ""
           resources: {}
@@ -209,7 +209,7 @@ spec:
           command:
           - /bin/bash
           - -c
-          image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
+          image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
           imagePullPolicy: IfNotPresent
           name: ""
           resources: {}

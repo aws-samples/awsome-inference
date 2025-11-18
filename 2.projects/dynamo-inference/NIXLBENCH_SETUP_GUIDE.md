@@ -447,16 +447,16 @@ kubectl exec -it $POD1 -- nvidia-smi
 - Verify nodes have GPU resources: `kubectl describe node <node-name>`
 
 ================================================================================
-## KEY DIFFERENCES FROM FRIEND'S CONFIG
+## VALIDATED CONFIGURATION PARAMETERS
 ================================================================================
 
-A reference's working setup uses:
-1. [Completed] ETCD endpoint: `http://etcd.default:2379` (not `etcd-service`)
-2. [Completed] Benchmark group: `bg100000`
-3. [Completed] 8 GPUs per pod: `--num_initiator_dev=8 --num_target_dev=8`
-4. [Completed] 60GB buffer: `--total_buffer_size=64424509440`
-5. [Completed] Up to 2GB blocks: `--max_block_size=2147483648`
-6. [Completed] Multi-GPU mode: `--mode=MG`
+The validated setup uses the following parameters:
+1. ETCD endpoint: `http://etcd.default:2379` (not `etcd-service`)
+2. Benchmark group: `bg100000`
+3. 8 GPUs per pod: `--num_initiator_dev=8 --num_target_dev=8`
+4. 60GB buffer: `--total_buffer_size=64424509440`
+5. Up to 2GB blocks: `--max_block_size=2147483648`
+6. Multi-GPU mode: `--mode=MG`
 
 Make sure your configuration matches these exactly.
 

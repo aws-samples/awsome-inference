@@ -36,11 +36,15 @@ echo -e "${YELLOW}Note: Total build time ~90-120 minutes on H100 with 16 cores${
 echo ""
 
 # Confirmation
-read -p "Proceed with slim builds? (y/N) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Build cancelled"
-    exit 0
+if [[ "${NON_INTERACTIVE}" != "1" ]]; then
+    read -p "Proceed with slim builds? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Build cancelled"
+        exit 0
+    fi
+else
+    echo "Non-interactive mode: Proceeding with slim builds..."
 fi
 
 START_TIME=$(date +%s)

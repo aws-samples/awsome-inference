@@ -24,7 +24,7 @@ BUILD_TARGET=slim TAG=dynamo-trtllm:slim ./build_trtllm.sh
 
 ## What Gets Removed in Slim Builds?
 
-### [No] Removed (Safe)
+### Removed (Safe)
 - **Build artifacts**: `*.o`, `*.a`, CMake files
 - **Python cache**: `__pycache__`, `*.pyc`, `*.pyo`
 - **Static libraries**: All `.a` files (keeping `.so` shared libraries)
@@ -34,7 +34,7 @@ BUILD_TARGET=slim TAG=dynamo-trtllm:slim ./build_trtllm.sh
 - **APT cache**: All package cache and lists
 - **Source directories**: Git repos used for building
 
-### [Completed] Kept (Essential)
+### Kept (Essential)
 - **All runtime libraries**: UCX, EFA, libfabric, NIXL, NCCL, GDRCopy
 - **CUDA runtime and tools**
 - **Python packages**: vLLM, PyTorch, TensorRT-LLM
@@ -98,11 +98,11 @@ dynamo-trtllm       slim      16.9GB  (-32%)
 - Includes all build dependencies (for potential extensions)
 - ~25GB
 
-### Slim (Production Optimized)
+### Slim (Debloated)
 ```bash
 BUILD_TARGET=slim ./build_vllm.sh
 ```
-- Debloated for production
+- Optimized deployment image
 - Removed build tools and caches
 - Keeps essential editors and debug tools
 - ~17-18GB (30-40% smaller)
