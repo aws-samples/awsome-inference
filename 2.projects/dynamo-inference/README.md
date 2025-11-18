@@ -553,7 +553,7 @@ MIT-0 - See the repository [LICENSE](../../LICENSE) file for details.
 ## Support
 
 For issues, questions, or contributions:
-- **Issues**: [GitHub Issues](https://github.com/dmvevents/dynamo-workshop/issues)
+- **Issues**: [GitHub Issues](https://github.com/aws-samples/awsome-inference/issues)
 - **Documentation**: This README and [DEBLOAT_GUIDE.md](DEBLOAT_GUIDE.md)
 - **AWS Support**: Contact AWS for EFA and GPU instance support
 
