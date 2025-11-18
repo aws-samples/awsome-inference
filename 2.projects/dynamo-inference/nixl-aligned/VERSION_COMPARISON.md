@@ -67,7 +67,7 @@ RUN meson setup -Dlibfabric_path=$LIBFABRIC_INSTALL_PATH build/ --prefix=$NIXL_P
 
 **Critical flag**: `-Dlibfabric_path=$LIBFABRIC_INSTALL_PATH`
 
-This is exactly the fix your friend mentioned! They use it explicitly.
+This is exactly the fix a reference implementation mentioned! They use it explicitly.
 
 ### 3. Base Image Strategy
 
@@ -277,4 +277,4 @@ GDRCOPY_VERSION="2.4.1"
 NCCL_VERSION="2.23.4-1"  # Optional
 ```
 
-This alignment should fix the segfault issue your friend identified while keeping EFA support working!
+This alignment should fix the segfault issue a reference implementation identified while keeping EFA support working!
