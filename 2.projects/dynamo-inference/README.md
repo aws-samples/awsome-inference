@@ -542,19 +542,13 @@ dynamo-workshop/
     └── nixlbench-test.sh             # Benchmarking
 ```
 
-## Authors
+## Credits
 
-**Built for Amazon Web Services by:**
-- Anton Alexander
-- Alex Iankoulski
+See [CREDITS.md](CREDITS.md) for contributor information and acknowledgments of open-source components.
 
 ## License
 
-Apache License 2.0 - See [LICENSE](LICENSE) for details.
-
-## Credits
-
-See [ATTRIBUTION.md](ATTRIBUTION.md) for acknowledgments of open-source components.
+MIT-0 - See the repository [LICENSE](../../LICENSE) file for details.
 
 ## Support
 
