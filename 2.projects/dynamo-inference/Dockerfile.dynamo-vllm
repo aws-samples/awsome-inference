@@ -1,8 +1,7 @@
 # syntax=docker/dockerfile:1.10.0
 
-# Built for Amazon Web Services by Anton Alexander and Alex Iankoulski
 # Based on NVIDIA components with Apache-2.0 license
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT-0
 
 ARG NIXL_BASE_IMAGE="nixl-h100-efa:optimized"
 ARG DYNAMO_BASE_IMAGE="nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.4.0"
