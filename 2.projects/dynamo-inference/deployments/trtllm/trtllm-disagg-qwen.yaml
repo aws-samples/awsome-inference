@@ -32,7 +32,7 @@ spec:
       replicas: 1
       extraPodSpec:
         mainContainer:
-          image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
+          image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
           imagePullPolicy: IfNotPresent
       envs:
         - name: DYN_ROUTER_MODE
@@ -53,7 +53,7 @@ spec:
           cpu: "4"
       extraPodSpec:
         mainContainer:
-          image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
+          image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
           imagePullPolicy: IfNotPresent
           workingDir: /workspace/examples/backends/trtllm
           command:
@@ -108,7 +108,7 @@ spec:
           cpu: "4"
       extraPodSpec:
         mainContainer:
-          image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
+          image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:full
           imagePullPolicy: IfNotPresent
           workingDir: /workspace/examples/backends/trtllm
           command:
