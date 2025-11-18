@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# TensorRT-LLM Decode Worker Configuration for Qwen/Qwen2.5-0.5B-Instruct
+# This config enables KV cache transfer in disaggregated serving mode
+
+# Backend configuration
+backend: pytorch
+
+# Parallelism settings (single GPU per worker)
+tensor_parallel_size: 1
+pipeline_parallel_size: 1
+
+# Batch and sequence length settings
+max_batch_size: 256
+max_num_tokens: 256
+max_seq_len: 4096
+
+# Trust remote code for Qwen model
+trust_remote_code: true
+
+# KV cache configuration
+kv_cache_config:
+  free_gpu_memory_fraction: 0.8
+
+# Enable chunked prefill
+enable_chunked_prefill: true
+
+# Overlap scheduler can be enabled in decode workers
+disable_overlap_scheduler: false
+
+# CUDA graph configuration for better performance
+cuda_graph_config:
+  batch_sizes:
+    - 1
+    - 2
+    - 4
+    - 8
+    - 16
+    - 32
+    - 64
+    - 128
+    - 256
+
+# CRITICAL: KV cache transceiver config for disaggregated serving
+# This enables KV cache transfer between prefill and decode workers
+cache_transceiver_config:
+  backend: DEFAULT
