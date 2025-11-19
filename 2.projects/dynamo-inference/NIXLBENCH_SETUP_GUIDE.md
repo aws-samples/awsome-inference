@@ -326,10 +326,10 @@ Init nixl worker, dev all rank 0, type initiator, hostname nixl-benchmark-xxxxxx
 ```
 
 **SUCCESS INDICATORS:**
-- [Completed] "Registered as rank 0 item 2 of 2" and "Registered as rank 1 item 2 of 2"
-- [Completed] One pod as "initiator", other as "target"
-- [Completed] No barrier synchronization failures
-- [Completed] Benchmark runs and shows bandwidth/latency results
+- ✅ "Registered as rank 0 item 2 of 2" and "Registered as rank 1 item 2 of 2"
+- ✅ One pod as "initiator", other as "target"
+- ✅ No barrier synchronization failures
+- ✅ Benchmark runs and shows bandwidth/latency results
 
 ================================================================================
 ## STEP 5: RUN NIXLBENCH - LIBFABRIC BACKEND
@@ -447,8 +447,6 @@ kubectl exec -it $POD1 -- nvidia-smi
 - Verify nodes have GPU resources: `kubectl describe node <node-name>`
 
 ================================================================================
-## VALIDATED CONFIGURATION PARAMETERS
-================================================================================
 
 The validated setup uses the following parameters:
 1. ETCD endpoint: `http://etcd.default:2379` (not `etcd-service`)
@@ -457,6 +455,15 @@ The validated setup uses the following parameters:
 4. 60GB buffer: `--total_buffer_size=64424509440`
 5. Up to 2GB blocks: `--max_block_size=2147483648`
 6. Multi-GPU mode: `--mode=MG`
+## KEY DIFFERENCES FROM FRIEND'S CONFIG
+
+Your friend's working setup uses:
+1. ✅ ETCD endpoint: `http://etcd.default:2379` (not `etcd-service`)
+2. ✅ Benchmark group: `bg100000`
+3. ✅ 8 GPUs per pod: `--num_initiator_dev=8 --num_target_dev=8`
+4. ✅ 60GB buffer: `--total_buffer_size=64424509440`
+5. ✅ Up to 2GB blocks: `--max_block_size=2147483648`
+6. ✅ Multi-GPU mode: `--mode=MG`
 
 Make sure your configuration matches these exactly.
 
@@ -483,21 +490,21 @@ if ! kubectl cluster-info &>/dev/null; then
   echo "  aws eks update-kubeconfig --region us-east-2 --name sagemaker-hyperpod-eks-cluster"
   exit 1
 fi
-echo "[Completed] Cluster access confirmed"
+echo "✅ Cluster access confirmed"
 echo
 
 # Step 2: Deploy ETCD
 echo "Step 2: Deploying ETCD..."
 kubectl apply -f examples/etcd-deployment.yaml
 kubectl wait --for=condition=ready pod -l app=etcd --timeout=60s
-echo "[Completed] ETCD deployed"
+echo "✅ ETCD deployed"
 echo
 
 # Step 3: Deploy nixlbench pods
 echo "Step 3: Deploying nixlbench pods..."
 kubectl apply -f examples/nixl-benchmark-deployment.yaml
 kubectl wait --for=condition=ready pod -l app=nixl-benchmark --timeout=120s
-echo "[Completed] nixlbench pods deployed"
+echo "✅ nixlbench pods deployed"
 echo
 
 # Step 4: Verify setup
@@ -517,7 +524,7 @@ echo
 # Step 6: Test ETCD connectivity
 echo "Step 6: Testing ETCD connectivity..."
 kubectl exec -it $POD1 -- curl -s http://etcd.default:2379/version
-echo "[Completed] ETCD connectivity confirmed"
+echo "✅ ETCD connectivity confirmed"
 echo
 
 echo "===== Setup Complete! ====="

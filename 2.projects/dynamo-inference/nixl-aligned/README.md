@@ -8,11 +8,11 @@
 ## Overview
 
 This is a from-scratch Docker build that combines:
-- [Completed] Official NIXL 0.7.1 versions and approach
-- [Completed] AWS EFA driver support for HyperPod/EKS
-- [Completed] Fixes the libfabric segfault issue identified in Experiment 5
+- ✅ Official NIXL 0.7.1 versions and approach
+- ✅ AWS EFA driver support for HyperPod/EKS
+- ✅ Fixes the libfabric segfault issue identified in Experiment 5
 
-**Key fix**: NIXL compiled with `-Dlibfabric_path=/usr/local` pointing to source-built libfabric v2.3.0
+**Key fix**: NIXL compiled with `-Dlibfabric_path=/usr/local` pointing to source-built libfabric v1.21.0
 
 ---
 
@@ -36,9 +36,9 @@ This is a from-scratch Docker build that combines:
 - **After**: Virtual environment at `/opt/venv` managed with `uv`
 
 ### New Components
-- [Completed] DOCA (for GPUNetIO backend)
-- [Completed] gusli (NVIDIA storage library)
-- [Completed] Improved RDMA/verbs handling
+- ✅ DOCA (for GPUNetIO backend)
+- ✅ gusli (NVIDIA storage library)
+- ✅ Improved RDMA/verbs handling
 
 ---
 
@@ -101,7 +101,7 @@ Expected output:
 === NIXL Validation ===
 
 1. Python import:
-   [Completed] NIXL 0.7.1
+   ✅ NIXL 0.7.1
 
 2. libfabric linkage:
    libfabric.so.1 => /usr/local/lib/libfabric.so.1
@@ -218,11 +218,11 @@ spec:
 
 | Aspect | pip install nixl | This Build |
 |--------|------------------|------------|
-| libfabric | Bundled 2.3 | Source-built 2.3.0 |
+| libfabric | Bundled 2.3 | Source-built 1.21.0 |
 | libfabric path | In package | /usr/local |
-| EFA support | [No] Segfaults | [Completed] Works |
+| EFA support | ❌ Segfaults | ✅ Works |
 | NIXL version | 0.6.x | 0.7.1 |
-| vLLM disaggregation | [No] Segfaults | [Completed] Works |
+| vLLM disaggregation | ❌ Segfaults | ✅ Works |
 
 ---
 
@@ -304,12 +304,12 @@ cat /home/ubuntu/dynamo-experiment/VERSION_COMPARISON.md
 
 ## Next Steps
 
-1. [Completed] Build image: `./build-nixl-aligned.sh`
-2. [Completed] Validate: `docker run --rm nixl-aligned:latest validate-nixl`
-3. [Completed] Push to ECR
-4. [Completed] Test in Kubernetes
-5. [Completed] Test vLLM disaggregation (should not segfault)
-6. [Completed] Run NIXL benchmarks
+1. ✅ Build image: `./build-nixl-aligned.sh`
+2. ✅ Validate: `docker run --rm nixl-aligned:latest validate-nixl`
+3. ✅ Push to ECR
+4. ✅ Test in Kubernetes
+5. ✅ Test vLLM disaggregation (should not segfault)
+6. ✅ Run NIXL benchmarks
 
 ---
 
@@ -324,8 +324,8 @@ cat /home/ubuntu/dynamo-experiment/VERSION_COMPARISON.md
 
 ## Status
 
-**Build**: [Pending] Pending
-**Validation**: [Pending] Pending
-**Testing**: [Pending] Pending
+**Build**: ⏳ Pending
+**Validation**: ⏳ Pending
+**Testing**: ⏳ Pending
 
 Once built and validated, this will replace our base image with proper NIXL 0.7.1 + EFA support.

@@ -7,10 +7,10 @@
 ## What Is This?
 
 This is a **clean-slate Docker build** that:
-1. [Completed] Aligns with official NVIDIA ai-dynamo/nixl 0.7.1
-2. [Completed] Adds AWS EFA support for HyperPod/EKS
-3. [Completed] Fixes the libfabric segfault issue (Experiment 5)
-4. [Completed] Uses best practices from both approaches
+1. ✅ Aligns with official NVIDIA ai-dynamo/nixl 0.7.1
+2. ✅ Adds AWS EFA support for HyperPod/EKS
+3. ✅ Fixes the libfabric segfault issue (Experiment 5)
+4. ✅ Uses best practices from both approaches
 
 **Key insight**: NIXL must be compiled with `-Dlibfabric_path` pointing to the exact libfabric location, or vLLM disaggregation will segfault.
 
@@ -65,10 +65,10 @@ docker run --rm nixl-aligned:latest validate-nixl
 ```
 
 Should show:
-- [Completed] NIXL 0.7.1
-- [Completed] libfabric linked to /usr/local/lib
-- [Completed] UCX info
-- [Warning] EFA devices (warning OK without hardware)
+- ✅ NIXL 0.7.1
+- ✅ libfabric linked to /usr/local/lib
+- ✅ UCX info
+- ⚠️ EFA devices (warning OK without hardware)
 
 ### 2. Test Python
 
@@ -152,10 +152,10 @@ RUN meson setup -Dlibfabric_path=/usr/local build/
 ## Testing Plan
 
 ### Phase 1: Container Validation
-1. [Completed] Build succeeds
-2. [Completed] NIXL imports
-3. [Completed] libfabric path correct
-4. [Completed] Can run nixlbench --help
+1. ✅ Build succeeds
+2. ✅ NIXL imports
+3. ✅ libfabric path correct
+4. ✅ Can run nixlbench --help
 
 ### Phase 2: Same-Node Test
 Deploy pod and test NIXL on single node:
@@ -239,7 +239,7 @@ python -c "import nixl"
 
 1. **Never use `pip install nixl` on EFA systems** - it bundles wrong libfabric
 2. **Always build NIXL from source** with explicit `-Dlibfabric_path`
-3. **Use libfabric v2.3.0** (official NIXL version) not v2.3.0
+3. **Use libfabric v2.3.0** (official NIXL version)
 4. **Install to /usr/local** for consistency with official NIXL
 5. **AWS EFA drivers separate** from libfabric build
 

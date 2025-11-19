@@ -96,7 +96,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 **Our Build**: System-wide Python packages
 
-**Decision**: [Completed] Use uv + virtual environment (cleaner, faster)
+**Decision**: ✅ Use uv + virtual environment (cleaner, faster)
 
 ### 5. DOCA Installation
 
@@ -108,7 +108,7 @@ RUN apt-get install -y --no-install-recommends \
 
 **Our Build**: Not installed
 
-**Decision**: [Completed] Include DOCA for GPUNetIO support
+**Decision**: ✅ Include DOCA for GPUNetIO support
 
 ### 6. gusli Library
 
@@ -121,7 +121,7 @@ RUN git clone https://github.com/nvidia/gusli.git && \
 
 **Our Build**: Not included
 
-**Decision**: [Completed] Include gusli for storage backends
+**Decision**: ✅ Include gusli for storage backends
 
 ---
 
