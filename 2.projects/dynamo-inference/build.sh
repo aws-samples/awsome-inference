@@ -38,11 +38,15 @@ echo "  Parallel jobs:   ${NPROC}"
 echo ""
 
 # Confirmation
-read -p "Proceed with build? (y/N) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Build cancelled"
-    exit 0
+if [[ "${NON_INTERACTIVE}" != "1" ]]; then
+    read -p "Proceed with build? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Build cancelled"
+        exit 0
+    fi
+else
+    echo "Non-interactive mode: Proceeding with build..."
 fi
 
 # Build with BuildKit optimizations

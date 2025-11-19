@@ -1,9 +1,9 @@
 # nixlbench Setup Guide - Based on Working Configuration
 
 **Date:** November 10, 2025
-**Status:** Setup guide based on successful friend configuration
+**Status:** Setup guide based on validated configuration
 
-This guide will help you replicate the working nixlbench setup that your friend achieved.
+This guide will help you replicate a validated working nixlbench setup.
 
 ================================================================================
 ## PREREQUISITES
@@ -42,7 +42,7 @@ If not yet pushed, wait for the background push operations to complete (check lo
 
 ### Create ETCD Deployment
 
-Your friend's configuration uses `etcd.default:2379` which means ETCD is running in the `default` namespace with service name `etcd`.
+A reference's configuration uses `etcd.default:2379` which means ETCD is running in the `default` namespace with service name `etcd`.
 
 Check if you have an ETCD deployment YAML. If not, create one:
 
@@ -139,7 +139,7 @@ etcd   ClusterIP   10.100.xxx.xxx   <none>        2379/TCP,2380/TCP   30s
 
 ### Create nixlbench Deployment
 
-Based on your friend's configuration, they're using a Kubernetes Deployment (not individual Pods). This provides better management and can help with the rank assignment.
+Based on a reference's configuration, they're using a Kubernetes Deployment (not individual Pods). This provides better management and can help with the rank assignment.
 
 ```yaml
 # File: /home/ubuntu/dynamo-workshop/examples/nixl-benchmark-deployment.yaml
@@ -447,8 +447,15 @@ kubectl exec -it $POD1 -- nvidia-smi
 - Verify nodes have GPU resources: `kubectl describe node <node-name>`
 
 ================================================================================
+
+The validated setup uses the following parameters:
+1. ETCD endpoint: `http://etcd.default:2379` (not `etcd-service`)
+2. Benchmark group: `bg100000`
+3. 8 GPUs per pod: `--num_initiator_dev=8 --num_target_dev=8`
+4. 60GB buffer: `--total_buffer_size=64424509440`
+5. Up to 2GB blocks: `--max_block_size=2147483648`
+6. Multi-GPU mode: `--mode=MG`
 ## KEY DIFFERENCES FROM FRIEND'S CONFIG
-================================================================================
 
 Your friend's working setup uses:
 1. ✅ ETCD endpoint: `http://etcd.default:2379` (not `etcd-service`)

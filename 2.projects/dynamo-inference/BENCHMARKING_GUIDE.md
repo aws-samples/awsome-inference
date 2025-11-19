@@ -284,7 +284,7 @@ export MAX_NUM_SEQS="32"
 ## References
 
 - [vLLM GitHub](https://github.com/vllm-project/vllm)
-- [NVIDIA Triton GenAI-Perf](https://github.com/triton-inference-server/client/tree/main/src/c%2B%2B/perf_analyzer/genai-perf)
+- [NVIDIA Triton GenAI-Perf](https://github.com/triton-inference-server/perf_analyzer/blob/main/genai-perf/README.md)
 - [Kubernetes GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/)
 - [NCCL Tests](https://github.com/NVIDIA/nccl-tests)
 

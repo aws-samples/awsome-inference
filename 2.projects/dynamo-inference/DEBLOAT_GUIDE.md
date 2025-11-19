@@ -98,11 +98,11 @@ dynamo-trtllm       slim      16.9GB  (-32%)
 - Includes all build dependencies (for potential extensions)
 - ~25GB
 
-### Slim (Production Optimized)
+### Slim (Debloated)
 ```bash
 BUILD_TARGET=slim ./build_vllm.sh
 ```
-- Debloated for production
+- Optimized deployment image
 - Removed build tools and caches
 - Keeps essential editors and debug tools
 - ~17-18GB (30-40% smaller)

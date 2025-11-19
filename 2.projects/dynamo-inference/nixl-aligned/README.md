@@ -28,7 +28,7 @@ This is a from-scratch Docker build that combines:
 
 ### libfabric (CRITICAL CHANGE)
 - **Before**: v2.3.0 installed to `/opt/amazon/efa` (via EFA installer)
-- **After**: v1.21.0 built from source to `/usr/local`
+- **After**: v2.3.0 built from source to `/usr/local`
 - **Why**: NIXL's libfabric plugin must match the path, fixing segfault
 
 ### Python Environment
@@ -47,7 +47,7 @@ This is a from-scratch Docker build that combines:
 | Component | Version | Install Path |
 |-----------|---------|--------------|
 | NIXL | 0.7.1 | /usr/local/nixl |
-| libfabric | v1.21.0 | /usr/local |
+| libfabric | v2.3.0 | /usr/local |
 | UCX | v1.19.0 | /usr |
 | GDRCopy | v2.4.1 | /usr/local |
 | Python | 3.12 | /opt/venv |
@@ -248,7 +248,7 @@ dynamo-experiment/
 **Solution**:
 ```bash
 # Check version
-curl -I https://github.com/ofiwg/libfabric/releases/download/v1.21.0/libfabric-1.21.0.tar.bz2
+curl -I https://github.com/ofiwg/libfabric/releases/download/v2.3.0/libfabric-2.3.0.tar.bz2
 ```
 
 ### Build fails at DOCA

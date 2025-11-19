@@ -542,24 +542,18 @@ dynamo-workshop/
     └── nixlbench-test.sh             # Benchmarking
 ```
 
-## Authors
+## Credits
 
-**Built for Amazon Web Services by:**
-- Anton Alexander
-- Alex Iankoulski
+See [CREDITS.md](CREDITS.md) for contributor information and acknowledgments of open-source components.
 
 ## License
 
-Apache License 2.0 - See [LICENSE](LICENSE) for details.
-
-## Credits
-
-See [ATTRIBUTION.md](ATTRIBUTION.md) for acknowledgments of open-source components.
+MIT-0 - See the repository [LICENSE](../../LICENSE) file for details.
 
 ## Support
 
 For issues, questions, or contributions:
-- **Issues**: [GitHub Issues](https://github.com/dmvevents/dynamo-workshop/issues)
+- **Issues**: [GitHub Issues](https://github.com/aws-samples/awsome-inference/issues)
 - **Documentation**: This README and [DEBLOAT_GUIDE.md](DEBLOAT_GUIDE.md)
 - **AWS Support**: Contact AWS for EFA and GPU instance support
 

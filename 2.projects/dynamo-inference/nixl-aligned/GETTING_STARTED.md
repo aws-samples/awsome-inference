@@ -115,7 +115,7 @@ docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/nixl-aligned:0.7.1
 
 ### Versions
 - NIXL: 0.6.0 → **0.7.1**
-- libfabric: v2.3.0 @ /opt/amazon/efa → **v1.21.0 @ /usr/local**
+- libfabric: v2.3.0 @ /opt/amazon/efa → **v2.3.0 @ /usr/local**
 - CUDA: 12.8 → **12.9**
 - Ubuntu: 22.04 → **24.04**
 - Base: pytorch → **cuda-dl-base**
@@ -239,7 +239,7 @@ python -c "import nixl"
 
 1. **Never use `pip install nixl` on EFA systems** - it bundles wrong libfabric
 2. **Always build NIXL from source** with explicit `-Dlibfabric_path`
-3. **Use libfabric v1.21.0** (official NIXL version) not v2.3.0
+3. **Use libfabric v2.3.0** (official NIXL version)
 4. **Install to /usr/local** for consistency with official NIXL
 5. **AWS EFA drivers separate** from libfabric build
 

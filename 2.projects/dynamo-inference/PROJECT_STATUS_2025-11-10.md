@@ -6,7 +6,7 @@
 ## EXECUTIVE SUMMARY
 ================================================================================
 
-### ✅ MAJOR BREAKTHROUGH: nixlbench Working on EKS
+### ✅ nixlbench Working on EKS
 
 After comprehensive troubleshooting and root cause analysis, **nixlbench is now successfully running** on AWS SageMaker HyperPod with EKS.
 

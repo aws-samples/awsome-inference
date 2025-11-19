@@ -157,8 +157,9 @@ Benchmark complete!
 Target bandwidth for large blocks: **280-285 GB/s** (similar to UCX perftest: 284.98 GB/s)
 
 ================================================================================
+
+### [Completed] SUCCESS
 ## ALL POSSIBLE SCENARIOS
-================================================================================
 
 ### ✅ SUCCESS
 - Both workers connect to ETCD

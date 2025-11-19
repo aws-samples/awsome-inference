@@ -74,11 +74,15 @@ if [ $MISSING -gt 0 ]; then
 fi
 
 echo ""
-echo "Proceed with build? (y/N) "
-read -r REPLY
-if [ "$REPLY" != "y" ] && [ "$REPLY" != "Y" ]; then
-    echo "Build cancelled."
-    exit 0
+if [[ "${NON_INTERACTIVE}" != "1" ]]; then
+    echo "Proceed with build? (y/N) "
+    read -r REPLY
+    if [ "$REPLY" != "y" ] && [ "$REPLY" != "Y" ]; then
+        echo "Build cancelled."
+        exit 0
+    fi
+else
+    echo "Non-interactive mode: Proceeding with build..."
 fi
 
 # Build command
