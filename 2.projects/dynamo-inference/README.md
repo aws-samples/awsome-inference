@@ -79,7 +79,7 @@ BUILD_TARGET=slim CUDA_ARCH=86 CUDA_ARCH_NAME=A10G ./build_trtllm.sh
 
 | GPU  | CUDA Arch | Build Flag | AWS Instance | Default |
 |------|-----------|------------|--------------|---------|
-| H100 | 90 (SM90) | `CUDA_ARCH=90 CUDA_ARCH_NAME=H100` | p5.* | [Completed] Yes |
+| H100 | 90 (SM90) | `CUDA_ARCH=90 CUDA_ARCH_NAME=H100` | p5.* | ✅ Yes |
 | A100 | 80 (SM80) | `CUDA_ARCH=80 CUDA_ARCH_NAME=A100` | p4d.* | |
 | A10G | 86 (SM86) | `CUDA_ARCH=86 CUDA_ARCH_NAME=A10G` | g5.* | |
 
