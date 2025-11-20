@@ -328,7 +328,7 @@ RUN chmod +x /opt/nvidia/nvidia_entrypoint.sh
 COPY benchmarks/ /opt/dynamo/benchmarks/
 
 # Copy and install Dynamo wheelhouse (optional)
-RUN --mount=type=bind,from=dynamo_base,source=/opt/dynamo/wheelhouse,target=/tmp/wheels \
+RUN --mount=type=bind,from=dynamo_base,source=/workspace/wheelhouse,target=/tmp/wheels \
     mkdir -p /opt/dynamo/wheelhouse && \
     if [ "$(ls -A /tmp/wheels 2>/dev/null)" ]; then \
         cp -r /tmp/wheels/* /opt/dynamo/wheelhouse/ && \
