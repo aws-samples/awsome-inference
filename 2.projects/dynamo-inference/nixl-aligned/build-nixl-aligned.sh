@@ -20,7 +20,13 @@ echo ""
 DOCKER_REGISTRY="${DOCKER_REGISTRY:-<AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com}"
 IMAGE_NAME="${IMAGE_NAME:-nixl-aligned}"
 TAG="${TAG:-0.7.1}"
-FULL_IMAGE="${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG}"
+
+# If TAG already contains the image name (e.g., "nixl-aligned:0.7.1-nccl"), use it directly
+if [[ "$TAG" == *":"* ]]; then
+    FULL_IMAGE="${DOCKER_REGISTRY}/${TAG}"
+else
+    FULL_IMAGE="${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG}"
+fi
 
 # Build arguments
 NPROC="${NPROC:-12}"
@@ -43,12 +49,17 @@ echo "  Python:       3.12"
 echo "  Ubuntu:       24.04"
 echo ""
 
-# Confirm
-read -p "$(echo -e ${YELLOW}Proceed with build? [y/N]:${NC} )" -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Build cancelled"
-    exit 1
+# Check for non-interactive mode
+if [ "${NON_INTERACTIVE}" = "1" ]; then
+    echo -e "${GREEN}Non-interactive mode - proceeding with build${NC}"
+else
+    # Confirm
+    read -p "$(echo -e ${YELLOW}Proceed with build? [y/N]:${NC} )" -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Build cancelled"
+        exit 1
+    fi
 fi
 
 # Build
@@ -56,11 +67,22 @@ echo ""
 echo -e "${GREEN}Starting Docker build...${NC}"
 echo ""
 
+# Determine the tag to use
+if [[ "$TAG" == *":"* ]]; then
+    # TAG already contains the full image:tag format
+    BUILD_TAG="${TAG}"
+    LOCAL_TAG="${TAG}"
+else
+    # TAG is just a version
+    BUILD_TAG="${IMAGE_NAME}:${TAG}"
+    LOCAL_TAG="${IMAGE_NAME}:${TAG}"
+fi
+
 DOCKER_BUILDKIT=1 docker build \
     --progress=plain \
     --build-arg NPROC=${NPROC} \
     --build-arg INSTALL_NCCL=${INSTALL_NCCL} \
-    -t ${IMAGE_NAME}:${TAG} \
+    -t ${BUILD_TAG} \
     -t ${IMAGE_NAME}:latest \
     -f Dockerfile.nixl-aligned \
     . 2>&1 | tee build-nixl-aligned.log
@@ -73,7 +95,7 @@ if [ ${PIPESTATUS[0]} -eq 0 ]; then
     echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
     echo ""
     echo "Local tags:"
-    echo "  ${IMAGE_NAME}:${TAG}"
+    echo "  ${BUILD_TAG}"
     echo "  ${IMAGE_NAME}:latest"
     echo ""
     echo -e "${YELLOW}Next steps:${NC}"

@@ -71,6 +71,7 @@ RUN apt-get update && \
         findutils \
         coreutils \
         libcudnn9-cuda-12 \
+        libcufile-12-9 \
         libzmq3-dev \
         ibverbs-providers \
         ibverbs-utils \
@@ -129,26 +130,87 @@ ENV PATH=/usr/local/bin/etcd/:/usr/local/cuda/nvvm/bin:$PATH
 # CRITICAL: Copy and register ALL communication libraries BEFORE Python setup
 # ============================================================================
 
-# Copy UCX from NIXL base
-COPY --from=nixl_base /usr/local/ucx /usr/local/ucx
-RUN echo "/usr/local/ucx/lib" > /etc/ld.so.conf.d/ucx.conf && \
-    echo "/usr/local/ucx/lib/ucx" >> /etc/ld.so.conf.d/ucx.conf && \
+# Copy UCX from NIXL base (adaptive: nixl-prebuilt or nixl-source)
+RUN --mount=type=bind,from=nixl_base,source=/opt/hpcx,target=/tmp/hpcx \
+    --mount=type=bind,from=nixl_base,source=/usr/local,target=/tmp/usr_local \
+    --mount=type=bind,from=nixl_base,source=/usr,target=/tmp/usr \
+    mkdir -p /opt/hpcx /usr/local/ucx && \
+    if [ -d /tmp/hpcx/ucx ]; then \
+        cp -r /tmp/hpcx/ucx /opt/hpcx/ && \
+        ln -sf /opt/hpcx/ucx /usr/local/ucx && \
+        echo "/opt/hpcx/ucx/lib" > /etc/ld.so.conf.d/ucx.conf && \
+        echo "/opt/hpcx/ucx/lib/ucx" >> /etc/ld.so.conf.d/ucx.conf && \
+        echo "✅ UCX copied from nixl-prebuilt (/opt/hpcx/ucx)"; \
+    elif [ -d /tmp/usr_local/ucx ]; then \
+        cp -r /tmp/usr_local/ucx /usr/local/ && \
+        echo "/usr/local/ucx/lib" > /etc/ld.so.conf.d/ucx.conf && \
+        echo "/usr/local/ucx/lib/ucx" >> /etc/ld.so.conf.d/ucx.conf && \
+        echo "✅ UCX copied from nixl-prebuilt (/usr/local/ucx)"; \
+    elif [ -f /tmp/usr/lib/libucs.so ]; then \
+        cp -a /tmp/usr/lib/libucs.so* /usr/lib/ 2>/dev/null || true && \
+        cp -a /tmp/usr/lib/libuct.so* /usr/lib/ 2>/dev/null || true && \
+        cp -a /tmp/usr/lib/libucm.so* /usr/lib/ 2>/dev/null || true && \
+        cp -a /tmp/usr/lib/libucp.so* /usr/lib/ 2>/dev/null || true && \
+        cp -a /tmp/usr/bin/ucx_* /usr/bin/ 2>/dev/null || true && \
+        echo "/usr/lib" > /etc/ld.so.conf.d/ucx.conf && \
+        echo "✅ UCX copied from nixl-source (/usr/lib)"; \
+    else \
+        echo "⚠️  UCX not found in any expected location"; \
+    fi && \
     ldconfig && \
     ldconfig -p | grep -i libucs && \
     echo "✅ UCX registered"
 
-ENV PATH=/usr/local/ucx/bin:$PATH
+ENV PATH=/usr/local/ucx/bin:/opt/hpcx/ucx/bin:/usr/bin:$PATH
 
-# Copy libfabric from NIXL base
-COPY --from=nixl_base /usr/local/libfabric /usr/local/libfabric
-RUN echo "/usr/local/libfabric/lib" > /etc/ld.so.conf.d/libfabric.conf && \
-    ln -sf /usr/local/libfabric/bin/* /usr/local/bin/ && \
+# Copy libfabric from NIXL base (adaptive: nixl-prebuilt or nixl-source)
+RUN --mount=type=bind,from=nixl_base,source=/usr/local,target=/tmp/usr_local \
+    mkdir -p /usr/local/libfabric && \
+    if [ -d /tmp/usr_local/libfabric ]; then \
+        cp -r /tmp/usr_local/libfabric /usr/local/ && \
+        echo "/usr/local/libfabric/lib" > /etc/ld.so.conf.d/libfabric.conf && \
+        ln -sf /usr/local/libfabric/bin/* /usr/local/bin/ && \
+        echo "✅ libfabric copied from nixl-prebuilt (/usr/local/libfabric/)"; \
+    elif [ -f /tmp/usr_local/lib/libfabric.so ]; then \
+        cp -a /tmp/usr_local/lib/libfabric.so* /usr/local/lib/ && \
+        if [ -d /tmp/usr_local/bin ]; then \
+            cp -a /tmp/usr_local/bin/fi_* /usr/local/bin/ 2>/dev/null || true; \
+        fi && \
+        echo "/usr/local/lib" > /etc/ld.so.conf.d/libfabric.conf && \
+        echo "✅ libfabric copied from nixl-source (/usr/local/lib/)"; \
+    else \
+        echo "⚠️  libfabric not found in any expected location"; \
+    fi && \
     ldconfig && \
     echo "✅ libfabric registered"
 
-# Copy GDRCopy from NIXL base
-COPY --from=nixl_base /opt/gdrcopy /opt/gdrcopy
-RUN echo "/opt/gdrcopy/lib" > /etc/ld.so.conf.d/gdrcopy.conf && \
+# Copy EFA libraries from NIXL base (matching base configuration)
+RUN --mount=type=bind,from=nixl_base,source=/opt/amazon/efa,target=/tmp/efa \
+    if [ -d /tmp/efa ]; then \
+        mkdir -p /opt/amazon/efa && \
+        cp -r /tmp/efa/* /opt/amazon/efa/ && \
+        echo "/opt/amazon/efa/lib" > /etc/ld.so.conf.d/efa.conf && \
+        echo "✅ EFA libraries copied from nixl_base"; \
+    else \
+        echo "⚠️  EFA libraries not found in /opt/amazon/efa (embedded in libfabric)"; \
+    fi && \
+    ldconfig
+
+# Copy GDRCopy from NIXL base (adaptive: nixl-prebuilt or nixl-source)
+RUN --mount=type=bind,from=nixl_base,source=/opt,target=/tmp/opt \
+    --mount=type=bind,from=nixl_base,source=/usr/local,target=/tmp/usr_local \
+    mkdir -p /opt/gdrcopy && \
+    if [ -d /tmp/opt/gdrcopy ]; then \
+        cp -r /tmp/opt/gdrcopy /opt/ && \
+        echo "/opt/gdrcopy/lib64" > /etc/ld.so.conf.d/gdrcopy.conf && \
+        echo "✅ GDRCopy copied from nixl base (/opt/gdrcopy)"; \
+    elif [ -f /tmp/usr_local/lib/libgdrapi.so ]; then \
+        cp -a /tmp/usr_local/lib/libgdrapi.so* /usr/local/lib/ && \
+        echo "/usr/local/lib" > /etc/ld.so.conf.d/gdrcopy.conf && \
+        echo "✅ GDRCopy copied from nixl-source (/usr/local/lib)"; \
+    else \
+        echo "⚠️  GDRCopy not found (may not be installed)"; \
+    fi && \
     ldconfig && \
     echo "✅ GDRCopy registered"
 
@@ -182,10 +244,25 @@ RUN ln -sf /usr/local/libfabric/lib/libfabric.so* /usr/local/lib/ && \
     ldconfig && \
     echo "✅ libfabric symlinked to /usr/local/lib"
 
-# Copy NIXL
-COPY --from=nixl_base /opt/nvidia/nvda_nixl /opt/nvidia/nvda_nixl
-RUN echo "${NIXL_LIB_DIR}" > /etc/ld.so.conf.d/nixl.conf && \
-    echo "${NIXL_PLUGIN_DIR}" >> /etc/ld.so.conf.d/nixl.conf && \
+# Copy NIXL (adaptive: nixl-prebuilt or nixl-source)
+RUN --mount=type=bind,from=nixl_base,source=/opt/nvidia,target=/tmp/opt_nvidia \
+    --mount=type=bind,from=nixl_base,source=/usr/local,target=/tmp/usr_local \
+    mkdir -p /opt/nvidia && \
+    if [ -d /tmp/opt_nvidia/nvda_nixl ]; then \
+        cp -r /tmp/opt_nvidia/nvda_nixl /opt/nvidia/ && \
+        echo "${NIXL_LIB_DIR}" > /etc/ld.so.conf.d/nixl.conf && \
+        echo "${NIXL_PLUGIN_DIR}" >> /etc/ld.so.conf.d/nixl.conf && \
+        echo "✅ NIXL copied from nixl-prebuilt (/opt/nvidia/nvda_nixl)"; \
+    elif [ -d /tmp/usr_local/nixl ]; then \
+        cp -r /tmp/usr_local/nixl /usr/local/ && \
+        NIXL_SOURCE_LIB="/usr/local/nixl/lib/${ARCH_ALT}-linux-gnu" && \
+        NIXL_SOURCE_PLUGIN="${NIXL_SOURCE_LIB}/plugins" && \
+        echo "${NIXL_SOURCE_LIB}" > /etc/ld.so.conf.d/nixl.conf && \
+        echo "${NIXL_SOURCE_PLUGIN}" >> /etc/ld.so.conf.d/nixl.conf && \
+        echo "✅ NIXL copied from nixl-source (/usr/local/nixl)"; \
+    else \
+        echo "⚠️  NIXL not found in any expected location"; \
+    fi && \
     ldconfig && \
     echo "✅ NIXL registered"
 
@@ -210,14 +287,21 @@ RUN ldconfig && \
     ldconfig -p | grep -E "libucs|libfabric|libnccl|libnixl" && \
     echo "✅ All libraries ready for Python/PyTorch"
 
-# Set comprehensive environment variables
+# Set comprehensive environment variables (adaptive for both nixl-prebuilt and nixl-source)
 ENV DYNAMO_HOME=/workspace
 ENV LD_LIBRARY_PATH=\
 /usr/local/lib:\
 /usr/local/libfabric/lib:\
 /usr/local/ucx/lib:\
 /usr/local/ucx/lib/ucx:\
+/opt/hpcx/ucx/lib:\
+/opt/hpcx/ucx/lib/ucx:\
+/usr/lib:\
+/opt/amazon/efa/lib:\
+/opt/gdrcopy/lib:\
 /opt/gdrcopy/lib64:\
+/usr/local/nixl/lib/x86_64-linux-gnu:\
+/usr/local/nixl/lib/x86_64-linux-gnu/plugins:\
 $NIXL_LIB_DIR:\
 $NIXL_PLUGIN_DIR:\
 /opt/hpcx/ompi/lib:\

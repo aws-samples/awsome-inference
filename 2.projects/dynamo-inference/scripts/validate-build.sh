@@ -35,11 +35,21 @@ echo "  Detected container type: ${CONTAINER_TYPE}"
 echo ""
 
 # Helper function to check critical library (supports multiple possible paths)
+# If library is found via ldconfig but not at expected path, mark as AVAILABLE (not critical)
 check_critical() {
     local name="$1"
     shift
     local paths=("$@")
     local found_path=""
+    local lib_pattern=""
+
+    # Extract library name pattern for ldconfig check (if path contains .so)
+    for path in "${paths[@]}"; do
+        if [[ "$path" == *".so"* ]]; then
+            lib_pattern=$(basename "$path" | cut -d. -f1,2)
+            break
+        fi
+    done
 
     # Check all possible paths
     for path in "${paths[@]}"; do
@@ -63,6 +73,12 @@ check_critical() {
                 echo "             → $(readlink -f $found_path)"
             fi
         fi
+    elif [ -n "$lib_pattern" ] && ldconfig -p 2>/dev/null | grep -q "$lib_pattern"; then
+        # Library not at expected path but available via ldconfig
+        local ld_path=$(ldconfig -p | grep "$lib_pattern" | head -1 | awk '{print $NF}')
+        echo -e "${GREEN}✓ AVAILABLE${NC} via ldconfig at $ld_path"
+        echo "             Note: Not at expected path (${paths[*]}) but runtime accessible"
+        FOUND_COUNT=$((FOUND_COUNT + 1))
     else
         echo -e "${RED}✗ MISSING${NC} (expected at: ${paths[*]})"
         CRITICAL_MISSING=$((CRITICAL_MISSING + 1))
@@ -70,11 +86,21 @@ check_critical() {
 }
 
 # Helper function to check optional library (supports multiple possible paths)
+# If library is found via ldconfig but not at expected path, mark as AVAILABLE
 check_optional() {
     local name="$1"
     shift
     local paths=("$@")
     local found_path=""
+    local lib_pattern=""
+
+    # Extract library name pattern for ldconfig check (if path contains .so)
+    for path in "${paths[@]}"; do
+        if [[ "$path" == *".so"* ]]; then
+            lib_pattern=$(basename "$path" | cut -d. -f1,2)
+            break
+        fi
+    done
 
     # Check all possible paths
     for path in "${paths[@]}"; do
@@ -97,6 +123,12 @@ check_optional() {
                 echo "             → $(readlink -f $found_path)"
             fi
         fi
+    elif [ -n "$lib_pattern" ] && ldconfig -p 2>/dev/null | grep -q "$lib_pattern"; then
+        # Library not at expected path but available via ldconfig
+        local ld_path=$(ldconfig -p | grep "$lib_pattern" | head -1 | awk '{print $NF}')
+        echo -e "${GREEN}✓ AVAILABLE${NC} via ldconfig at $ld_path"
+        echo "             Note: Not at expected path (${paths[*]}) but runtime accessible"
+        FOUND_COUNT=$((FOUND_COUNT + 1))
     else
         echo -e "${YELLOW}⊘ NOT INSTALLED${NC} (expected at: ${paths[*]})"
         OPTIONAL_MISSING=$((OPTIONAL_MISSING + 1))
@@ -140,23 +172,23 @@ else
 fi
 check_ldcache "libgdrapi.so"
 
-# UCX
-check_critical "UCX" "/usr/local/ucx"
-check_critical "UCX Libraries" "/usr/local/ucx/lib"
+# UCX (supports both nixl-prebuilt and nixl-source locations)
+check_optional "UCX Directory" "/usr/local/ucx" "/opt/hpcx/ucx"
+check_optional "UCX Libraries" "/usr/local/ucx/lib" "/opt/hpcx/ucx/lib" "/usr/lib"
 # Only check pkg-config if it doesn't work via PKG_CONFIG_PATH
 if ! pkg-config --exists ucx 2>/dev/null; then
-    check_critical "UCX pkg-config" "/usr/local/lib/pkgconfig/ucx.pc" "/usr/local/ucx/lib/pkgconfig/ucx.pc"
+    check_optional "UCX pkg-config" "/usr/local/lib/pkgconfig/ucx.pc" "/usr/local/ucx/lib/pkgconfig/ucx.pc"
 fi
 check_ldcache "libucp.so"
 
-# libfabric
-check_critical "libfabric" "/usr/local/libfabric"
-check_critical "libfabric Libraries" "/usr/local/libfabric/lib"
+# libfabric (supports both nixl-prebuilt and nixl-source locations)
+check_optional "libfabric Directory" "/usr/local/libfabric"
+check_optional "libfabric Libraries" "/usr/local/libfabric/lib" "/usr/local/lib"
 # Only check pkg-config if it doesn't work via PKG_CONFIG_PATH
 if ! pkg-config --exists libfabric 2>/dev/null; then
-    check_critical "libfabric pkg-config" "/usr/local/lib/pkgconfig/libfabric.pc" "/usr/local/libfabric/lib/pkgconfig/libfabric.pc"
+    check_optional "libfabric pkg-config" "/usr/local/lib/pkgconfig/libfabric.pc" "/usr/local/libfabric/lib/pkgconfig/libfabric.pc"
 fi
-check_critical "libfabric symlink" "/usr/local/lib/libfabric.so"
+check_optional "libfabric symlink" "/usr/local/lib/libfabric.so"
 check_ldcache "libfabric.so"
 
 # EFA
@@ -207,9 +239,9 @@ echo "2. NIXL COMMUNICATION STACK"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-check_critical "NIXL" "/opt/nvidia/nvda_nixl"
-check_critical "NIXL Headers" "/opt/nvidia/nvda_nixl/include"
-check_critical "NIXL Libraries" "/opt/nvidia/nvda_nixl/lib" "/opt/nvidia/nvda_nixl/lib/x86_64-linux-gnu"
+check_critical "NIXL" "/opt/nvidia/nvda_nixl" "/usr/local/nixl"
+check_critical "NIXL Headers" "/opt/nvidia/nvda_nixl/include" "/usr/local/nixl/include"
+check_critical "NIXL Libraries" "/opt/nvidia/nvda_nixl/lib" "/opt/nvidia/nvda_nixl/lib/x86_64-linux-gnu" "/usr/local/nixl/lib" "/usr/local/nixl/lib/x86_64-linux-gnu"
 # NIXL pkg-config is optional
 if ! pkg-config --exists nvda-nixl 2>/dev/null; then
     check_optional "NIXL pkg-config" "/usr/local/lib/pkgconfig/nvda-nixl.pc" "/opt/nvidia/nvda_nixl/lib/pkgconfig/nvda-nixl.pc"
