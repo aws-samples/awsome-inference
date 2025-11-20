@@ -4,7 +4,7 @@ set -e
 
 # Configuration
 NIXL_BASE_IMAGE="${NIXL_BASE_IMAGE:-nixl-h100-efa:optimized}"
-DYNAMO_BASE_IMAGE="${DYNAMO_BASE_IMAGE:-nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.4.0}"
+DYNAMO_BASE_IMAGE="${DYNAMO_BASE_IMAGE:-nvcr.io/nvidia/ai-dynamo/tensorrtllm-runtime:0.4.1}"
 PYTORCH_IMAGE="${PYTORCH_IMAGE:-nvcr.io/nvidia/pytorch}"
 PYTORCH_IMAGE_TAG="${PYTORCH_IMAGE_TAG:-25.06-py3}"
 RUNTIME_IMAGE="${RUNTIME_IMAGE:-nvcr.io/nvidia/cuda}"
