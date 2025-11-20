@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT-0
 
 ARG NIXL_BASE_IMAGE="nixl-h100-efa:optimized"
-ARG DYNAMO_BASE_IMAGE="nvcr.io/nvidia/ai-dynamo/tensorrtllm-runtime:0.4.0"
+ARG DYNAMO_BASE_IMAGE="nvcr.io/nvidia/ai-dynamo/tensorrtllm-runtime:0.4.1"
 ARG PYTORCH_IMAGE="nvcr.io/nvidia/pytorch"
 ARG PYTORCH_IMAGE_TAG="25.06-py3"
 ARG RUNTIME_IMAGE="nvcr.io/nvidia/cuda"
@@ -333,7 +333,7 @@ RUN --mount=type=bind,from=dynamo_base,source=/workspace/wheelhouse,target=/tmp/
     if [ "$(ls -A /tmp/wheels 2>/dev/null)" ]; then \
         cp -r /tmp/wheels/* /opt/dynamo/wheelhouse/ && \
         uv pip install \
-            /opt/dynamo/wheelhouse/ai_dynamo_runtime*.whl \
+            /opt/dynamo/wheelhouse/ai_dynamo_runtime-0.4.1-cp312-cp312*.whl \
             /opt/dynamo/wheelhouse/ai_dynamo*any.whl \
             /opt/dynamo/wheelhouse/nixl*.whl && \
         if [ "${ENABLE_KVBM}" = "true" ]; then \
