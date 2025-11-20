@@ -335,7 +335,7 @@ RUN --mount=type=bind,from=dynamo_base,source=/workspace/wheelhouse,target=/tmp/
         uv pip install \
             /opt/dynamo/wheelhouse/ai_dynamo_runtime*.whl \
             /opt/dynamo/wheelhouse/ai_dynamo*any.whl \
-            /opt/dynamo/wheelhouse/nixl/nixl*.whl && \
+            /opt/dynamo/wheelhouse/nixl*.whl && \
         if [ "${ENABLE_KVBM}" = "true" ]; then \
             uv pip install /opt/dynamo/wheelhouse/kvbm*.whl; \
         fi && \
