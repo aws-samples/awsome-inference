@@ -1,0 +1,63 @@
+# Simple patch for existing dynamo-trtllm image to fix nixlbench
+# This is a minimal fix that can be applied to any existing image
+
+ARG BASE_IMAGE=058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-trtllm:all-arch
+FROM ${BASE_IMAGE}
+
+# Install build tools temporarily
+RUN apt-get update && apt-get install -y \
+    git \
+    cmake \
+    build-essential \
+    libprotobuf-dev \
+    protobuf-compiler \
+    protobuf-compiler-grpc \
+    libgrpc++-dev \
+    libboost-all-dev \
+    libcpprest-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clone, patch, and build etcd-cpp-apiv3
+WORKDIR /tmp/etcd-fix
+RUN git clone https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3.git && \
+    cd etcd-cpp-apiv3 && \
+    git checkout v0.15.4
+
+# Copy and apply the fix patch
+COPY etcd-uri-fix.patch /tmp/etcd-fix/
+RUN cd /tmp/etcd-fix/etcd-cpp-apiv3 && \
+    patch -p1 < /tmp/etcd-fix/etcd-uri-fix.patch && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc) && \
+    cp src/libetcd-cpp-api.so* /usr/local/lib/ && \
+    ldconfig
+
+# Clean up build tools to keep image size down
+RUN apt-get remove -y \
+    git \
+    cmake \
+    build-essential \
+    libprotobuf-dev \
+    protobuf-compiler \
+    libgrpc++-dev \
+    libboost-all-dev \
+    libcpprest-dev \
+    && apt-get autoremove -y \
+    && rm -rf /tmp/etcd-fix
+
+# Set the environment variable permanently
+ENV ETCD_CPP_API_DISABLE_URI_VALIDATION=1
+
+# Add documentation
+RUN echo '#!/bin/bash' > /usr/local/bin/nixlbench-test && \
+    echo 'echo "Testing nixlbench with ETCD fix..."' >> /usr/local/bin/nixlbench-test && \
+    echo 'echo "ETCD_CPP_API_DISABLE_URI_VALIDATION=$ETCD_CPP_API_DISABLE_URI_VALIDATION"' >> /usr/local/bin/nixlbench-test && \
+    echo 'if strings /usr/local/lib/libetcd-cpp-api-core.so | grep -q ETCD_CPP_API_DISABLE_URI_VALIDATION; then' >> /usr/local/bin/nixlbench-test && \
+    echo '    echo "✅ Fix is applied - nixlbench should work"' >> /usr/local/bin/nixlbench-test && \
+    echo 'else' >> /usr/local/bin/nixlbench-test && \
+    echo '    echo "❌ Fix not found - nixlbench may fail"' >> /usr/local/bin/nixlbench-test && \
+    echo 'fi' >> /usr/local/bin/nixlbench-test && \
+    chmod +x /usr/local/bin/nixlbench-test
+
+WORKDIR /workspace

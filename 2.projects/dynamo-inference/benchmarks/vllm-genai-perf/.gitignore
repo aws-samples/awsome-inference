@@ -1,0 +1,53 @@
+# Benchmark Results
+results/
+reports/
+logs/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+*.swp
+
+# Archives
+*.tar.gz
+*.zip
+*.tar
+*.tgz
+
+# Generated reports
+*.html
+*.pdf
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Data files (large)
+*.bin
+*.safetensors
+*.pt
+*.pth
