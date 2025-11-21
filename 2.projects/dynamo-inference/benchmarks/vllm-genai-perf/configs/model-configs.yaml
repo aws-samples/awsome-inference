@@ -1,0 +1,180 @@
+# Model Configurations for Benchmark Suite
+# Define model settings for different model sizes
+
+models:
+  # 7B Models
+  llama-7b:
+    model_id: "meta-llama/Llama-2-7b-hf"
+    display_name: "Llama 2 7B"
+    tensor_parallel: 1
+    pipeline_parallel: 1
+    max_model_len: 4096
+    gpu_memory_utilization: 0.90
+    kv_cache_dtype: "auto"
+    quantization: null
+    min_gpus: 1
+    recommended_gpus: 1
+
+  llama-7b-instruct:
+    model_id: "meta-llama/Llama-2-7b-chat-hf"
+    display_name: "Llama 2 7B Instruct"
+    tensor_parallel: 1
+    pipeline_parallel: 1
+    max_model_len: 4096
+    gpu_memory_utilization: 0.90
+    kv_cache_dtype: "auto"
+    quantization: null
+    min_gpus: 1
+    recommended_gpus: 1
+
+  # 13B Models
+  llama-13b:
+    model_id: "meta-llama/Llama-2-13b-hf"
+    display_name: "Llama 2 13B"
+    tensor_parallel: 2
+    pipeline_parallel: 1
+    max_model_len: 4096
+    gpu_memory_utilization: 0.90
+    kv_cache_dtype: "auto"
+    quantization: null
+    min_gpus: 2
+    recommended_gpus: 2
+
+  llama-13b-instruct:
+    model_id: "meta-llama/Llama-2-13b-chat-hf"
+    display_name: "Llama 2 13B Instruct"
+    tensor_parallel: 2
+    pipeline_parallel: 1
+    max_model_len: 4096
+    gpu_memory_utilization: 0.90
+    kv_cache_dtype: "auto"
+    quantization: null
+    min_gpus: 2
+    recommended_gpus: 2
+
+  # 70B Models
+  llama-70b:
+    model_id: "meta-llama/Llama-2-70b-hf"
+    display_name: "Llama 2 70B"
+    tensor_parallel: 8
+    pipeline_parallel: 1
+    max_model_len: 4096
+    gpu_memory_utilization: 0.90
+    kv_cache_dtype: "fp8"
+    quantization: null
+    min_gpus: 8
+    recommended_gpus: 8
+
+  llama-70b-instruct:
+    model_id: "meta-llama/Llama-2-70b-chat-hf"
+    display_name: "Llama 2 70B Instruct"
+    tensor_parallel: 8
+    pipeline_parallel: 1
+    max_model_len: 4096
+    gpu_memory_utilization: 0.90
+    kv_cache_dtype: "fp8"
+    quantization: null
+    min_gpus: 8
+    recommended_gpus: 8
+
+  llama-3.3-70b:
+    model_id: "meta-llama/Llama-3.3-70B-Instruct"
+    display_name: "Llama 3.3 70B Instruct"
+    tensor_parallel: 8
+    pipeline_parallel: 1
+    max_model_len: 131072
+    gpu_memory_utilization: 0.90
+    kv_cache_dtype: "fp8"
+    quantization: null
+    min_gpus: 8
+    recommended_gpus: 8
+
+# Quantization Configurations
+quantization_configs:
+  fp16:
+    dtype: "float16"
+    kv_cache_dtype: "auto"
+    quantization: null
+    description: "FP16 baseline (no quantization)"
+
+  int8:
+    dtype: "float16"
+    kv_cache_dtype: "auto"
+    quantization: "int8"
+    description: "INT8 quantization"
+
+  int4:
+    dtype: "float16"
+    kv_cache_dtype: "auto"
+    quantization: "int4"
+    description: "INT4 quantization"
+
+  fp8:
+    dtype: "float16"
+    kv_cache_dtype: "fp8"
+    quantization: null
+    description: "FP8 KV cache (H100 only)"
+
+  awq:
+    dtype: "float16"
+    kv_cache_dtype: "auto"
+    quantization: "awq"
+    description: "AWQ quantization"
+
+  gptq:
+    dtype: "float16"
+    kv_cache_dtype: "auto"
+    quantization: "gptq"
+    description: "GPTQ quantization"
+
+# Model Size Categories
+model_categories:
+  small:
+    description: "7B parameter models"
+    models: ["llama-7b", "llama-7b-instruct"]
+    default_batch_size: 32
+    default_concurrency: 16
+
+  medium:
+    description: "13B parameter models"
+    models: ["llama-13b", "llama-13b-instruct"]
+    default_batch_size: 16
+    default_concurrency: 8
+
+  large:
+    description: "70B parameter models"
+    models: ["llama-70b", "llama-70b-instruct", "llama-3.3-70b"]
+    default_batch_size: 8
+    default_concurrency: 4
+
+# GPU Requirements
+gpu_requirements:
+  h100:
+    compute_capability: "9.0"
+    memory_per_gpu: "80GB"
+    supports_fp8: true
+    recommended_for: ["llama-70b", "llama-70b-instruct", "llama-3.3-70b"]
+
+  a100:
+    compute_capability: "8.0"
+    memory_per_gpu: "80GB"
+    supports_fp8: false
+    recommended_for: ["llama-70b", "llama-70b-instruct", "llama-13b", "llama-13b-instruct"]
+
+  a10g:
+    compute_capability: "8.6"
+    memory_per_gpu: "24GB"
+    supports_fp8: false
+    recommended_for: ["llama-7b", "llama-7b-instruct"]
+
+# Default Settings
+defaults:
+  tensor_parallel: 1
+  pipeline_parallel: 1
+  max_num_seqs: 64
+  max_num_seqs_prefill: 1
+  max_num_seqs_decode: 64
+  gpu_memory_utilization: 0.90
+  trust_remote_code: true
+  enable_prefix_caching: false
+  enable_chunked_prefill: false
