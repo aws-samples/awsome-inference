@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neuron-download-scripts
+  namespace: neuron-inference
+data:
+  download_models.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    : "${HF_MODEL_ID:=Qwen/Qwen3-32B}"
+    : "${HF_DRAFT_MODEL_ID:=Qwen/Qwen3-0.6B}"
+
+    : "${MODEL_DIRNAME:=Qwen3-32B}"
+    : "${DRAFT_DIRNAME:=Qwen3-0.6B}"
+
+    : "${MODEL_ROOT:=/shared/model_hub}"
+    MODEL_PATH="${MODEL_ROOT}/${MODEL_DIRNAME}"
+    DRAFT_MODEL_PATH="${MODEL_ROOT}/${DRAFT_DIRNAME}"
+
+    mkdir -p "$MODEL_PATH" "$DRAFT_MODEL_PATH"
+
+    if ! command -v hf >/dev/null 2>&1; then
+      python -m pip install -q --no-cache-dir 'huggingface_hub[cli]'
+    fi
+
+    if [[ -z "${HF_TOKEN:-}" ]]; then
+      echo "HF_TOKEN not set; cannot access gated repos." >&2
+      exit 1
+    fi
+    export HUGGINGFACE_HUB_TOKEN="$HF_TOKEN"
+
+    echo "Downloading target: ${HF_MODEL_ID} -> ${MODEL_PATH}"
+    hf download "${HF_MODEL_ID}" --local-dir "${MODEL_PATH}" --exclude "*/.git/*"
+    echo "OK: ${MODEL_PATH}"
+
+    echo "Downloading draft: ${HF_DRAFT_MODEL_ID} -> ${DRAFT_MODEL_PATH}"
+    hf download "${HF_DRAFT_MODEL_ID}" --local-dir "${DRAFT_MODEL_PATH}" --exclude "*/.git/*"
+    echo "OK: ${DRAFT_MODEL_PATH}"
+
+    echo "Listing:"
+    find "${MODEL_PATH}" -maxdepth 1 -type f | head -n 20
+    find "${DRAFT_MODEL_PATH}" -maxdepth 1 -type f | head -n 20
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: neuron-model-download
+  namespace: neuron-inference
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      nodeSelector:
+        workload-type: "neuron-inference"
+      tolerations:
+      - key: aws.amazon.com/neuron
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: downloader
+        image: public.ecr.aws/neuron/pytorch-inference-vllm-neuronx:0.9.1-neuronx-py310-sdk2.25.0-ubuntu22.04
+        command: ["/bin/bash","-lc"]
+        args:
+        - |
+          set -euxo pipefail
+          df -h /shared || true
+          bash /scripts/download_models.sh 2>&1 | tee /shared/download.log
+        env:
+        # Set/override these as needed:
+        - name: HF_MODEL_ID
+          value: "Qwen/Qwen3-32B"
+        - name: HF_DRAFT_MODEL_ID
+          value: "Qwen/Qwen3-0.6B"
+        - name: MODEL_DIRNAME
+          value: "Qwen3-32B"
+        - name: DRAFT_DIRNAME
+          value: "Qwen3-0.6B"
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-token
+              key: HF_TOKEN
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /shared
+        - name: scripts
+          mountPath: /scripts
+      volumes:
+      - name: shared-storage
+        persistentVolumeClaim:
+          claimName: efs-models-pvc
+      - name: scripts
+        configMap:
+          name: neuron-download-scripts
+          defaultMode: 0755

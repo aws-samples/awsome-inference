@@ -13,7 +13,7 @@ README                                # Project Summaries
 |-- README                            # Setup for infrastructure (VPC, EKS cluster etc)
 |-- 0_setup_vpc/                      # CloudFormation templates for reference VPC
 |-- 1_setup_cluster/                  # Scripts to create your cluster using EKS
-2.project/
+2.projects/
 |-- nims-inference/
 |-- trtllm-inference/
 |-- sglang-inference/
@@ -21,7 +21,8 @@ README                                # Project Summaries
 |-- ray-service/ 
 |-- multinode-triton-trtllm-inference/
 |-- mixture-of-agents/
-|-- mig/
+|-- neuronx-distributed/
+|-- mig-gpu-partitioning/
 3.use-cases/
 |-- nims-inference/
 `-- ...
@@ -68,6 +69,14 @@ This project demonstrates deploying large language models like Qwen3-Next-80B-A3
 ### TRITON TRT-LLM SAGEMAKER
 
 These examples shows how to deploy LLMs like T5, Mistral using NVIDIA Triton TRT-LLM on Amazon SageMaker. See [triton-trtllm-sagemaker](2.projects/triton-trtllm-sagemaker) for more information.
+
+### NEURONX-DISTRIBUTED-INFERENCE EKS
+
+This project demonstrates deploying Large Language Models using **NeuronX Distributed Inference (NxDI)** with **vLLM-Neuron** on Amazon EKS with AWS Trainium instances (trn1.32xlarge). The solution showcases advanced inference optimization techniques including **fused draft speculative decoding** and comprehensive performance monitoring including NeuronCore utilization, inference latency, and throughput metrics. See [neuronx-distributed/nxd-inference-eks](2.projects/neuronx-distributed/nxd-inference-eks) for more information.
+
+### NEURONX DISTRIBUTED INFERENCE - Profiling and Benchmarking Guide on EC2
+
+This example on EC2 walks through deploying, profiling, and benchmarking LLMs on EC2 with NxDI. See [neuronx-distributed/nxd-inference-ec2](2.projects/neuronx-distributed/nxdi-ec2-vllm) for more information.
 
 ### MIG 
 

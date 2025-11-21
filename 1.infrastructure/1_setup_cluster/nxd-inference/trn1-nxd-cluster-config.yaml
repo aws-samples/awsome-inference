@@ -1,0 +1,85 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: $CLUSTER_NAME
+  region: $REGION
+  version: "1.30"
+
+vpc:
+  id: $VPC_ID
+  subnets:
+    private:
+      us-west-2c:
+        id: $PRIVATE_SUBNET_1
+      us-west-2d:
+        id: $PRIVATE_SUBNET_2
+    public:
+      us-west-2c:
+        id: $PUBLIC_SUBNET_1
+      us-west-2d:
+        id: $PUBLIC_SUBNET_2
+  clusterEndpoints:
+    privateAccess: true
+    publicAccess: true
+
+cloudwatch:
+  clusterLogging:
+    enableTypes: ["*"]
+
+iam:
+  withOIDC: true
+  serviceAccounts:
+    - metadata:
+        name: efs-csi-controller-sa
+        namespace: kube-system
+      wellKnownPolicies:
+        efsCSIController: true
+
+addons:
+  - name: vpc-cni
+    version: v1.18.1-eksbuild.1
+    resolveConflicts: overwrite
+    configurationValues: |
+      env:
+        ENABLE_PREFIX_DELEGATION: "true"
+        ENABLE_POD_ENI: "true"
+        POD_SECURITY_GROUP_ENFORCING_MODE: "standard"
+      enableNetworkPolicy: "true"
+
+  - name: amazon-cloudwatch-observability
+    version: v1.16.4-eksbuild.1
+
+  - name: aws-efs-csi-driver
+    version: v2.1.9-eksbuild.1
+
+managedNodeGroups:
+  - name: trn-compute-node-group
+    instanceType: trn1.32xlarge
+    amiFamily: AmazonLinux2023
+    subnets:
+      - $PRIVATE_SUBNET_1
+    privateNetworking: true
+    efaEnabled: true
+    minSize: 0
+    desiredCapacity: 1
+    maxSize: 2
+    volumeSize: 500
+    capacityReservation:
+      capacityReservationTarget:
+        capacityReservationId: $CAPACITY_RESERVATION_ID
+    updateConfig:
+      maxUnavailablePercentage: 50
+    iam:
+      withAddonPolicies:
+        externalDNS: true
+        certManager: true
+        autoScaler: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+        imageBuilder: true
+        xRay: true
+        awsLoadBalancerController: true
+        albIngress: true
