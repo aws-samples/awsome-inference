@@ -1,0 +1,113 @@
+# Fixed TensorRT-LLM Dockerfile with patched etcd-cpp-api library
+# Resolves nixlbench ETCD URI validation bug
+
+ARG BASE_IMAGE=dynamo-base:latest
+FROM ${BASE_IMAGE} as builder
+
+# Build arguments
+ARG CUDA_ARCH="86"
+ARG CUDA_ARCH_NAME="A10G"
+ARG BUILD_TARGET="slim"
+
+# Install build dependencies for etcd-cpp-apiv3
+RUN apt-get update && apt-get install -y \
+    git \
+    cmake \
+    build-essential \
+    libprotobuf-dev \
+    protobuf-compiler \
+    libgrpc++-dev \
+    libboost-all-dev \
+    libcpprest-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clone and patch etcd-cpp-apiv3
+WORKDIR /tmp/etcd-fix
+RUN git clone https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3.git && \
+    cd etcd-cpp-apiv3 && \
+    git checkout v0.15.4
+
+# Copy and apply the fix patch
+COPY etcd-uri-fix.patch /tmp/etcd-fix/
+RUN cd /tmp/etcd-fix/etcd-cpp-apiv3 && \
+    patch -p1 < /tmp/etcd-fix/etcd-uri-fix.patch
+
+# Build patched etcd-cpp-apiv3
+RUN cd /tmp/etcd-fix/etcd-cpp-apiv3 && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc) && \
+    make install
+
+# Continue with the original TensorRT-LLM build
+FROM ${BASE_IMAGE}
+
+# Copy fixed etcd library from builder
+COPY --from=builder /usr/local/lib/libetcd-cpp-api* /usr/local/lib/
+COPY --from=builder /usr/local/include/etcd /usr/local/include/etcd
+
+# Environment variables for the fix
+ENV ETCD_CPP_API_DISABLE_URI_VALIDATION=1
+
+# Build arguments
+ARG CUDA_ARCH="86"
+ARG CUDA_ARCH_NAME="A10G"
+ARG BUILD_TARGET="slim"
+ARG TRTLLM_VERSION="v0.15.0"
+
+# Set build environment
+ENV CUDA_ARCH=${CUDA_ARCH}
+ENV CUDA_ARCH_NAME=${CUDA_ARCH_NAME}
+ENV BUILD_TARGET=${BUILD_TARGET}
+ENV LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
+
+# Install TensorRT-LLM dependencies
+RUN apt-get update && apt-get install -y \
+    python3-dev \
+    python3-pip \
+    git \
+    cmake \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clone and build TensorRT-LLM
+WORKDIR /workspace
+RUN git clone https://github.com/NVIDIA/TensorRT-LLM.git && \
+    cd TensorRT-LLM && \
+    git checkout ${TRTLLM_VERSION}
+
+# Install Python dependencies
+RUN cd /workspace/TensorRT-LLM && \
+    pip3 install -r requirements.txt
+
+# Build TensorRT-LLM
+RUN cd /workspace/TensorRT-LLM && \
+    python3 scripts/build_wheel.py \
+        --cuda_architectures ${CUDA_ARCH} \
+        --clean
+
+# Install the built wheel
+RUN pip3 install /workspace/TensorRT-LLM/build/tensorrt_llm*.whl
+
+# Add nixlbench fix documentation
+RUN echo "# nixlbench ETCD Fix Applied" > /NIXLBENCH_FIX_README.md && \
+    echo "" >> /NIXLBENCH_FIX_README.md && \
+    echo "This container includes a patched version of libetcd-cpp-api-core.so that fixes" >> /NIXLBENCH_FIX_README.md && \
+    echo "the \"target uri is not valid\" error in nixlbench." >> /NIXLBENCH_FIX_README.md && \
+    echo "" >> /NIXLBENCH_FIX_README.md && \
+    echo "## The Fix" >> /NIXLBENCH_FIX_README.md && \
+    echo "- Environment variable ETCD_CPP_API_DISABLE_URI_VALIDATION=1 is set by default" >> /NIXLBENCH_FIX_README.md && \
+    echo "- The etcd-cpp-apiv3 library has been patched to respect this environment variable" >> /NIXLBENCH_FIX_README.md && \
+    echo "- DNS resolution failures no longer cause hard errors" >> /NIXLBENCH_FIX_README.md && \
+    echo "" >> /NIXLBENCH_FIX_README.md && \
+    echo "## Usage" >> /NIXLBENCH_FIX_README.md && \
+    echo "nixlbench should work out of the box." >> /NIXLBENCH_FIX_README.md && \
+    echo "" >> /NIXLBENCH_FIX_README.md && \
+    echo "## GitHub Issue" >> /NIXLBENCH_FIX_README.md && \
+    echo "Fix addresses: https://github.com/ai-dynamo/nixl/issues/1044" >> /NIXLBENCH_FIX_README.md
+
+# Set working directory
+WORKDIR /workspace
+
+# Default command
+CMD ["/bin/bash"]
