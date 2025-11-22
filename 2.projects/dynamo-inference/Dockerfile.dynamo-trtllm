@@ -2,7 +2,7 @@
 
 ARG NIXL_BASE_IMAGE="nixl-h100-efa:optimized"
 
-FROM $(NIXL_BASE_IMAGE)
+FROM ${NIXL_BASE_IMAGE} as runtime
 
 # Display build summary
 RUN echo "" && \
@@ -29,7 +29,7 @@ RUN apt-get update && \
         libzmq3-dev && \
     rm -rf /var/lib/apt/lists/*
 
-    
+
 # Force correct cuda-python version BEFORE installing tensorrt-llm/dynamo
 RUN pip3 uninstall -y cuda-python cuda-bindings 2>/dev/null || true && \
     pip3 cache purge && \
