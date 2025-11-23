@@ -4,15 +4,25 @@ ARG NIXL_BASE_IMAGE="nixl-h100-efa:optimized"
 
 FROM ${NIXL_BASE_IMAGE} as runtime
 
-# Display build summary
-RUN echo "" && \
-    echo "════════════════════════════════════════════════════════════════════════════" && \
-    cat /opt/BUILD_SUMMARY.txt && \
-    echo "════════════════════════════════════════════════════════════════════════════" && \
-    echo ""
+ARG DEFAULT_PYTHON_VERSION=3.12
 
-# 0. Make sure you are in the Python env you actually want to use
-#    (e.g., source /opt/dynamo/venv/bin/activate, or conda activate, etc.)
+# Install Python in this layer
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python-is-python3 \
+        python3-pip \
+        && rm -rf /var/lib/apt/lists/*
+
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
+# Install NIXL & CUDA 12 wheel and related Python deps
+RUN pip install nixl
+RUN python3 -c "import importlib.metadata as im, nixl; print('✅ NIXL imported:', nixl); print('  dist nixl:     ', im.version('nixl')); print('  dist nixl-cu12:', im.version('nixl-cu12'))"
+WORKDIR /workspace
+
+CMD ["/bin/bash"]
+
 ENV PIP_BREAK_SYSTEM_PACKAGES=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -45,14 +55,20 @@ WORKDIR /opt/
 
 
 RUN git clone https://github.com/ai-dynamo/dynamo.git
-RUN cd /opt/dynamo && git checkout v0.4.1
+RUN cd /opt/dynamo && git checkout v0.6.1
 
 
-RUN cd /opt/dynamo/lib/bindings/python && maturin develop
+# Build the Rust/Python extension wheel
+RUN cd /opt/dynamo/lib/bindings/python && \
+    maturin build --release --locked
 
+# Install the produced wheel into system Python (no venv)
+RUN cd /opt/dynamo/lib/bindings/python && \
+    python3 -m pip install --no-cache-dir \
+        target/wheels/*.whl
 WORKDIR /opt/dynamo
 
-RUN pip3 install -e ".[trtllm]" --break-system-packages
+RUN pip3 install -e ".[trtllm]" --no-cache-dir --break-system-packages
 # Initialize PYTHONPATH if it doesn't exist
 # Only append if PYTHONPATH exists, otherwise just set it
 
@@ -61,7 +77,7 @@ RUN pip3 install -e ".[trtllm]" --break-system-packages
 # or: pip install -e ".[vllm]"
 # or: pip install -e ".[all]"
 # If you don't care about preserving existing PYTHONPATH
-ENV PYTHONPATH="/opt/dynamo/components/backends/trtllm/src"
+ENV PYTHONPATH="/opt/dynamo/components/backends/trtllm/src:/opt/dynamo/components/frontend/src:"
 
 # Verify ZeroMQ is available
 RUN ldconfig && ldconfig -p | grep libzmq.so.5
@@ -73,4 +89,3 @@ RUN pip3 cache purge && \
     rm -rf /tmp/* /var/tmp/*
 
 CMD ["/bin/bash"]
-
