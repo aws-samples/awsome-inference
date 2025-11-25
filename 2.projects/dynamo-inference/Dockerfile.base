@@ -49,7 +49,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     CUDA_HOME=/usr/local/cuda \
-    PATH=/usr/local/cuda/bin:/usr/local/bin:${PATH}
+    PATH=/usr/local/cuda/bin:/usr/local/bin:/usr/local/ucx/bin:${PATH}
 
 WORKDIR /opt/build
 
@@ -289,7 +289,7 @@ ARG RUST_TOOLCHAIN="1.86.0"
 
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/cargo/bin:$PATH \
+    PATH=/usr/local/cargo/bin:/usr/local/ucx/bin:$PATH \
     RUSTARCH=${ARCH}-unknown-linux-gnu
 
 RUN cd /tmp && \
@@ -421,7 +421,7 @@ ARG ARCH="x86_64"
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     CUDA_HOME=/usr/local/cuda \
-    PATH=/usr/local/cuda/bin:/usr/local/bin:${PATH} \
+    PATH=/usr/local/cuda/bin:/usr/local/bin:/usr/local/ucx/bin:${PATH} \
     EFA_PATH=/opt/amazon/efa \
     GDRCOPY_PATH=/opt/gdrcopy \
     UCX_PATH=/usr/local/ucx \
