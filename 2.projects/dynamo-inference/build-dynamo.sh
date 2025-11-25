@@ -366,6 +366,9 @@ fi
 # Build Docker command
 ##############################
 BUILD_ARGS=(
+    # Base image
+    --build-arg "BASE_IMAGE=${BASE_IMAGE}"
+
     # Architecture
     --build-arg "ARCH=${ARCH}"
     --build-arg "NPROC=${NPROC}"
@@ -434,6 +437,8 @@ fi
 
 echo "🚀 Starting build..."
 echo ""
+
+echo "$DOCKER_CMD"
 
 eval "$DOCKER_CMD"
 
