@@ -438,6 +438,11 @@ COPY --from=build /opt/amazon /opt/amazon
 COPY --from=build /opt/gdrcopy /opt/gdrcopy
 COPY --from=build /opt/aws-ofi-nccl /opt/aws-ofi-nccl
 
+# libgflags-dev
+RUN apt-get update && \
+    apt-get install -y libgflags-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 ENV LD_LIBRARY_PATH="/usr/local/lib:/usr/local/libfabric/lib:/usr/local/ucx/lib:/usr/local/ucx/lib/ucx:/opt/amazon/efa/lib:/opt/gdrcopy/lib64:/opt/aws-ofi-nccl/lib:${LD_LIBRARY_PATH}"
 
 WORKDIR /workspace
