@@ -1,0 +1,299 @@
+# syntax=docker/dockerfile:1.10.0
+
+FROM aws-efa-base-a10:latest
+
+##############################
+# Build ARGs
+##############################
+ARG NPROC
+ARG ARCH="x86_64"
+
+# Versions
+ARG DEFAULT_PYTHON_VERSION="3.12"
+ARG NIXL_VERSION="0.7.1"
+ARG NIXL_GIT_TAG="${NIXL_VERSION}"
+ARG DYNAMO_GIT_TAG="main"
+ARG RUST_TOOLCHAIN="1.86.0"
+
+##############################
+# Path ARGs (from base image)
+##############################
+ARG CUDA_HOME="/usr/local/cuda"
+ARG EFA_PREFIX="/opt/amazon/efa"
+ARG GDRCOPY_PREFIX="/opt/gdrcopy"
+ARG UCX_PREFIX="/usr/local/ucx"
+ARG AWS_OFI_NCCL_PREFIX="/opt/aws-ofi-nccl"
+ARG LIBFABRIC_PREFIX="/usr/local"
+
+# NIXL paths
+ARG NIXL_PREFIX="/usr/local/nixl"
+ARG NIXL_LIB_DIR="${NIXL_PREFIX}/lib/${ARCH}-linux-gnu"
+ARG NIXL_PLUGIN_DIR="${NIXL_PREFIX}/lib/${ARCH}-linux-gnu/plugins"
+
+# Python paths
+ARG PYTHON_VERSION="3.12"
+ARG PYTHON_SITE_PACKAGES="/usr/local/lib/python${PYTHON_VERSION}/dist-packages"
+
+# Application paths
+ARG DYNAMO_HOME="/opt/dynamo"
+ARG NIXL_BUILD_DIR="/workspace/nixl"
+
+# Rust paths
+ARG RUSTUP_HOME="/usr/local/rustup"
+ARG CARGO_HOME="/usr/local/cargo"
+
+##############################
+# Derived paths (computed from ARGs)
+##############################
+ARG TORCH_LIB_DIR="${PYTHON_SITE_PACKAGES}/torch/lib"
+ARG TENSORRT_LLM_DIR="${PYTHON_SITE_PACKAGES}/tensorrt_llm"
+ARG TENSORRT_LLM_LIBS="${TENSORRT_LLM_DIR}/libs"
+ARG TENSORRT_DIR="${PYTHON_SITE_PACKAGES}/tensorrt"
+
+##############################
+# Environment variables
+##############################
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PIP_BREAK_SYSTEM_PACKAGES=1 \
+    # Rust
+    RUSTUP_HOME=${RUSTUP_HOME} \
+    CARGO_HOME=${CARGO_HOME} \
+    # CUDA
+    CUDA_HOME=${CUDA_HOME} \
+    # Paths from base
+    EFA_PATH=${EFA_PREFIX} \
+    GDRCOPY_PATH=${GDRCOPY_PREFIX} \
+    UCX_PATH=${UCX_PREFIX} \
+    # NIXL
+    NIXL_PREFIX=${NIXL_PREFIX} \
+    NIXL_LIB_DIR=${NIXL_LIB_DIR} \
+    NIXL_PLUGIN_DIR=${NIXL_PLUGIN_DIR} \
+    # Dynamo
+    DYNAMO_HOME=${DYNAMO_HOME} \
+    # Python paths for Dynamo
+    PYTHONPATH=${DYNAMO_HOME}/components/backends/trtllm/src:${DYNAMO_HOME}/components/frontend/src \
+    # System PATH
+    PATH=${CARGO_HOME}/bin:${CUDA_HOME}/bin:/usr/local/bin:${PATH}
+
+############################
+# Install system dependencies
+############################
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-dev \
+        python3-pip \
+        python-is-python3 \
+        openmpi-bin \
+        libopenmpi-dev \
+        git \
+        build-essential \
+        pkg-config \
+        libhwloc-dev \
+        curl \
+        wget \
+        protobuf-compiler \
+        libprotobuf-dev \
+        libzmq5 \
+        libcpprest-dev \
+        libgrpc++-dev \
+        libgrpc-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+############################
+# Install Rust toolchain
+############################
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+    sh -s -- -y --no-modify-path --profile minimal --default-toolchain ${RUST_TOOLCHAIN} && \
+    chmod -R a+w ${RUSTUP_HOME} ${CARGO_HOME} && \
+    rustc --version && cargo --version
+
+############################
+# Build NIXL Python bindings
+############################
+WORKDIR ${NIXL_BUILD_DIR}
+RUN rm -rf nixl && \
+    git clone --depth 1 --branch "${NIXL_GIT_TAG}" \
+        https://github.com/ai-dynamo/nixl.git ${NIXL_BUILD_DIR}
+
+RUN python3 -m pip install --no-cache-dir \
+        meson meson-python pybind11 tomlkit && \
+    python3 -m pip install --no-cache-dir . && \
+    python3 -m pip install --no-cache-dir "nixl==${NIXL_VERSION}"
+
+RUN python3 -c 'import nixl, importlib.metadata as im; \
+print("✅ NIXL imported successfully"); \
+print("   Version:", im.version("nixl"))'
+
+############################
+# Clone Dynamo
+############################
+RUN git clone https://github.com/ai-dynamo/dynamo.git ${DYNAMO_HOME} && \
+    cd ${DYNAMO_HOME} && \
+    git checkout "${DYNAMO_GIT_TAG}"
+
+############################
+# Install maturin and build Dynamo Rust bindings
+############################
+RUN python3 -m pip install --no-cache-dir maturin
+
+WORKDIR ${DYNAMO_HOME}/lib/bindings/python
+RUN maturin build --release --locked -j ${NPROC:-$(nproc)} && \
+    python3 -m pip install --no-cache-dir target/wheels/*.whl
+
+############################
+# Install Dynamo with TensorRT-LLM
+############################
+WORKDIR ${DYNAMO_HOME}
+RUN echo "=== Installing Dynamo with TensorRT-LLM ===" && \
+    python3 -m pip install --no-cache-dir \
+        --extra-index-url https://pypi.nvidia.com/ \
+        -e ".[trtllm]" && \
+    echo "✅ Dynamo installed"
+
+
+RUN apt-get update && \
+    apt-get install -y  \
+        jq 
+
+        
+# Show installed versions
+RUN python3 -c "\
+import torch; \
+import importlib.metadata as im; \
+print('Installed versions:'); \
+print('  PyTorch:', torch.__version__); \
+print('  PyTorch CUDA:', torch.version.cuda); \
+print('  TensorRT-LLM:', im.version('tensorrt-llm')); \
+"
+
+############################
+# Set LD_LIBRARY_PATH (order matters!)
+############################
+ENV LD_LIBRARY_PATH="\
+${PYTHON_SITE_PACKAGES}/torch/lib:\
+${PYTHON_SITE_PACKAGES}/tensorrt_libs:\
+${PYTHON_SITE_PACKAGES}/tensorrt_llm/libs:\
+${TORCH_LIB_DIR}:\
+${TENSORRT_LLM_LIBS}:\
+${TENSORRT_DIR}:\
+/usr/local/lib:\
+${NIXL_LIB_DIR}:\
+${NIXL_PLUGIN_DIR}:\
+${UCX_PREFIX}/lib:\
+${UCX_PREFIX}/lib/ucx:\
+${LIBFABRIC_PREFIX}/lib:\
+${EFA_PREFIX}/lib:\
+${GDRCOPY_PREFIX}/lib64:\
+${AWS_OFI_NCCL_PREFIX}/lib:\
+${LD_LIBRARY_PATH}"
+
+############################
+# Validation
+############################
+
+# 1. Check cuBLAS 13 exists
+RUN echo "=== Checking cuBLAS Libraries ===" && \
+    ldconfig -p | grep libcublas && \
+    ldconfig -p | grep -q "libcublasLt.so.13" && \
+    echo "✅ libcublasLt.so.13 FOUND (CUDA 13)"
+
+# 2. Verify Python packages
+RUN python3 -c "\
+import torch; \
+import importlib.metadata as im; \
+print('✅ PyTorch:', torch.__version__, '- CUDA:', torch.version.cuda); \
+print('✅ TensorRT-LLM:', im.version('tensorrt-llm')); \
+print('✅ NIXL:', im.version('nixl')); \
+"
+
+# 3. Verify imports (non-GPU safe)
+RUN python3 -c "\
+import nixl; \
+import dynamo; \
+print('✅ NIXL imported'); \
+print('✅ Dynamo imported'); \
+"
+
+# 4. Verify critical shared libraries
+RUN python3 -c "\
+import ctypes; \
+ctypes.CDLL('libpython3.12.so.1.0'); \
+ctypes.CDLL('libmpi.so.40'); \
+print('✅ libpython3.12.so.1.0 found'); \
+print('✅ libmpi.so.40 found'); \
+"
+
+# 5. Find TensorRT libraries
+RUN echo "=== Locating TensorRT Libraries ===" && \
+    find ${PYTHON_SITE_PACKAGES} -name "libnvinfer*.so*" 2>/dev/null | head -5 && \
+    if [ -f "${TENSORRT_LLM_LIBS}/libnvinfer.so.10" ]; then \
+        echo "✅ libnvinfer.so.10 found in ${TENSORRT_LLM_LIBS}"; \
+    elif find ${PYTHON_SITE_PACKAGES} -name "libnvinfer.so.10" 2>/dev/null | grep -q .; then \
+        echo "✅ libnvinfer.so.10 found in site-packages"; \
+    else \
+        echo "⚠️  libnvinfer.so.10 location:"; \
+        ldconfig -p | grep libnvinfer || echo "Checking at runtime"; \
+    fi
+
+# 6. Check TensorRT-LLM bindings dependencies
+RUN echo "=== Checking TensorRT-LLM Dependencies ===" && \
+    BINDINGS=$(find ${TENSORRT_LLM_DIR} -name "bindings*.so" 2>/dev/null | head -1) && \
+    if [ -n "$BINDINGS" ]; then \
+        echo "Checking: $BINDINGS"; \
+        echo "--- Dependency status ---"; \
+        ldd "$BINDINGS" 2>/dev/null | grep -E "nvinfer|cublas|cuda" | head -10 || true; \
+        MISSING=$(ldd "$BINDINGS" 2>/dev/null | grep "not found" | grep -Ev "libcuda|libnvidia-ml|libnvrtc|libnvinfer" || true); \
+        if [ -n "$MISSING" ]; then \
+            echo "⚠️  Potentially missing (may be runtime-only):"; \
+            echo "$MISSING"; \
+        else \
+            echo "✅ Core dependencies satisfied"; \
+        fi; \
+    else \
+        echo "⚠️  TensorRT-LLM bindings not found"; \
+    fi
+
+# 7. Verify LD_LIBRARY_PATH directories exist
+RUN echo "=== Verifying Library Paths ===" && \
+    for dir in \
+        "${TORCH_LIB_DIR}" \
+        "${NIXL_LIB_DIR}" \
+        "${UCX_PREFIX}/lib" \
+        "${EFA_PREFIX}/lib" \
+        "${GDRCOPY_PREFIX}/lib64" \
+    ; do \
+        if [ -d "$dir" ]; then \
+            echo "✅ $dir exists"; \
+        else \
+            echo "⚠️  $dir not found"; \
+        fi; \
+    done
+
+# 8. Final summary
+RUN echo "========================================" && \
+    echo "✅ BUILD VALIDATION COMPLETE (CUDA 13.0)" && \
+    echo "========================================" && \
+    echo "" && \
+    echo "Key paths:" && \
+    echo "  DYNAMO_HOME: ${DYNAMO_HOME}" && \
+    echo "  NIXL_PREFIX: ${NIXL_PREFIX}" && \
+    echo "  CUDA_HOME: ${CUDA_HOME}" && \
+    echo "" && \
+    echo "Test at runtime with GPU:" && \
+    echo "  docker run --gpus all <image> python3 -c \\" && \
+    echo "    'from tensorrt_llm.bindings import executor; print(\"OK\")'"
+
+############################
+# Cleanup
+############################
+RUN python3 -m pip cache purge && \
+    rm -rf /root/.cache/pip /tmp/* /var/tmp/* && \
+    find ${PYTHON_SITE_PACKAGES} -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
+    find ${DYNAMO_HOME} -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+
+
+
+WORKDIR /workspace
+CMD ["/bin/bash"]

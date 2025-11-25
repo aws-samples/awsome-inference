@@ -2,35 +2,52 @@
 #
 # Canonical NIXL + EFA base for Dynamo on AWS/EKS
 # - CUDA 12.9, Ubuntu 24.04
-# - NIXL 0.7.1 (ready to move to 0.8.0)
-# - libfabric 1.21.0 to /usr/local
+# - NIXL 0.7.1 (C++ core + Rust bindings)
+# - libfabric v2.3.0 to /usr/local
 # - UCX v1.19.0 with EFA + GDRCopy
 # - GDRCopy 2.4.1
 # - EFA userspace via aws-efa-installer (no kernel)
-# - aws-ofi-nccl from release tarball
-# - etcd-cpp-apiv3 + your URI patch + AWS SDK C++
+# - etcd-cpp-apiv3 + URI patch + AWS SDK C++ (S3)
+# - Optional NCCL + aws-ofi-nccl
 #
-ARG BASE_IMAGE="nvcr.io/nvidia/cuda-dl-base"
-ARG BASE_IMAGE_TAG="25.06-cuda12.9-devel-ubuntu24.04"
+# Build stage image
+# NEW (correct tags):
+ARG BASE_IMAGE_DEVEL="nvidia/cuda"
+ARG BASE_IMAGE_DEVEL_TAG="13.0.0-devel-ubuntu24.04"
 
-FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG} AS build
+ARG BASE_IMAGE_RUNTIME="nvidia/cuda"
+ARG BASE_IMAGE_RUNTIME_TAG="13.0.0-runtime-ubuntu24.04"
+
+
+##########
+# Build stage
+##########
+FROM ${BASE_IMAGE_DEVEL}:${BASE_IMAGE_DEVEL_TAG} AS build
 
 ARG ARCH="x86_64"
 ARG DEFAULT_PYTHON_VERSION="3.12"
 ARG NPROC
 
 # Core versions
-ARG NIXL_VERSION="0.7.1"              # can bump to 0.8.0 later
+ARG NIXL_VERSION="0.7.1"
+ARG NIXL_GIT_TAG="${NIXL_VERSION}"
 ARG UCX_VERSION="v1.19.0"
 ARG LIBFABRIC_VERSION="v2.3.0"
 ARG LIBFABRIC_INSTALL_PATH="/usr/local"
 ARG GDRCOPY_VERSION="2.4.1"
-ARG AWS_OFI_NCCL_VERSION="v1.17.2"    # example: latest tested release
+ARG AWS_OFI_NCCL_VERSION="v1.17.1"
 ARG AWS_SDK_VERSION="1.11.581"
 ARG ETCD_CPP_VERSION="0.15.4"
+ARG RDMA_CORE_VERSION="v51.0"
+ARG EFA_INSTALLER_VERSION="1.43.1"
+ARG INSTALL_NCCL="1"
+ARG INSTALL_AWS_OFI_NCCL="1"
+ARG NCCL_VERSION="v2.27.5"
+ARG CUDA_ARCH="86"     # A10G
 
 ENV DEBIAN_FRONTEND=noninteractive \
-    LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
     CUDA_HOME=/usr/local/cuda \
     PATH=/usr/local/cuda/bin:/usr/local/bin:${PATH}
 
@@ -62,9 +79,6 @@ RUN apt-get update -y && \
       libnuma-dev \
       hwloc \
       libhwloc-dev \
-      # Python
-      python${DEFAULT_PYTHON_VERSION}-dev \
-      pybind11-dev \
       # TLS / HTTP / GRPC
       libssl-dev \
       zlib1g-dev \
@@ -77,11 +91,19 @@ RUN apt-get update -y && \
       # misc
       libaio-dev \
       liburing-dev \
+      # Python for meson/nixl build
+      python${DEFAULT_PYTHON_VERSION} \
+      python${DEFAULT_PYTHON_VERSION}-dev \
+      python3-pip \
+      python-is-python3 \
+      jq \
       && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y pandoc && rm -rf /var/lib/apt/lists/*
 
-ARG RDMA_CORE_VERSION=v51.0
+############################
+# 2. RDMA core
+############################
 RUN cd /opt/build && \
     wget https://github.com/linux-rdma/rdma-core/archive/refs/tags/${RDMA_CORE_VERSION}.tar.gz && \
     tar xzf ${RDMA_CORE_VERSION}.tar.gz && \
@@ -92,16 +114,13 @@ RUN cd /opt/build && \
           -DNO_MAN_PAGES=1 \
           -DENABLE_STATIC=1 \
           .. && \
-    make -j$(nproc) && make install && \
+    make -j${NPROC:-$(nproc)} && make install && \
     ldconfig && \
     cd / && rm -rf /opt/build/rdma-core-*
 
-
-#===========================================================================
-# EFA Installer (without kernel modules, skip libfabric for custom build)
-#===========================================================================
-ARG EFA_INSTALLER_VERSION="1.43.1"
-
+############################
+# 3. EFA userspace (no kmod)
+############################
 RUN cd /tmp && \
     echo "=== Installing EFA Installer (skipping libfabric for custom build) ===" && \
     curl -O https://efa-installer.amazonaws.com/aws-efa-installer-${EFA_INSTALLER_VERSION}.tar.gz && \
@@ -110,11 +129,9 @@ RUN cd /tmp && \
     ./efa_installer.sh -y --skip-kmod --skip-limit-conf --enable-gdr --no-verify || true && \
     cd .. && rm -rf aws-efa-installer*
 
-# Setup EFA library paths
 RUN echo "=== Setting up EFA library paths for downstream builds ===" && \
     mkdir -p /opt/amazon/efa/lib /opt/amazon/efa/include
 
-# Find and symlink EFA library
 RUN if [ -f /usr/lib/x86_64-linux-gnu/libefa.so ]; then \
         ln -sf /usr/lib/x86_64-linux-gnu/libefa.so* /opt/amazon/efa/lib/ && \
         echo "✅ EFA library symlinked from /usr/lib/x86_64-linux-gnu/"; \
@@ -129,7 +146,6 @@ RUN if [ -f /usr/lib/x86_64-linux-gnu/libefa.so ]; then \
         echo "✅ EFA library linked"; \
     fi
 
-# Symlink EFA headers
 RUN if [ -d /usr/include/infiniband ]; then \
         rm -rf /opt/amazon/efa/include/infiniband && \
         ln -sfn /usr/include/infiniband /opt/amazon/efa/include/infiniband && \
@@ -140,11 +156,11 @@ RUN if [ -d /usr/include/infiniband ]; then \
         ln -sfn /usr/include/rdma /opt/amazon/efa/include/rdma && \
         echo "✅ RDMA headers symlinked from /usr/include/rdma"; \
     fi
-    
+
 ENV EFA_PATH=/opt/amazon/efa
 
 ############################
-# 3. GDRCopy
+# 4. GDRCopy
 ############################
 RUN git clone --depth 1 --branch v${GDRCOPY_VERSION} https://github.com/NVIDIA/gdrcopy.git && \
     cd gdrcopy && \
@@ -154,6 +170,10 @@ RUN git clone --depth 1 --branch v${GDRCOPY_VERSION} https://github.com/NVIDIA/g
     cd / && rm -rf gdrcopy
 
 ENV GDRCOPY_PATH=/opt/gdrcopy
+
+############################
+# 5. libfabric v2.3.0 -> /usr/local (CRITICAL)
+############################
 RUN cd /opt/build && \
     wget --tries=3 --waitretry=5 \
       "https://github.com/ofiwg/libfabric/releases/download/${LIBFABRIC_VERSION}/libfabric-${LIBFABRIC_VERSION#v}.tar.bz2" \
@@ -177,39 +197,10 @@ RUN cd /opt/build && \
     ldconfig && \
     cd / && rm -rf /opt/build/libfabric-*
 
-
-# CRITICAL: Build libfabric from source to /usr/local (not /opt/amazon/efa)
-# This is the key fix for NIXL segfault issue
-RUN wget --tries=3 --waitretry=5 --timeout=30 --read-timeout=60 \
-    "https://github.com/ofiwg/libfabric/releases/download/${LIBFABRIC_VERSION}/libfabric-${LIBFABRIC_VERSION#v}.tar.bz2" \
-    -O /opt/build/libfabric.tar.bz2 && \
-    cd /opt/build && \
-    tar xjf libfabric.tar.bz2 && \
-    rm libfabric.tar.bz2 && \
-    cd libfabric-* && \
-    ./configure \
-        --prefix="${LIBFABRIC_INSTALL_PATH}" \
-        --disable-verbs \
-        --disable-psm3 \
-        --disable-opx \
-        --disable-usnic \
-        --disable-rstream \
-        --enable-efa \
-        --with-cuda=${CUDA_HOME} \
-        --enable-cuda-dlopen \
-        --with-gdrcopy=/opt/gdrcopy \
-        --enable-gdrcopy-dlopen && \
-    make -j${NPROC:-$(nproc)} && \
-    make install && \
-    ldconfig && \
-    cd .. && rm -rf libfabric-* && \
-    echo "✅ libfabric ${LIBFABRIC_VERSION} installed to ${LIBFABRIC_INSTALL_PATH}"
-
-# Verify libfabric installation
 RUN fi_info -p efa || echo "⚠️ Warning: EFA provider not available (may need hardware)"
 
 ############################
-# 5. UCX v1.19 with EFA+GDRCopy
+# 6. UCX v1.19 with EFA+GDRCopy
 ############################
 RUN cd /opt/build && \
     git clone https://github.com/openucx/ucx.git && \
@@ -239,34 +230,14 @@ RUN cd /opt/build && \
 ENV UCX_PATH=/usr/local/ucx
 
 ############################
-# 6. Python
-############################
-# Install Python and pip
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    python-is-python3 \
-    && rm -rf /var/lib/apt/lists/*
-
-ENV PIP_BREAK_SYSTEM_PACKAGES=1
-
-# Install Python packages
-RUN pip install --upgrade \
-    meson meson-python pybind11 patchelf \
-    pyyaml click tabulate auditwheel tomlkit
-    
-############################
-# 7. etcd-cpp-apiv3 + your URI patch + AWS SDK
+# 7. etcd-cpp-apiv3 + URI patch + AWS SDK C++ (S3 only)
 ############################
 COPY etcd-uri-fix.patch /tmp/etcd-fix/
 
-# Install cpprestsdk dependency
 RUN apt-get update && apt-get install -y \
-    libcpprest-dev \
-    && rm -rf /var/lib/apt/lists/*
+    libcpprest-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-    
-# Build etcd-cpp-apiv3
 RUN git clone --depth 1 -b v${ETCD_CPP_VERSION} https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3.git && \
     cd etcd-cpp-apiv3 && \
     sed -i '/^find_dependency(cpprestsdk)$/d' etcd-cpp-api-config.in.cmake && \
@@ -276,10 +247,8 @@ RUN git clone --depth 1 -b v${ETCD_CPP_VERSION} https://github.com/etcd-cpp-apiv
     make -j${NPROC:-$(nproc)} && make install && \
     cd / && rm -rf etcd-cpp-apiv3
 
-# Set the environment variable permanently
 ENV ETCD_CPP_API_DISABLE_URI_VALIDATION=1
 
-# Add documentation
 RUN echo '#!/bin/bash' > /usr/local/bin/nixlbench-test && \
     echo 'echo "Testing nixlbench with ETCD fix..."' >> /usr/local/bin/nixlbench-test && \
     echo 'echo "ETCD_CPP_API_DISABLE_URI_VALIDATION=$ETCD_CPP_API_DISABLE_URI_VALIDATION"' >> /usr/local/bin/nixlbench-test && \
@@ -290,9 +259,6 @@ RUN echo '#!/bin/bash' > /usr/local/bin/nixlbench-test && \
     echo 'fi' >> /usr/local/bin/nixlbench-test && \
     chmod +x /usr/local/bin/nixlbench-test
 
-############################
-# 7a. AWS SDK C++ (only S3 component)
-############################    
 RUN git clone --recurse-submodules --depth 1 --shallow-submodules \
         https://github.com/aws/aws-sdk-cpp.git --branch ${AWS_SDK_VERSION} && \
     mkdir aws_sdk_build && cd aws_sdk_build && \
@@ -302,25 +268,22 @@ RUN git clone --recurse-submodules --depth 1 --shallow-submodules \
         -DENABLE_TESTING=OFF \
         -DCMAKE_INSTALL_PREFIX=/usr/local && \
     make -j${NPROC:-$(nproc)} && make install && \
-    cd / && rm -rf aws-sdk-cpp aws_sdk_build \
+    cd / && rm -rf aws-sdk-cpp aws_sdk_build && \
     ldconfig && \
     echo "✅ AWS SDK C++ (S3 only) installed"
 
-
 ############################
-# 8. NIXL 0.7.1 build + wheel
-########################
-# Build gusli (NVIDIA storage library)
+# 8. gusli (optional)
+############################
 RUN git clone https://github.com/nvidia/gusli.git && \
     cd gusli && \
     make all BUILD_RELEASE=1 BUILD_FOR_UNITEST=0 VERBOSE=1 ALLOW_USE_URING=0 && \
-    cd .. && \
+    cd .. && rm -rf gusli && \
     echo "✅ gusli built"
 
-##############################################################################
-# Rust Toolchain (Required for NIXL Rust bindings)
-##############################################################################
-
+############################
+# 9. Rust toolchain for NIXL
+############################
 ARG RUSTUP_VERSION="1.28.1"
 ARG RUST_TOOLCHAIN="1.86.0"
 
@@ -329,27 +292,24 @@ ENV RUSTUP_HOME=/usr/local/rustup \
     PATH=/usr/local/cargo/bin:$PATH \
     RUSTARCH=${ARCH}-unknown-linux-gnu
 
-RUN echo "=== Installing rustup ${RUSTUP_VERSION} and Rust toolchain ${RUST_TOOLCHAIN} ===" && \
-    cd /tmp && \
+RUN cd /tmp && \
     wget -q "https://static.rust-lang.org/rustup/archive/${RUSTUP_VERSION}/${RUSTARCH}/rustup-init" && \
     chmod +x rustup-init && \
     ./rustup-init -y --no-modify-path --profile minimal --default-toolchain ${RUST_TOOLCHAIN} && \
     rm rustup-init && \
     chmod -R a+w ${RUSTUP_HOME} ${CARGO_HOME} && \
     rustup default ${RUST_TOOLCHAIN} && \
-    rustup toolchain list && \
     rustc --version && \
     cargo --version && \
     echo "✅ Rust toolchain ${RUST_TOOLCHAIN} installed"
 
-##############################################################################
-# Clone / patch NIXL and build C++ core (unchanged from what you had)
-##############################################################################
-
+############################
+# 10. NIXL C++ + Rust
+############################
 WORKDIR /workspace/nixl
-RUN git clone --depth 1 --branch ${NIXL_VERSION} \
+RUN git clone --depth 1 --branch ${NIXL_GIT_TAG} \
     https://github.com/ai-dynamo/nixl.git /workspace/nixl
-    
+
 WORKDIR /workspace/nixl
 
 RUN sed -i 's/<< event.event_type()/<< static_cast<int>(event.event_type())/' \
@@ -361,6 +321,8 @@ ENV NIXL_PREFIX=/usr/local/nixl \
     NIXL_LIB_DIR=/usr/local/nixl/lib/${ARCH}-linux-gnu \
     NIXL_PLUGIN_DIR=/usr/local/nixl/lib/${ARCH}-linux-gnu/plugins \
     LD_LIBRARY_PATH=/usr/local/lib:${LIBFABRIC_INSTALL_PATH}/lib:${LD_LIBRARY_PATH}
+
+RUN apt-get update && apt-get install -y pybind11-dev && rm -rf /var/lib/apt/lists/*
 
 RUN rm -rf build && \
     mkdir build && \
@@ -377,65 +339,29 @@ RUN echo "${NIXL_LIB_DIR}" > /etc/ld.so.conf.d/nixl.conf && \
     echo "${NIXL_PLUGIN_DIR}" >> /etc/ld.so.conf.d/nixl.conf && \
     ldconfig
 
-##############################################################################
-# libclang + Rust bindings (FIX)
-##############################################################################
-
-# Install clang + libclang
 RUN apt-get update && \
     apt-get install -y --no-install-recommends clang libclang-dev && \
     rm -rf /var/lib/apt/lists/*
 
-
-# Tell bindgen where libclang.so lives
 ENV LIBCLANG_PATH=/usr/lib/llvm-18/lib
 
-# Now build Rust bindings
 RUN cd src/bindings/rust && \
     cargo build --release --locked && \
     echo "✅ NIXL Rust bindings built"
 
-
-##############################################################################
-# Python bindings from source (CUDA 12)
-##############################################################################
-# After NIXL C++ + Rust build
-WORKDIR /workspace/nixl
-
-# Build + install CUDA-12 NIXL wheel from this source
-RUN python3.12 -m pip install --no-cache-dir \
-      meson meson-python pybind11 tomlkit && \
-    python3.12 -m pip install --no-cache-dir .
-
-# (Optional but recommended) install meta nixl stub aligned to your version
-# so that "import nixl" works as expected
-RUN python3.12 -m pip install --no-cache-dir "nixl==0.7.1"
-
-# Sanity check – one-line import
-RUN python3.12 -c 'import importlib.metadata as im, nixl, sys; \
-print("Python:", sys.version); \
-print("✅ NIXL imported:", nixl); \
-print("  dist nixl:     ", im.version("nixl")); \
-print("  dist nixl-cu12:", im.version("nixl-cu12"))'
-
-
-##############################################################################
-# Optional: Build nixlbench
-##############################################################################
+############################
+# 11. nixlbench
+############################
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        libgflags-dev && \
+    apt-get install -y --no-install-recommends libgflags-dev && \
     rm -rf /var/lib/apt/lists/*
 
-
-ENV NIXL_SRC_DIR=/workspace/nixl
-
 RUN echo "=== Building nixlbench ===" && \
-    cd ${NIXL_SRC_DIR}/benchmark/nixlbench && \
+    cd /workspace/nixl/benchmark/nixlbench && \
     rm -rf build && mkdir build && \
     meson setup build/ \
         --prefix=/usr/local \
-        -Dnixl_path=/usr/local/nixl \
+        -Dnixl_path=${NIXL_PREFIX} \
         -Dcudapath_inc=/usr/local/cuda/include \
         -Dcudapath_lib=/usr/local/cuda/lib64 \
         -Detcd_inc_path=/usr/local/include \
@@ -445,17 +371,16 @@ RUN echo "=== Building nixlbench ===" && \
     ninja install && \
     echo "✅ nixlbench installed"
 
-#===========================================================================
-#  NCCL - NVIDIA Collective Communications Library
-#===========================================================================
-ARG INSTALL_NCCL="1"
-
+############################
+# 12. (Optional) NCCL + aws-ofi-nccl
+############################
+ARG NCCL_VERSION="v2.27.5"
 RUN if [ "${INSTALL_NCCL}" = "1" ]; then \
         echo "=== Building NCCL v${NCCL_VERSION} for SM${CUDA_ARCH} ===" && \
         cd /tmp && \
         git clone --depth 1 --branch v${NCCL_VERSION} https://github.com/NVIDIA/nccl.git && \
         cd nccl && \
-        make -j${NPROC} src.build \
+        make -j${NPROC:-$(nproc)} src.build \
             CUDA_HOME=${CUDA_HOME} \
             NVCC_GENCODE="-gencode=arch=compute_${CUDA_ARCH},code=sm_${CUDA_ARCH}" && \
         make install PREFIX=/usr/local && \
@@ -467,26 +392,54 @@ RUN if [ "${INSTALL_NCCL}" = "1" ]; then \
         echo "⏭️ Skipping NCCL build (INSTALL_NCCL=0)"; \
     fi
 
-##############################################################################
-# 9. aws-ofi-nccl
-##############################################################################
+RUN if [ "${INSTALL_AWS_OFI_NCCL}" = "1" ]; then \
+        cd /opt/build && \
+        echo "=== Building aws-ofi-nccl ${AWS_OFI_NCCL_VERSION} from git ===" && \
+        git clone --depth 1 --branch ${AWS_OFI_NCCL_VERSION} https://github.com/aws/aws-ofi-nccl.git aws-ofi-nccl && \
+        cd aws-ofi-nccl && \
+        ./autogen.sh && \
+        ./configure \
+            --prefix=/opt/aws-ofi-nccl \
+            --with-libfabric=/usr/local \
+            --with-cuda=${CUDA_HOME} && \
+        make -j${NPROC:-$(nproc)} && \
+        make install && \
+        echo "/opt/aws-ofi-nccl/lib" > /etc/ld.so.conf.d/aws-ofi-nccl.conf && \
+        ldconfig && \
+        cd / && rm -rf /opt/build/aws-ofi-nccl*; \
+    else \
+        echo "⏭️ Skipping aws-ofi-nccl build (INSTALL_AWS_OFI_NCCL=0)"; \
+    fi
 
-ARG AWS_OFI_NCCL_VERSION="v1.17.1"  # or v1.17.0, or whichever tag you want
+##########
+# Runtime stage – HPC base (no Python)
+##########
+FROM ${BASE_IMAGE_RUNTIME}:${BASE_IMAGE_RUNTIME_TAG} AS runtime
 
-RUN cd /opt/build && \
-    echo "=== Building aws-ofi-nccl ${AWS_OFI_NCCL_VERSION} from git ===" && \
-    git clone --depth 1 --branch ${AWS_OFI_NCCL_VERSION} https://github.com/aws/aws-ofi-nccl.git aws-ofi-nccl && \
-    cd aws-ofi-nccl && \
-    ./autogen.sh && \
-    ./configure \
-        --prefix=/opt/aws-ofi-nccl \
-        --with-libfabric=/usr/local \
-        --with-cuda=${CUDA_HOME} && \
-    make -j${NPROC:-$(nproc)} && \
-    make install && \
-    echo "/opt/aws-ofi-nccl/lib" > /etc/ld.so.conf.d/aws-ofi-nccl.conf && \
-    ldconfig && \
-    cd / && rm -rf /opt/build/aws-ofi-nccl*
+ARG ARCH="x86_64"
 
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    CUDA_HOME=/usr/local/cuda \
+    PATH=/usr/local/cuda/bin:/usr/local/bin:${PATH} \
+    EFA_PATH=/opt/amazon/efa \
+    GDRCOPY_PATH=/opt/gdrcopy \
+    UCX_PATH=/usr/local/ucx \
+    NIXL_PREFIX=/usr/local/nixl \
+    NIXL_LIB_DIR=/usr/local/nixl/lib/${ARCH}-linux-gnu \
+    NIXL_PLUGIN_DIR=/usr/local/nixl/lib/${ARCH}-linux-gnu/plugins \
+    NCCL_DEBUG=INFO \
+    FI_PROVIDER=efa \
+    ETCD_CPP_API_DISABLE_URI_VALIDATION=1
 
+# Copy libs and tools from build
+COPY --from=build /usr/local /usr/local
+COPY --from=build /opt/amazon /opt/amazon
+COPY --from=build /opt/gdrcopy /opt/gdrcopy
+COPY --from=build /opt/aws-ofi-nccl /opt/aws-ofi-nccl
 
+ENV LD_LIBRARY_PATH="/usr/local/lib:/usr/local/libfabric/lib:/usr/local/ucx/lib:/usr/local/ucx/lib/ucx:/opt/amazon/efa/lib:/opt/gdrcopy/lib64:/opt/aws-ofi-nccl/lib:${LD_LIBRARY_PATH}"
+
+WORKDIR /workspace
+
+CMD ["/bin/bash"]
