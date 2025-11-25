@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1.10.0
 
-FROM aws-efa-base-a10:latest
+ARG BASE_IMAGE="efa:a10g"
+
+FROM ${BASE_IMAGE}
 
 ##############################
 # Build ARGs
