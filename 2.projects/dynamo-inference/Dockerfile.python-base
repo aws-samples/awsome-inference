@@ -188,19 +188,11 @@ RUN echo "=== Building NIXL from source (CUDA 13) ===" && \
     echo "✅ NIXL built from source against CUDA 13"
 
 # Verify NIXL
-RUN python3 -c '\
-import nixl; \
-print("✅ NIXL imported successfully"); \
-try: \
-    import importlib.metadata as im; \
-    for name in ["nixl", "nixl-cu12", "nixl-cu13"]: \
-        try: \
-            ver = im.version(name); \
-            print(f"   Version ({name}): {ver}"); \
-            break; \
-        except: pass; \
-except: \
-    print("   Version: from source");'
+RUN python3 -c "import nixl; print('✅ NIXL imported successfully')" && \
+    (python3 -c "import importlib.metadata as im; print('   Version:', im.version('nixl'))" 2>/dev/null || \
+     python3 -c "import importlib.metadata as im; print('   Version:', im.version('nixl-cu12'))" 2>/dev/null || \
+     python3 -c "import importlib.metadata as im; print('   Version:', im.version('nixl-cu13'))" 2>/dev/null || \
+     echo "   Version: built from source")
 
 ############################
 # Clone Dynamo
@@ -304,17 +296,18 @@ print('✅ PyTorch CUDA 13 verified'); \
 
 # 2. Check for any remaining CUDA 12 packages
 RUN echo "=== Checking for CUDA 12 packages ===" && \
-    python3 -c "\
-import subprocess; \
-result = subprocess.run(['pip', 'freeze'], capture_output=True, text=True); \
-cu12_pkgs = [l for l in result.stdout.split('\n') if '-cu12' in l.lower() and l.strip()]; \
-if cu12_pkgs: \
-    print('⚠️  WARNING: CUDA 12 packages still present:'); \
-    for p in cu12_pkgs[:20]: print(f'  {p}'); \
-    print('  (These may cause runtime issues)'); \
-else: \
-    print('✅ No -cu12 packages found'); \
-"
+    python3 << 'PYEOF'
+import subprocess
+result = subprocess.run(['pip', 'freeze'], capture_output=True, text=True)
+cu12_pkgs = [l for l in result.stdout.split('\n') if '-cu12' in l.lower() and l.strip()]
+if cu12_pkgs:
+    print('⚠️  WARNING: CUDA 12 packages still present:')
+    for p in cu12_pkgs[:20]:
+        print(f'  {p}')
+    print('  (These may cause runtime issues)')
+else:
+    print('✅ No -cu12 packages found')
+PYEOF
 
 # 3. Check cuBLAS 13 exists
 RUN echo "=== Checking cuBLAS Libraries ===" && \
@@ -347,16 +340,16 @@ print('✅ Dynamo imported successfully'); \
 "
 
 # 7. Verify critical shared libraries
-RUN python3 -c "\
-import ctypes; \
-libs = ['libpython3.12.so.1.0', 'libmpi.so.40']; \
-for lib in libs: \
-    try: \
-        ctypes.CDLL(lib); \
-        print(f'✅ {lib} found'); \
-    except OSError as e: \
-        print(f'⚠️ {lib}: {e}'); \
-"
+RUN python3 << 'PYEOF'
+import ctypes
+libs = ['libpython3.12.so.1.0', 'libmpi.so.40']
+for lib in libs:
+    try:
+        ctypes.CDLL(lib)
+        print(f'✅ {lib} found')
+    except OSError as e:
+        print(f'⚠️ {lib}: {e}')
+PYEOF
 
 # 8. Check NVIDIA library versions in LD path
 RUN echo "=== Checking NVIDIA libraries ===" && \
@@ -390,17 +383,19 @@ RUN echo "========================================" && \
     echo "✅ BUILD VALIDATION COMPLETE (CUDA 13.0)" && \
     echo "========================================" && \
     echo "" && \
-    python3 -c "\
-import torch; \
-import importlib.metadata as im; \
-print('Final Package Versions:'); \
-print(f'  PyTorch: {torch.__version__}'); \
-print(f'  CUDA: {torch.version.cuda}'); \
-print(f'  TensorRT-LLM: {im.version(\"tensorrt-llm\")}'); \
-try: \
-    print(f'  TensorRT: {im.version(\"tensorrt\")}'); \
-except: pass; \
-" && \
+    python3 << 'PYEOF'
+import torch
+import importlib.metadata as im
+print('Final Package Versions:')
+print(f'  PyTorch: {torch.__version__}')
+print(f'  CUDA: {torch.version.cuda}')
+print(f'  TensorRT-LLM: {im.version("tensorrt-llm")}')
+try:
+    print(f'  TensorRT: {im.version("tensorrt")}')
+except:
+    pass
+PYEOF
+    echo "" && \
     echo "" && \
     echo "Key paths:" && \
     echo "  DYNAMO_HOME: ${DYNAMO_HOME}" && \
