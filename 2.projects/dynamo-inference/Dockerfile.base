@@ -13,10 +13,10 @@
 # Build stage image
 # NEW (correct tags):
 ARG BASE_IMAGE_DEVEL="nvidia/cuda"
-ARG BASE_IMAGE_DEVEL_TAG="13.0.0-devel-ubuntu24.04"
+ARG BASE_IMAGE_DEVEL_TAG="12.4.1-devel-ubuntu24.04"
 
 ARG BASE_IMAGE_RUNTIME="nvidia/cuda"
-ARG BASE_IMAGE_RUNTIME_TAG="13.0.0-runtime-ubuntu24.04"
+ARG BASE_IMAGE_RUNTIME_TAG="12.4.1-runtime-ubuntu24.04"
 
 
 ##########
