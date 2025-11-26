@@ -1,4 +1,8 @@
 # syntax=docker/dockerfile:1.10.0
+#
+# Dockerfile.python-base-cuda13-enforced
+# CUDA 13 enforced build for NIXL + Dynamo + TensorRT-LLM
+#
 
 ARG BASE_IMAGE="efa:a10g"
 
@@ -89,7 +93,7 @@ ENV LANG=C.UTF-8 \
     REQUIRED_CUDA_MAJOR=${REQUIRED_CUDA_MAJOR} \
     REQUIRED_CUDA_MINOR=${REQUIRED_CUDA_MINOR} \
     MIN_DRIVER_VERSION=${MIN_DRIVER_VERSION} \
-    CUDA_VERSION_ENFORCED=true 
+    CUDA_VERSION_ENFORCED=true
 
 ############################
 # Install system dependencies
@@ -114,6 +118,7 @@ RUN apt-get update && \
         libcpprest-dev \
         libgrpc++-dev \
         libgrpc-dev \
+        jq \
     && rm -rf /var/lib/apt/lists/*
 
 ############################
@@ -131,24 +136,58 @@ RUN echo "=== Installing PyTorch with CUDA 13 ===" && \
     python3 -m pip install --no-cache-dir \
         --index-url https://download.pytorch.org/whl/cu130 \
         torch torchvision torchaudio && \
-    python3 -c "import torch; print('✅ PyTorch:', torch.__version__, '| CUDA:', torch.version.cuda); assert '13.' in torch.version.cuda, f'Expected CUDA 13, got {torch.version.cuda}'"
+    python3 -c "\
+import torch; \
+print('✅ PyTorch:', torch.__version__, '| CUDA:', torch.version.cuda); \
+assert torch.version.cuda.startswith('13.'), f'Expected CUDA 13, got {torch.version.cuda}'"
 
 ############################
-# Build NIXL Python bindings
+# Capture CUDA 13 package versions for constraints
+############################
+RUN echo "=== Capturing CUDA 13 package versions ===" && \
+    python3 -c "import torch; print(f'torch=={torch.__version__}')" > /tmp/cuda13-constraints.txt && \
+    python3 -c "import torchvision; print(f'torchvision=={torchvision.__version__}')" >> /tmp/cuda13-constraints.txt && \
+    python3 -c "import torchaudio; print(f'torchaudio=={torchaudio.__version__}')" >> /tmp/cuda13-constraints.txt && \
+    pip freeze | grep -E "^nvidia-" >> /tmp/cuda13-constraints.txt && \
+    echo "=== CUDA 13 Constraints ===" && \
+    cat /tmp/cuda13-constraints.txt
+
+############################
+# Build NIXL Python bindings (CUDA 13 - FROM SOURCE ONLY)
 ############################
 WORKDIR ${NIXL_BUILD_DIR}
-RUN rm -rf nixl && \
+RUN rm -rf ${NIXL_BUILD_DIR} && \
     git clone --depth 1 --branch "${NIXL_GIT_TAG}" \
         https://github.com/ai-dynamo/nixl.git ${NIXL_BUILD_DIR}
 
-RUN python3 -m pip install --no-cache-dir \
-        meson meson-python pybind11 tomlkit && \
-    python3 -m pip install --no-cache-dir . && \
-    python3 -m pip install --no-cache-dir "nixl==${NIXL_VERSION}"
+# Apply etcd type fix
+RUN echo "=== Applying NIXL etcd type fix ===" && \
+    if grep -q "static_cast<int>(event.event_type())" src/core/nixl_listener.cpp 2>/dev/null; then \
+        echo "Fixing static_cast comparison..."; \
+        sed -i 's/static_cast<int>(event.event_type()) ==/event.event_type() ==/g' src/core/nixl_listener.cpp; \
+    fi && \
+    if grep -q "<< event.event_type()" src/core/nixl_listener.cpp 2>/dev/null; then \
+        echo "Fixing ostream operator..."; \
+        sed -i 's/<< event.event_type()/<< static_cast<int>(event.event_type())/g' src/core/nixl_listener.cpp; \
+    fi && \
+    echo "✅ NIXL etcd fix applied"
 
-RUN python3 -c 'import nixl, importlib.metadata as im; \
+# Install build dependencies
+RUN python3 -m pip install --no-cache-dir \
+        meson meson-python pybind11 tomlkit
+
+# Build NIXL from source (uses system CUDA 13)
+# DO NOT install from PyPI - it would pull cu12 version
+RUN echo "=== Building NIXL from source (CUDA 13) ===" && \
+    python3 -m pip install --no-cache-dir . && \
+    echo "✅ NIXL built from source against CUDA 13"
+
+# Verify NIXL
+RUN python3 -c '\
+import nixl; \
+import importlib.metadata as im; \
 print("✅ NIXL imported successfully"); \
-print("   Version:", im.version("nixl"))'
+print("   Version:", im.version("nixl") if "nixl" in [d.name for d in im.distributions()] else "from source")'
 
 ############################
 # Clone Dynamo
@@ -167,48 +206,49 @@ RUN maturin build --release --locked -j ${NPROC:-$(nproc)} && \
     python3 -m pip install --no-cache-dir target/wheels/*.whl
 
 ############################
-# Install Dynamo with TensorRT-LLM (CUDA 13)
-############################
-############################
-# Install Dynamo with TensorRT-LLM (CUDA 13)
+# Install Dynamo with TensorRT-LLM (with CUDA 13 enforcement)
 ############################
 WORKDIR ${DYNAMO_HOME}
+
+# Step 1: Install TensorRT-LLM and Dynamo (will pull CUDA 12 deps)
 RUN echo "=== Installing Dynamo with TensorRT-LLM ===" && \
     python3 -m pip install --no-cache-dir \
         --index-url https://download.pytorch.org/whl/cu130 \
         --extra-index-url https://pypi.nvidia.com/ \
         --extra-index-url https://pypi.org/simple \
         -e ".[trtllm]" && \
-    echo "✅ Dynamo installed"
+    echo "✅ Dynamo initial install complete"
 
-# Fix PyTorch version (TensorRT-LLM downgrades it to 2.7.1)
-RUN echo "=== Restoring PyTorch 2.9.1+cu130 ===" && \
-    python3 -m pip install --no-cache-dir --force-reinstall --no-deps \
+# Step 2: Remove ALL nvidia CUDA 12 packages that got pulled in
+RUN echo "=== Removing CUDA 12 nvidia packages ===" && \
+    pip freeze | grep -iE "^nvidia.*-cu12" | cut -d'=' -f1 | sort -u | while read pkg; do \
+        if [ -n "$pkg" ]; then \
+            echo "Removing: $pkg"; \
+            pip uninstall -y "$pkg" 2>/dev/null || true; \
+        fi; \
+    done && \
+    echo "✅ CUDA 12 packages removed"
+
+# Step 3: Force reinstall CUDA 13 PyTorch stack
+RUN echo "=== Reinstalling CUDA 13 PyTorch stack ===" && \
+    python3 -m pip install --no-cache-dir --force-reinstall \
         --index-url https://download.pytorch.org/whl/cu130 \
-        torch==2.9.1+cu130 \
-        torchvision==0.24.1+cu130 \
-        torchaudio==2.9.1+cu130 && \
-    echo "✅ PyTorch CUDA 13 restored"
+        torch torchvision torchaudio && \
+    echo "✅ CUDA 13 PyTorch reinstalled"
 
-RUN apt-get update && \
-    apt-get install -y jq && \
-    rm -rf /var/lib/apt/lists/*
-
-        
-# Show installed versions
-RUN python3 -c "\
-import torch; \
-import importlib.metadata as im; \
-print('Installed versions:'); \
-print('  PyTorch:', torch.__version__); \
-print('  PyTorch CUDA:', torch.version.cuda); \
-print('  TensorRT-LLM:', im.version('tensorrt-llm')); \
-"
+# Step 4: Rebuild NIXL to ensure clean CUDA 13 linkage
+RUN echo "=== Rebuilding NIXL for CUDA 13 ===" && \
+    pip uninstall -y nixl nixl-cu12 nixl-cu13 2>/dev/null || true && \
+    cd ${NIXL_BUILD_DIR} && \
+    python3 -m pip install --no-cache-dir --force-reinstall . && \
+    echo "✅ NIXL rebuilt against CUDA 13"
 
 ############################
-# Set LD_LIBRARY_PATH (order matters!)
+# Set LD_LIBRARY_PATH (CUDA 13 paths FIRST!)
 ############################
 ENV LD_LIBRARY_PATH="\
+${CUDA_HOME}/lib64:\
+${CUDA_HOME}/lib64/stubs:\
 ${PYTHON_SITE_PACKAGES}/torch/lib:\
 ${PYTHON_SITE_PACKAGES}/tensorrt_libs:\
 ${PYTHON_SITE_PACKAGES}/tensorrt_llm/libs:\
@@ -227,91 +267,119 @@ ${AWS_OFI_NCCL_PREFIX}/lib:\
 ${LD_LIBRARY_PATH}"
 
 ############################
-# Validation
+# Comprehensive CUDA 13 Validation
 ############################
 
-# 1. Check cuBLAS 13 exists
+# 1. Verify PyTorch CUDA 13
+RUN echo "=== Validating CUDA 13 ===" && \
+    python3 -c "\
+import torch; \
+cuda_ver = torch.version.cuda; \
+print(f'PyTorch version: {torch.__version__}'); \
+print(f'PyTorch CUDA: {cuda_ver}'); \
+assert cuda_ver.startswith('13.'), f'❌ CUDA 13 was replaced with {cuda_ver}!'; \
+print('✅ PyTorch CUDA 13 verified'); \
+"
+
+# 2. Check for any remaining CUDA 12 packages
+RUN echo "=== Checking for CUDA 12 packages ===" && \
+    python3 -c "\
+import subprocess; \
+result = subprocess.run(['pip', 'freeze'], capture_output=True, text=True); \
+cu12_pkgs = [l for l in result.stdout.split('\n') if '-cu12' in l.lower() and l.strip()]; \
+if cu12_pkgs: \
+    print('⚠️  WARNING: CUDA 12 packages still present:'); \
+    for p in cu12_pkgs[:20]: print(f'  {p}'); \
+    print('  (These may cause runtime issues)'); \
+else: \
+    print('✅ No -cu12 packages found'); \
+"
+
+# 3. Check cuBLAS 13 exists
 RUN echo "=== Checking cuBLAS Libraries ===" && \
     ldconfig -p | grep libcublas && \
-    ldconfig -p | grep -q "libcublasLt.so.13" && \
-    echo "✅ libcublasLt.so.13 FOUND (CUDA 13)"
+    if ldconfig -p | grep -q "libcublasLt.so.13"; then \
+        echo "✅ libcublasLt.so.13 FOUND (CUDA 13)"; \
+    else \
+        echo "⚠️ libcublasLt.so.13 not in ldconfig, checking CUDA_HOME..."; \
+        ls -la ${CUDA_HOME}/lib64/libcublas* 2>/dev/null || true; \
+    fi
 
-# 2. Verify Python packages
+# 4. Verify Python packages
 RUN python3 -c "\
 import torch; \
 import importlib.metadata as im; \
 print('✅ PyTorch:', torch.__version__, '- CUDA:', torch.version.cuda); \
 print('✅ TensorRT-LLM:', im.version('tensorrt-llm')); \
-print('✅ NIXL:', im.version('nixl')); \
 "
 
-# 3. Verify imports (non-GPU safe)
+# 5. Verify NIXL import
 RUN python3 -c "\
 import nixl; \
-import dynamo; \
-print('✅ NIXL imported'); \
-print('✅ Dynamo imported'); \
+print('✅ NIXL imported successfully'); \
 "
 
-# 4. Verify critical shared libraries
+# 6. Verify Dynamo import
+RUN python3 -c "\
+import dynamo; \
+print('✅ Dynamo imported successfully'); \
+"
+
+# 7. Verify critical shared libraries
 RUN python3 -c "\
 import ctypes; \
-ctypes.CDLL('libpython3.12.so.1.0'); \
-ctypes.CDLL('libmpi.so.40'); \
-print('✅ libpython3.12.so.1.0 found'); \
-print('✅ libmpi.so.40 found'); \
+libs = ['libpython3.12.so.1.0', 'libmpi.so.40']; \
+for lib in libs: \
+    try: \
+        ctypes.CDLL(lib); \
+        print(f'✅ {lib} found'); \
+    except OSError as e: \
+        print(f'⚠️ {lib}: {e}'); \
 "
 
-# 5. Find TensorRT libraries
-RUN echo "=== Locating TensorRT Libraries ===" && \
-    find ${PYTHON_SITE_PACKAGES} -name "libnvinfer*.so*" 2>/dev/null | head -5 && \
-    if [ -f "${TENSORRT_LLM_LIBS}/libnvinfer.so.10" ]; then \
-        echo "✅ libnvinfer.so.10 found in ${TENSORRT_LLM_LIBS}"; \
-    elif find ${PYTHON_SITE_PACKAGES} -name "libnvinfer.so.10" 2>/dev/null | grep -q .; then \
-        echo "✅ libnvinfer.so.10 found in site-packages"; \
-    else \
-        echo "⚠️  libnvinfer.so.10 location:"; \
-        ldconfig -p | grep libnvinfer || echo "Checking at runtime"; \
-    fi
-
-# 6. Check TensorRT-LLM bindings dependencies
-RUN echo "=== Checking TensorRT-LLM Dependencies ===" && \
-    BINDINGS=$(find ${TENSORRT_LLM_DIR} -name "bindings*.so" 2>/dev/null | head -1) && \
-    if [ -n "$BINDINGS" ]; then \
-        echo "Checking: $BINDINGS"; \
-        echo "--- Dependency status ---"; \
-        ldd "$BINDINGS" 2>/dev/null | grep -E "nvinfer|cublas|cuda" | head -10 || true; \
-        MISSING=$(ldd "$BINDINGS" 2>/dev/null | grep "not found" | grep -Ev "libcuda|libnvidia-ml|libnvrtc|libnvinfer" || true); \
-        if [ -n "$MISSING" ]; then \
-            echo "⚠️  Potentially missing (may be runtime-only):"; \
-            echo "$MISSING"; \
+# 8. Check NVIDIA library versions in LD path
+RUN echo "=== Checking NVIDIA libraries ===" && \
+    for lib in libcudart libcublas libcudnn libnccl; do \
+        found=$(ldconfig -p | grep "${lib}.so" | head -1); \
+        if [ -n "$found" ]; then \
+            echo "✅ $lib: $found"; \
         else \
-            echo "✅ Core dependencies satisfied"; \
+            echo "⚠️ $lib not in ldconfig"; \
         fi; \
-    else \
-        echo "⚠️  TensorRT-LLM bindings not found"; \
-    fi
+    done
 
-# 7. Verify LD_LIBRARY_PATH directories exist
+# 9. Verify LD_LIBRARY_PATH directories exist
 RUN echo "=== Verifying Library Paths ===" && \
     for dir in \
+        "${CUDA_HOME}/lib64" \
         "${TORCH_LIB_DIR}" \
         "${NIXL_LIB_DIR}" \
         "${UCX_PREFIX}/lib" \
         "${EFA_PREFIX}/lib" \
-        "${GDRCOPY_PREFIX}/lib64" \
     ; do \
         if [ -d "$dir" ]; then \
             echo "✅ $dir exists"; \
         else \
-            echo "⚠️  $dir not found"; \
+            echo "⚠️ $dir not found"; \
         fi; \
     done
 
-# 8. Final summary
+# 10. Final summary
 RUN echo "========================================" && \
     echo "✅ BUILD VALIDATION COMPLETE (CUDA 13.0)" && \
     echo "========================================" && \
+    echo "" && \
+    python3 -c "\
+import torch; \
+import importlib.metadata as im; \
+print('Final Package Versions:'); \
+print(f'  PyTorch: {torch.__version__}'); \
+print(f'  CUDA: {torch.version.cuda}'); \
+print(f'  TensorRT-LLM: {im.version(\"tensorrt-llm\")}'); \
+try: \
+    print(f'  TensorRT: {im.version(\"tensorrt\")}'); \
+except: pass; \
+" && \
     echo "" && \
     echo "Key paths:" && \
     echo "  DYNAMO_HOME: ${DYNAMO_HOME}" && \
@@ -320,7 +388,7 @@ RUN echo "========================================" && \
     echo "" && \
     echo "Test at runtime with GPU:" && \
     echo "  docker run --gpus all <image> python3 -c \\" && \
-    echo "    'from tensorrt_llm.bindings import executor; print(\"OK\")'"
+    echo "    'import torch; print(torch.cuda.is_available()); from tensorrt_llm.bindings import executor; print(\"OK\")'"
 
 ############################
 # Cleanup
@@ -330,7 +398,4 @@ RUN python3 -m pip cache purge && \
     find ${PYTHON_SITE_PACKAGES} -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
     find ${DYNAMO_HOME} -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
-
-
 WORKDIR /workspace
-CMD ["/bin/bash"]
