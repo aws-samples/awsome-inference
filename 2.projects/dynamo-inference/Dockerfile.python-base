@@ -169,8 +169,11 @@ RUN maturin build --release --locked -j ${NPROC:-$(nproc)} && \
 ############################
 # Install Dynamo with TensorRT-LLM (CUDA 13)
 ############################
+############################
+# Install Dynamo with TensorRT-LLM (CUDA 13)
+############################
 WORKDIR ${DYNAMO_HOME}
-RUN echo "=== Installing Dynamo with TensorRT-LLM (CUDA 13) ===" && \
+RUN echo "=== Installing Dynamo with TensorRT-LLM ===" && \
     python3 -m pip install --no-cache-dir \
         --index-url https://download.pytorch.org/whl/cu130 \
         --extra-index-url https://pypi.nvidia.com/ \
@@ -178,10 +181,18 @@ RUN echo "=== Installing Dynamo with TensorRT-LLM (CUDA 13) ===" && \
         -e ".[trtllm]" && \
     echo "✅ Dynamo installed"
 
+# Fix PyTorch version (TensorRT-LLM downgrades it to 2.7.1)
+RUN echo "=== Restoring PyTorch 2.9.1+cu130 ===" && \
+    python3 -m pip install --no-cache-dir --force-reinstall --no-deps \
+        --index-url https://download.pytorch.org/whl/cu130 \
+        torch==2.9.1+cu130 \
+        torchvision==0.24.1+cu130 \
+        torchaudio==2.9.1+cu130 && \
+    echo "✅ PyTorch CUDA 13 restored"
 
 RUN apt-get update && \
-    apt-get install -y  \
-        jq 
+    apt-get install -y jq && \
+    rm -rf /var/lib/apt/lists/*
 
         
 # Show installed versions
