@@ -154,6 +154,11 @@ RUN mkdir -p /opt/cuda13-constraints && \
     echo "=== CUDA 13 Constraints ===" && \
     cat /opt/cuda13-constraints/constraints.txt
 
+# Install liburing (required by libfabric)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends liburing-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 ############################
 # Build NIXL Python bindings (CUDA 13 - FROM SOURCE ONLY)
 ############################
