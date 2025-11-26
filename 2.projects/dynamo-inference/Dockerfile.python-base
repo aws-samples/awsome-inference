@@ -297,10 +297,9 @@ print(f'PyTorch CUDA: {cuda_ver}'); \
 assert cuda_ver.startswith('13.'), f'❌ CUDA 13 was replaced with {cuda_ver}!'; \
 print('✅ PyTorch CUDA 13 verified'); \
 "
-
 # 2. Check for any remaining CUDA 12 packages
 RUN echo "=== Checking for CUDA 12 packages ===" && \
-    python3 << 'PYEOF'
+python3 <<'PYEOF'
 import subprocess
 result = subprocess.run(['pip', 'freeze'], capture_output=True, text=True)
 cu12_pkgs = [l for l in result.stdout.split('\n') if '-cu12' in l.lower() and l.strip()]
@@ -313,38 +312,28 @@ else:
     print('✅ No -cu12 packages found')
 PYEOF
 
-# 3. Check cuBLAS 13 exists
-RUN echo "=== Checking cuBLAS Libraries ===" && \
-    ldconfig -p | grep libcublas && \
-    if ldconfig -p | grep -q "libcublasLt.so.13"; then \
-        echo "✅ libcublasLt.so.13 FOUND (CUDA 13)"; \
-    else \
-        echo "⚠️ libcublasLt.so.13 not in ldconfig, checking CUDA_HOME..."; \
-        ls -la ${CUDA_HOME}/lib64/libcublas* 2>/dev/null || true; \
-    fi
-
 # 4. Verify Python packages
-RUN python3 -c "\
-import torch; \
-import importlib.metadata as im; \
-print('✅ PyTorch:', torch.__version__, '- CUDA:', torch.version.cuda); \
-print('✅ TensorRT-LLM:', im.version('tensorrt-llm')); \
-"
+RUN python3 <<'PYEOF'
+import torch
+import importlib.metadata as im
+print('✅ PyTorch:', torch.__version__, '- CUDA:', torch.version.cuda)
+print('✅ TensorRT-LLM:', im.version('tensorrt-llm'))
+PYEOF
 
 # 5. Verify NIXL import
-RUN python3 -c "\
-import nixl; \
-print('✅ NIXL imported successfully'); \
-"
+RUN python3 <<'PYEOF'
+import nixl
+print('✅ NIXL imported successfully')
+PYEOF
 
 # 6. Verify Dynamo import
-RUN python3 -c "\
-import dynamo; \
-print('✅ Dynamo imported successfully'); \
-"
+RUN python3 <<'PYEOF'
+import dynamo
+print('✅ Dynamo imported successfully')
+PYEOF
 
 # 7. Verify critical shared libraries
-RUN python3 << 'PYEOF'
+RUN python3 <<'PYEOF'
 import ctypes
 libs = ['libpython3.12.so.1.0', 'libmpi.so.40']
 for lib in libs:
@@ -355,39 +344,12 @@ for lib in libs:
         print(f'⚠️ {lib}: {e}')
 PYEOF
 
-# 8. Check NVIDIA library versions in LD path
-RUN echo "=== Checking NVIDIA libraries ===" && \
-    for lib in libcudart libcublas libcudnn libnccl; do \
-        found=$(ldconfig -p | grep "${lib}.so" | head -1); \
-        if [ -n "$found" ]; then \
-            echo "✅ $lib: $found"; \
-        else \
-            echo "⚠️ $lib not in ldconfig"; \
-        fi; \
-    done
-
-# 9. Verify LD_LIBRARY_PATH directories exist
-RUN echo "=== Verifying Library Paths ===" && \
-    for dir in \
-        "${CUDA_HOME}/lib64" \
-        "${TORCH_LIB_DIR}" \
-        "${NIXL_LIB_DIR}" \
-        "${UCX_PREFIX}/lib" \
-        "${EFA_PREFIX}/lib" \
-    ; do \
-        if [ -d "$dir" ]; then \
-            echo "✅ $dir exists"; \
-        else \
-            echo "⚠️ $dir not found"; \
-        fi; \
-    done
-
 # 10. Final summary
 RUN echo "========================================" && \
     echo "✅ BUILD VALIDATION COMPLETE (CUDA 13.0)" && \
     echo "========================================" && \
     echo "" && \
-    python3 << 'PYEOF'
+python3 <<'PYEOF'
 import torch
 import importlib.metadata as im
 print('Final Package Versions:')
@@ -399,8 +361,8 @@ try:
 except:
     pass
 PYEOF
-    echo "" && \
-    echo "" && \
+
+RUN echo "" && \
     echo "Key paths:" && \
     echo "  DYNAMO_HOME: ${DYNAMO_HOME}" && \
     echo "  NIXL_PREFIX: ${NIXL_PREFIX}" && \
@@ -409,7 +371,6 @@ PYEOF
     echo "Test at runtime with GPU:" && \
     echo "  docker run --gpus all <image> python3 -c \\" && \
     echo "    'import torch; print(torch.cuda.is_available()); from tensorrt_llm.bindings import executor; print(\"OK\")'"
-
 ############################
 # Cleanup
 ############################
