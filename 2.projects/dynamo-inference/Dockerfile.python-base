@@ -397,10 +397,9 @@ RUN echo "=== Verifying Library Paths ===" && \
         fi; \
     done
 
-# 10. Final summary
-RUN echo "=== Final Package Versions ===" && \
-    echo "" && \
-    python3 <<'PYEOF' && \
+# 10. Final summary - Package versions
+RUN echo "=== Final Package Versions ===" && echo "" && \
+python3 <<'PYEOF'
 import torch
 import importlib.metadata as im
 print('Final Package Versions:')
@@ -409,7 +408,9 @@ print(f'  CUDA available: {torch.cuda.is_available()}')
 if torch.cuda.is_available():
     print(f'  CUDA version: {torch.version.cuda}')
 PYEOF
-    echo "" && \
+
+# 10b. Final summary - Paths and test instructions
+RUN echo "" && \
     echo "Key paths:" && \
     echo "  DYNAMO_HOME: ${DYNAMO_HOME}" && \
     echo "  NIXL_PREFIX: ${NIXL_PREFIX}" && \
@@ -418,6 +419,7 @@ PYEOF
     echo "Test at runtime with GPU:" && \
     echo "  docker run --gpus all <image> python3 -c \\" && \
     echo "    'import torch; print(torch.cuda.is_available()); from tensorrt_llm.bindings import executor; print(\"OK\")'"
+
 ############################
 # Cleanup
 ############################
