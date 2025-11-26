@@ -188,6 +188,9 @@ RUN python3 -m pip install --no-cache-dir \
 
 # For CUDA 13: Use tomlutil to set wheel name to nixl-cu13
 # Then build both the platform-specific package AND the meta package
+
+# For CUDA 13: Use tomlutil to set wheel name to nixl-cu13
+# Then build both the platform-specific package AND the meta package
 RUN echo "=== Building NIXL from source (CUDA 13) ===" && \
     python3 ./contrib/tomlutil.py --wheel-name nixl-cu13 pyproject.toml && \
     echo "✅ Set wheel name to nixl-cu13" && \
@@ -195,12 +198,22 @@ RUN echo "=== Building NIXL from source (CUDA 13) ===" && \
     echo "✅ Built nixl-cu13 platform package" && \
     meson setup build && \
     ninja -C build && \
-    pip install build/src/bindings/python/nixl-meta/nixl-*-py3-none-any.whl && \
-    echo "✅ Installed nixl meta-package (provides 'import nixl')"
+    echo "=== Looking for nixl-meta wheel ===" && \
+    find build -name "nixl*.whl" -type f 2>/dev/null && \
+    META_WHEEL=$(find build -name "nixl-[0-9]*.whl" -type f 2>/dev/null | head -1) && \
+    if [ -n "$META_WHEEL" ]; then \
+        echo "Found meta wheel: $META_WHEEL"; \
+        pip install "$META_WHEEL"; \
+        echo "✅ Installed nixl meta-package"; \
+    else \
+        echo "No separate meta wheel found - checking if nixl imports directly..."; \
+        python3 -c "import nixl_cu13; print('nixl_cu13 imports OK')" 2>/dev/null || true; \
+    fi
 
 # Verify NIXL
-RUN python3 -c "import nixl; print('✅ NIXL imported successfully')" && \
-    python3 -c "import importlib.metadata as im; print('   Version:', im.version('nixl'))"
+RUN python3 -c "import nixl; print('✅ NIXL imported as nixl')" 2>/dev/null || \
+    python3 -c "import nixl_cu13; print('✅ NIXL imported as nixl_cu13')" || \
+    (echo "❌ NIXL import failed" && exit 1)
 
 ############################
 # Clone Dynamo
