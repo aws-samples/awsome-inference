@@ -13,8 +13,9 @@
 ##############################
 # Base Image
 ##############################
-FROM aws-efa-base-a10:latest
+ARG BASE_IMAGE="aws-efa-base-a10:latest"
 
+FROM ${BASE_IMAGE}
 ##############################
 # Build ARGs
 ##############################
