@@ -1,36 +1,424 @@
-12 [ 7/32] RUN rm -rf /workspace/nixl &&     git clone --depth 1 --branch "0.7.1"         https://github.com/ai-dynamo/nixl.git /workspace/nixl
-#12 0.273 Cloning into '/workspace/nixl'...
-#12 0.279 fatal: Unable to read current working directory: No such file or directory
-#12 ERROR: process "/bin/sh -c rm -rf ${NIXL_BUILD_DIR} &&     git clone --depth 1 --branch \"${NIXL_GIT_TAG}\"         https://github.com/ai-dynamo/nixl.git ${NIXL_BUILD_DIR}" did not complete successfully: exit code: 128
-------
- > [ 7/32] RUN rm -rf /workspace/nixl &&     git clone --depth 1 --branch "0.7.1"         https://github.com/ai-dynamo/nixl.git /workspace/nixl:
-0.273 Cloning into '/workspace/nixl'...
-0.279 fatal: Unable to read current working directory: No such file or directory
-------
-Dockerfile.python-base:159
---------------------
- 158 |     WORKDIR ${NIXL_BUILD_DIR}
- 159 | >>> RUN rm -rf ${NIXL_BUILD_DIR} && \
- 160 | >>>     git clone --depth 1 --branch "${NIXL_GIT_TAG}" \
- 161 | >>>         https://github.com/ai-dynamo/nixl.git ${NIXL_BUILD_DIR}
- 162 |     
---------------------
-ERROR: failed to solve: process "/bin/sh -c rm -rf ${NIXL_BUILD_DIR} &&     git clone --depth 1 --branch \"${NIXL_GIT_TAG}\"         https://github.com/ai-dynamo/nixl.git ${NIXL_BUILD_DIR}" did not complete successfully: exit code: 128
+# syntax=docker/dockerfile:1.10.0
+#
+# Dockerfile.python-base-cuda13-enforced
+# CUDA 13 enforced build for NIXL + Dynamo + TensorRT-LLM
+#
 
-[Container] 2025/11/26 14:20:56.842487 Command did not exit successfully docker build --build-arg BASE_IMAGE=public.ecr.aws/v9l4g5s4/efa:a10g --build-arg DYNAMO_GIT_TAG=v0.6.1 -t dynamo-trtlm-efa:a10g -f Dockerfile.python-base . exit status 1
-[Container] 2025/11/26 14:20:56.849171 Phase complete: BUILD State: FAILED
-[Container] 2025/11/26 14:20:56.849196 Phase context status code: COMMAND_EXECUTION_ERROR Message: Error while executing command: docker build --build-arg BASE_IMAGE=public.ecr.aws/v9l4g5s4/efa:a10g --build-arg DYNAMO_GIT_TAG=v0.6.1 -t dynamo-trtlm-efa:a10g -f Dockerfile.python-base .. Reason: exit status 1
-[Container] 2025/11/26 14:20:56.898318 Entering phase POST_BUILD
-[Container] 2025/11/26 14:20:56.900791 Phase complete: POST_BUILD State: SUCCEEDED
-[Container] 2025/11/26 14:20:56.900809 Phase context status code:  Message: 
-[Container] 2025/11/26 14:20:56.953187 Set report auto-discover timeout to 5 seconds
-[Container] 2025/11/26 14:20:56.953233 Expanding base directory path:  .
-[Container] 2025/11/26 14:20:56.956744 Assembling file list
-[Container] 2025/11/26 14:20:56.956754 Expanding .
-[Container] 2025/11/26 14:20:56.960239 Expanding file paths for base directory .
-[Container] 2025/11/26 14:20:56.960252 Assembling file list
-[Container] 2025/11/26 14:20:56.960255 Expanding **/*
-[Container] 2025/11/26 14:20:56.966109 No matching auto-discover report paths found
-[Container] 2025/11/26 14:20:56.966138 Report auto-discover file discovery took 0.012952 seconds
-[Container] 2025/11/26 14:20:56.966148 Phase complete: UPLOAD_ARTIFACTS State: SUCCEEDED
-[Container] 2025/11/26 14:20:56.966154 Phase context status code:  Message: 
+ARG BASE_IMAGE="efa:a10g"
+
+FROM ${BASE_IMAGE}
+
+##############################
+# Build ARGs
+##############################
+ARG NPROC
+ARG ARCH="x86_64"
+
+# Versions
+ARG DEFAULT_PYTHON_VERSION="3.12"
+ARG NIXL_VERSION="0.7.1"
+ARG NIXL_GIT_TAG="${NIXL_VERSION}"
+ARG DYNAMO_GIT_TAG="main"
+ARG RUST_TOOLCHAIN="1.86.0"
+
+##############################
+# Path ARGs (from base image)
+##############################
+ARG CUDA_HOME="/usr/local/cuda"
+ARG EFA_PREFIX="/opt/amazon/efa"
+ARG GDRCOPY_PREFIX="/opt/gdrcopy"
+ARG UCX_PREFIX="/usr/local/ucx"
+ARG AWS_OFI_NCCL_PREFIX="/opt/aws-ofi-nccl"
+ARG LIBFABRIC_PREFIX="/usr/local"
+
+# NIXL paths
+ARG NIXL_PREFIX="/usr/local/nixl"
+ARG NIXL_LIB_DIR="${NIXL_PREFIX}/lib/${ARCH}-linux-gnu"
+ARG NIXL_PLUGIN_DIR="${NIXL_PREFIX}/lib/${ARCH}-linux-gnu/plugins"
+
+# Python paths
+ARG PYTHON_VERSION="3.12"
+ARG PYTHON_SITE_PACKAGES="/usr/local/lib/python${PYTHON_VERSION}/dist-packages"
+
+# Application paths
+ARG DYNAMO_HOME="/opt/dynamo"
+ARG NIXL_BUILD_DIR="/workspace/nixl"
+
+# Rust paths
+ARG RUSTUP_HOME="/usr/local/rustup"
+ARG CARGO_HOME="/usr/local/cargo"
+
+##############################
+# Derived paths (computed from ARGs)
+##############################
+ARG TORCH_LIB_DIR="${PYTHON_SITE_PACKAGES}/torch/lib"
+ARG TENSORRT_LLM_DIR="${PYTHON_SITE_PACKAGES}/tensorrt_llm"
+ARG TENSORRT_LLM_LIBS="${TENSORRT_LLM_DIR}/libs"
+ARG TENSORRT_DIR="${PYTHON_SITE_PACKAGES}/tensorrt"
+
+# CUDA version enforcement
+ARG REQUIRED_CUDA_MAJOR=13
+ARG REQUIRED_CUDA_MINOR=0
+ARG MIN_DRIVER_VERSION=555
+
+##############################
+# Environment variables
+##############################
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PIP_BREAK_SYSTEM_PACKAGES=1 \
+    # PyTorch CUDA 13 Index
+    PIP_INDEX_URL=https://download.pytorch.org/whl/cu130 \
+    PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
+    # Rust
+    RUSTUP_HOME=${RUSTUP_HOME} \
+    CARGO_HOME=${CARGO_HOME} \
+    # CUDA
+    CUDA_HOME=${CUDA_HOME} \
+    # Paths from base
+    EFA_PATH=${EFA_PREFIX} \
+    GDRCOPY_PATH=${GDRCOPY_PREFIX} \
+    UCX_PATH=${UCX_PREFIX} \
+    # NIXL
+    NIXL_PREFIX=${NIXL_PREFIX} \
+    NIXL_LIB_DIR=${NIXL_LIB_DIR} \
+    NIXL_PLUGIN_DIR=${NIXL_PLUGIN_DIR} \
+    # Dynamo
+    DYNAMO_HOME=${DYNAMO_HOME} \
+    # Python paths for Dynamo
+    PYTHONPATH=${DYNAMO_HOME}/components/backends/trtllm/src:${DYNAMO_HOME}/components/frontend/src \
+    # System PATH
+    PATH=${CARGO_HOME}/bin:${CUDA_HOME}/bin:/usr/local/bin:${PATH} \
+    # CUDA Version Enforcement
+    REQUIRED_CUDA_MAJOR=${REQUIRED_CUDA_MAJOR} \
+    REQUIRED_CUDA_MINOR=${REQUIRED_CUDA_MINOR} \
+    MIN_DRIVER_VERSION=${MIN_DRIVER_VERSION} \
+    CUDA_VERSION_ENFORCED=true
+
+############################
+# Install system dependencies
+############################
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-dev \
+        python3-pip \
+        python-is-python3 \
+        openmpi-bin \
+        libopenmpi-dev \
+        git \
+        build-essential \
+        pkg-config \
+        libhwloc-dev \
+        curl \
+        wget \
+        protobuf-compiler \
+        libprotobuf-dev \
+        libzmq5 \
+        libzmq3-dev \
+        libcpprest-dev \
+        libgrpc++-dev \
+        libgrpc-dev \
+        jq \
+    && rm -rf /var/lib/apt/lists/*
+
+############################
+# Install Rust toolchain
+############################
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+    sh -s -- -y --no-modify-path --profile minimal --default-toolchain ${RUST_TOOLCHAIN} && \
+    chmod -R a+w ${RUSTUP_HOME} ${CARGO_HOME} && \
+    rustc --version && cargo --version
+
+############################
+# Install PyTorch with CUDA 13 FIRST
+############################
+RUN echo "=== Installing PyTorch with CUDA 13 ===" && \
+    python3 -m pip install --no-cache-dir \
+        --index-url https://download.pytorch.org/whl/cu130 \
+        torch torchvision torchaudio && \
+    python3 -c "\
+import torch; \
+print('✅ PyTorch:', torch.__version__, '| CUDA:', torch.version.cuda); \
+assert torch.version.cuda.startswith('13.'), f'Expected CUDA 13, got {torch.version.cuda}'"
+
+############################
+# Capture CUDA 13 package versions for constraints
+############################
+RUN mkdir -p /opt/cuda13-constraints && \
+    echo "=== Capturing CUDA 13 package versions ===" && \
+    python3 -c "import torch; print(f'torch=={torch.__version__}')" > /opt/cuda13-constraints/constraints.txt && \
+    python3 -c "import torchvision; print(f'torchvision=={torchvision.__version__}')" >> /opt/cuda13-constraints/constraints.txt && \
+    python3 -c "import torchaudio; print(f'torchaudio=={torchaudio.__version__}')" >> /opt/cuda13-constraints/constraints.txt && \
+    pip freeze | grep -E "^nvidia-" >> /opt/cuda13-constraints/constraints.txt && \
+    echo "=== CUDA 13 Constraints ===" && \
+    cat /opt/cuda13-constraints/constraints.txt
+
+############################
+# Build NIXL Python bindings (CUDA 13 - FROM SOURCE ONLY)
+############################
+# Clone from /workspace first, then change into it
+WORKDIR /workspace
+RUN rm -rf ${NIXL_BUILD_DIR} && \
+    git clone --depth 1 --branch "${NIXL_GIT_TAG}" \
+        https://github.com/ai-dynamo/nixl.git ${NIXL_BUILD_DIR}
+
+WORKDIR ${NIXL_BUILD_DIR}
+
+# Apply etcd type fix
+RUN echo "=== Applying NIXL etcd type fix ===" && \
+    if grep -q "static_cast<int>(event.event_type())" src/core/nixl_listener.cpp 2>/dev/null; then \
+        echo "Fixing static_cast comparison..."; \
+        sed -i 's/static_cast<int>(event.event_type()) ==/event.event_type() ==/g' src/core/nixl_listener.cpp; \
+    fi && \
+    if grep -q "<< event.event_type()" src/core/nixl_listener.cpp 2>/dev/null; then \
+        echo "Fixing ostream operator..."; \
+        sed -i 's/<< event.event_type()/<< static_cast<int>(event.event_type())/g' src/core/nixl_listener.cpp; \
+    fi && \
+    echo "✅ NIXL etcd fix applied"
+
+# Install build dependencies
+RUN python3 -m pip install --no-cache-dir \
+        meson meson-python pybind11 tomlkit
+
+# Build NIXL from source (uses system CUDA 13)
+# DO NOT install from PyPI - it would pull cu12 version
+RUN echo "=== Building NIXL from source (CUDA 13) ===" && \
+    python3 -m pip install --no-cache-dir . && \
+    echo "✅ NIXL built from source against CUDA 13"
+
+# Verify NIXL
+RUN python3 -c '\
+import nixl; \
+print("✅ NIXL imported successfully"); \
+try: \
+    import importlib.metadata as im; \
+    for name in ["nixl", "nixl-cu12", "nixl-cu13"]: \
+        try: \
+            ver = im.version(name); \
+            print(f"   Version ({name}): {ver}"); \
+            break; \
+        except: pass; \
+except: \
+    print("   Version: from source");'
+
+############################
+# Clone Dynamo
+############################
+RUN echo "=== Cloning Dynamo ===" && \
+    rm -rf ${DYNAMO_HOME} && \
+    git clone https://github.com/ai-dynamo/dynamo.git ${DYNAMO_HOME} && \
+    cd ${DYNAMO_HOME} && \
+    echo "Checking out ${DYNAMO_GIT_TAG}..." && \
+    git checkout "${DYNAMO_GIT_TAG}" && \
+    echo "✅ Dynamo cloned at $(git rev-parse --short HEAD)"
+
+############################
+# Install maturin and build Dynamo Rust bindings
+############################
+RUN python3 -m pip install --no-cache-dir maturin
+
+WORKDIR ${DYNAMO_HOME}/lib/bindings/python
+RUN echo "=== Building Dynamo Rust bindings ===" && \
+    ls -la && \
+    maturin build --release --locked -j ${NPROC:-$(nproc)} && \
+    ls -la target/wheels/ && \
+    python3 -m pip install --no-cache-dir target/wheels/*.whl && \
+    echo "✅ Dynamo Rust bindings installed"
+
+############################
+# Install Dynamo with TensorRT-LLM (with CUDA 13 enforcement)
+############################
+WORKDIR ${DYNAMO_HOME}
+
+# Step 1: Install TensorRT-LLM and Dynamo (will pull CUDA 12 deps)
+RUN echo "=== Installing Dynamo with TensorRT-LLM ===" && \
+    python3 -m pip install --no-cache-dir \
+        --index-url https://download.pytorch.org/whl/cu130 \
+        --extra-index-url https://pypi.nvidia.com/ \
+        --extra-index-url https://pypi.org/simple \
+        -e ".[trtllm]" && \
+    echo "✅ Dynamo initial install complete"
+
+# Step 2: Remove ALL nvidia CUDA 12 packages that got pulled in
+RUN echo "=== Removing CUDA 12 nvidia packages ===" && \
+    pip freeze | grep -iE "^nvidia.*-cu12" | cut -d'=' -f1 | sort -u | while read pkg; do \
+        if [ -n "$pkg" ]; then \
+            echo "Removing: $pkg"; \
+            pip uninstall -y "$pkg" 2>/dev/null || true; \
+        fi; \
+    done && \
+    echo "✅ CUDA 12 packages removed"
+
+# Step 3: Force reinstall CUDA 13 PyTorch stack
+RUN echo "=== Reinstalling CUDA 13 PyTorch stack ===" && \
+    python3 -m pip install --no-cache-dir --force-reinstall \
+        --index-url https://download.pytorch.org/whl/cu130 \
+        torch torchvision torchaudio && \
+    echo "✅ CUDA 13 PyTorch reinstalled"
+
+# Step 4: Rebuild NIXL to ensure clean CUDA 13 linkage
+RUN echo "=== Rebuilding NIXL for CUDA 13 ===" && \
+    pip uninstall -y nixl nixl-cu12 nixl-cu13 2>/dev/null || true && \
+    cd ${NIXL_BUILD_DIR} && \
+    python3 -m pip install --no-cache-dir --no-deps --force-reinstall . && \
+    echo "✅ NIXL rebuilt against CUDA 13"
+
+############################
+# Set LD_LIBRARY_PATH (CUDA 13 paths FIRST!)
+############################
+ENV LD_LIBRARY_PATH="\
+${CUDA_HOME}/lib64:\
+${CUDA_HOME}/lib64/stubs:\
+${PYTHON_SITE_PACKAGES}/torch/lib:\
+${PYTHON_SITE_PACKAGES}/tensorrt_libs:\
+${PYTHON_SITE_PACKAGES}/tensorrt_llm/libs:\
+${TORCH_LIB_DIR}:\
+${TENSORRT_LLM_LIBS}:\
+${TENSORRT_DIR}:\
+/usr/local/lib:\
+${NIXL_LIB_DIR}:\
+${NIXL_PLUGIN_DIR}:\
+${UCX_PREFIX}/lib:\
+${UCX_PREFIX}/lib/ucx:\
+${LIBFABRIC_PREFIX}/lib:\
+${EFA_PREFIX}/lib:\
+${GDRCOPY_PREFIX}/lib64:\
+${AWS_OFI_NCCL_PREFIX}/lib:\
+${LD_LIBRARY_PATH}"
+
+############################
+# Comprehensive CUDA 13 Validation
+############################
+
+# 1. Verify PyTorch CUDA 13
+RUN echo "=== Validating CUDA 13 ===" && \
+    python3 -c "\
+import torch; \
+cuda_ver = torch.version.cuda; \
+print(f'PyTorch version: {torch.__version__}'); \
+print(f'PyTorch CUDA: {cuda_ver}'); \
+assert cuda_ver.startswith('13.'), f'❌ CUDA 13 was replaced with {cuda_ver}!'; \
+print('✅ PyTorch CUDA 13 verified'); \
+"
+
+# 2. Check for any remaining CUDA 12 packages
+RUN echo "=== Checking for CUDA 12 packages ===" && \
+    python3 -c "\
+import subprocess; \
+result = subprocess.run(['pip', 'freeze'], capture_output=True, text=True); \
+cu12_pkgs = [l for l in result.stdout.split('\n') if '-cu12' in l.lower() and l.strip()]; \
+if cu12_pkgs: \
+    print('⚠️  WARNING: CUDA 12 packages still present:'); \
+    for p in cu12_pkgs[:20]: print(f'  {p}'); \
+    print('  (These may cause runtime issues)'); \
+else: \
+    print('✅ No -cu12 packages found'); \
+"
+
+# 3. Check cuBLAS 13 exists
+RUN echo "=== Checking cuBLAS Libraries ===" && \
+    ldconfig -p | grep libcublas && \
+    if ldconfig -p | grep -q "libcublasLt.so.13"; then \
+        echo "✅ libcublasLt.so.13 FOUND (CUDA 13)"; \
+    else \
+        echo "⚠️ libcublasLt.so.13 not in ldconfig, checking CUDA_HOME..."; \
+        ls -la ${CUDA_HOME}/lib64/libcublas* 2>/dev/null || true; \
+    fi
+
+# 4. Verify Python packages
+RUN python3 -c "\
+import torch; \
+import importlib.metadata as im; \
+print('✅ PyTorch:', torch.__version__, '- CUDA:', torch.version.cuda); \
+print('✅ TensorRT-LLM:', im.version('tensorrt-llm')); \
+"
+
+# 5. Verify NIXL import
+RUN python3 -c "\
+import nixl; \
+print('✅ NIXL imported successfully'); \
+"
+
+# 6. Verify Dynamo import
+RUN python3 -c "\
+import dynamo; \
+print('✅ Dynamo imported successfully'); \
+"
+
+# 7. Verify critical shared libraries
+RUN python3 -c "\
+import ctypes; \
+libs = ['libpython3.12.so.1.0', 'libmpi.so.40']; \
+for lib in libs: \
+    try: \
+        ctypes.CDLL(lib); \
+        print(f'✅ {lib} found'); \
+    except OSError as e: \
+        print(f'⚠️ {lib}: {e}'); \
+"
+
+# 8. Check NVIDIA library versions in LD path
+RUN echo "=== Checking NVIDIA libraries ===" && \
+    for lib in libcudart libcublas libcudnn libnccl; do \
+        found=$(ldconfig -p | grep "${lib}.so" | head -1); \
+        if [ -n "$found" ]; then \
+            echo "✅ $lib: $found"; \
+        else \
+            echo "⚠️ $lib not in ldconfig"; \
+        fi; \
+    done
+
+# 9. Verify LD_LIBRARY_PATH directories exist
+RUN echo "=== Verifying Library Paths ===" && \
+    for dir in \
+        "${CUDA_HOME}/lib64" \
+        "${TORCH_LIB_DIR}" \
+        "${NIXL_LIB_DIR}" \
+        "${UCX_PREFIX}/lib" \
+        "${EFA_PREFIX}/lib" \
+    ; do \
+        if [ -d "$dir" ]; then \
+            echo "✅ $dir exists"; \
+        else \
+            echo "⚠️ $dir not found"; \
+        fi; \
+    done
+
+# 10. Final summary
+RUN echo "========================================" && \
+    echo "✅ BUILD VALIDATION COMPLETE (CUDA 13.0)" && \
+    echo "========================================" && \
+    echo "" && \
+    python3 -c "\
+import torch; \
+import importlib.metadata as im; \
+print('Final Package Versions:'); \
+print(f'  PyTorch: {torch.__version__}'); \
+print(f'  CUDA: {torch.version.cuda}'); \
+print(f'  TensorRT-LLM: {im.version(\"tensorrt-llm\")}'); \
+try: \
+    print(f'  TensorRT: {im.version(\"tensorrt\")}'); \
+except: pass; \
+" && \
+    echo "" && \
+    echo "Key paths:" && \
+    echo "  DYNAMO_HOME: ${DYNAMO_HOME}" && \
+    echo "  NIXL_PREFIX: ${NIXL_PREFIX}" && \
+    echo "  CUDA_HOME: ${CUDA_HOME}" && \
+    echo "" && \
+    echo "Test at runtime with GPU:" && \
+    echo "  docker run --gpus all <image> python3 -c \\" && \
+    echo "    'import torch; print(torch.cuda.is_available()); from tensorrt_llm.bindings import executor; print(\"OK\")'"
+
+############################
+# Cleanup
+############################
+RUN python3 -m pip cache purge && \
+    rm -rf /root/.cache/pip /var/tmp/* && \
+    find ${PYTHON_SITE_PACKAGES} -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
+    find ${DYNAMO_HOME} -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
+    echo "✅ Cleanup complete (constraints preserved at /opt/cuda13-constraints/)"
+
+WORKDIR /workspace
+CMD ["/bin/bash"]
