@@ -63,6 +63,9 @@ ARG MIN_DRIVER_VERSION=555
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     PIP_BREAK_SYSTEM_PACKAGES=1 \
+    # PyTorch CUDA 13 Index
+    PIP_INDEX_URL=https://download.pytorch.org/whl/cu130 \
+    PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
     # Rust
     RUSTUP_HOME=${RUSTUP_HOME} \
     CARGO_HOME=${CARGO_HOME} \
@@ -122,6 +125,15 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
     rustc --version && cargo --version
 
 ############################
+# Install PyTorch with CUDA 13 FIRST
+############################
+RUN echo "=== Installing PyTorch with CUDA 13 ===" && \
+    python3 -m pip install --no-cache-dir \
+        --index-url https://download.pytorch.org/whl/cu130 \
+        torch torchvision torchaudio && \
+    python3 -c "import torch; print('✅ PyTorch:', torch.__version__, '| CUDA:', torch.version.cuda); assert '13.' in torch.version.cuda, f'Expected CUDA 13, got {torch.version.cuda}'"
+
+############################
 # Build NIXL Python bindings
 ############################
 WORKDIR ${NIXL_BUILD_DIR}
@@ -155,12 +167,14 @@ RUN maturin build --release --locked -j ${NPROC:-$(nproc)} && \
     python3 -m pip install --no-cache-dir target/wheels/*.whl
 
 ############################
-# Install Dynamo with TensorRT-LLM
+# Install Dynamo with TensorRT-LLM (CUDA 13)
 ############################
 WORKDIR ${DYNAMO_HOME}
-RUN echo "=== Installing Dynamo with TensorRT-LLM ===" && \
+RUN echo "=== Installing Dynamo with TensorRT-LLM (CUDA 13) ===" && \
     python3 -m pip install --no-cache-dir \
+        --index-url https://download.pytorch.org/whl/cu130 \
         --extra-index-url https://pypi.nvidia.com/ \
+        --extra-index-url https://pypi.org/simple \
         -e ".[trtllm]" && \
     echo "✅ Dynamo installed"
 
