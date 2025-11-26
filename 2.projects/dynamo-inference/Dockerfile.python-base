@@ -398,21 +398,16 @@ RUN echo "=== Verifying Library Paths ===" && \
     done
 
 # 10. Final summary
-RUN echo "========================================" && \
-    echo "✅ BUILD VALIDATION COMPLETE (CUDA 13.0)" && \
-    echo "========================================" && \
+RUN echo "=== Final Package Versions ===" && \
     echo "" && \
-    python3 << 'PYEOF'
+python3 <<'PYEOF'
 import torch
 import importlib.metadata as im
 print('Final Package Versions:')
 print(f'  PyTorch: {torch.__version__}')
-print(f'  CUDA: {torch.version.cuda}')
-print(f'  TensorRT-LLM: {im.version("tensorrt-llm")}')
-try:
-    print(f'  TensorRT: {im.version("tensorrt")}')
-except:
-    pass
+print(f'  CUDA available: {torch.cuda.is_available()}')
+if torch.cuda.is_available():
+    print(f'  CUDA version: {torch.version.cuda}')
 PYEOF
     echo "" && \
     echo "" && \
