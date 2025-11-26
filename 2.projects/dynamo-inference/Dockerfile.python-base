@@ -179,20 +179,23 @@ RUN echo "=== Applying NIXL etcd type fix ===" && \
 
 # Install build dependencies
 RUN python3 -m pip install --no-cache-dir \
-        meson meson-python pybind11 tomlkit
+        meson meson-python pybind11 tomlkit ninja
 
-# Build NIXL from source (uses system CUDA 13)
-# DO NOT install from PyPI - it would pull cu12 version
+# For CUDA 13: Use tomlutil to set wheel name to nixl-cu13
+# Then build both the platform-specific package AND the meta package
 RUN echo "=== Building NIXL from source (CUDA 13) ===" && \
-    python3 -m pip install --no-cache-dir . && \
-    echo "✅ NIXL built from source against CUDA 13"
+    python3 ./contrib/tomlutil.py --wheel-name nixl-cu13 pyproject.toml && \
+    echo "✅ Set wheel name to nixl-cu13" && \
+    pip install . && \
+    echo "✅ Built nixl-cu13 platform package" && \
+    meson setup build && \
+    ninja -C build && \
+    pip install build/src/bindings/python/nixl-meta/nixl-*-py3-none-any.whl && \
+    echo "✅ Installed nixl meta-package (provides 'import nixl')"
 
 # Verify NIXL
 RUN python3 -c "import nixl; print('✅ NIXL imported successfully')" && \
-    (python3 -c "import importlib.metadata as im; print('   Version:', im.version('nixl'))" 2>/dev/null || \
-     python3 -c "import importlib.metadata as im; print('   Version:', im.version('nixl-cu12'))" 2>/dev/null || \
-     python3 -c "import importlib.metadata as im; print('   Version:', im.version('nixl-cu13'))" 2>/dev/null || \
-     echo "   Version: built from source")
+    python3 -c "import importlib.metadata as im; print('   Version:', im.version('nixl'))"
 
 ############################
 # Clone Dynamo
@@ -253,7 +256,8 @@ RUN echo "=== Reinstalling CUDA 13 PyTorch stack ===" && \
 RUN echo "=== Rebuilding NIXL for CUDA 13 ===" && \
     pip uninstall -y nixl nixl-cu12 nixl-cu13 2>/dev/null || true && \
     cd ${NIXL_BUILD_DIR} && \
-    python3 -m pip install --no-cache-dir --no-deps --force-reinstall . && \
+    pip install --no-cache-dir --no-deps --force-reinstall . && \
+    pip install --no-cache-dir --force-reinstall build/src/bindings/python/nixl-meta/nixl-*-py3-none-any.whl && \
     echo "✅ NIXL rebuilt against CUDA 13"
 
 ############################
@@ -295,19 +299,18 @@ print('✅ PyTorch CUDA 13 verified'); \
 "
 
 # 2. Check for any remaining CUDA 12 packages
-RUN python3 <<'PYEOF'
+RUN echo "=== Checking for CUDA 12 packages ===" && \
+    python3 << 'PYEOF'
 import subprocess
-
-print("=== Checking for CUDA 12 packages ===")
 result = subprocess.run(['pip', 'freeze'], capture_output=True, text=True)
 cu12_pkgs = [l for l in result.stdout.split('\n') if '-cu12' in l.lower() and l.strip()]
-
 if cu12_pkgs:
-    print("Found CUDA 12 packages:")
-    for pkg in cu12_pkgs:
-        print(f"  - {pkg}")
+    print('⚠️  WARNING: CUDA 12 packages still present:')
+    for p in cu12_pkgs[:20]:
+        print(f'  {p}')
+    print('  (These may cause runtime issues)')
 else:
-    print("No CUDA 12 packages found")
+    print('✅ No -cu12 packages found')
 PYEOF
 
 # 3. Check cuBLAS 13 exists
@@ -339,47 +342,29 @@ RUN python3 -c "\
 import dynamo; \
 print('✅ Dynamo imported successfully'); \
 "
+
 # 7. Verify critical shared libraries
-RUN python3 <<'PYEOF'
+RUN python3 << 'PYEOF'
 import ctypes
-
-libs = [
-    'libpython3.12.so.1.0',
-    'libmpi.so.40'
-]
-
-print("=== Checking Critical Shared Libraries ===")
+libs = ['libpython3.12.so.1.0', 'libmpi.so.40']
 for lib in libs:
     try:
         ctypes.CDLL(lib)
         print(f'✅ {lib} found')
     except OSError as e:
-        print(f'⚠️  {lib}: {e}')
+        print(f'⚠️ {lib}: {e}')
 PYEOF
 
 # 8. Check NVIDIA library versions in LD path
-RUN python3 <<'PYEOF'
-import subprocess
-
-print("=== Checking NVIDIA Libraries ===")
-libs = ['libcudart', 'libcublas', 'libcudnn', 'libnccl']
-
-for lib in libs:
-    try:
-        result = subprocess.run(
-            ['ldconfig', '-p'],
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        matches = [line for line in result.stdout.split('\n') if f'{lib}.so' in line]
-        if matches:
-            print(f'✅ {lib}: {matches[0].strip()}')
-        else:
-            print(f'⚠️  {lib} not in ldconfig')
-    except Exception as e:
-        print(f'❌ Error checking {lib}: {e}')
-PYEOF
+RUN echo "=== Checking NVIDIA libraries ===" && \
+    for lib in libcudart libcublas libcudnn libnccl; do \
+        found=$(ldconfig -p | grep "${lib}.so" | head -1); \
+        if [ -n "$found" ]; then \
+            echo "✅ $lib: $found"; \
+        else \
+            echo "⚠️ $lib not in ldconfig"; \
+        fi; \
+    done
 
 # 9. Verify LD_LIBRARY_PATH directories exist
 RUN echo "=== Verifying Library Paths ===" && \
@@ -397,20 +382,25 @@ RUN echo "=== Verifying Library Paths ===" && \
         fi; \
     done
 
-# 10. Final summary - Package versions
-RUN echo "=== Final Package Versions ===" && echo "" && \
-python3 <<'PYEOF'
+# 10. Final summary
+RUN echo "========================================" && \
+    echo "✅ BUILD VALIDATION COMPLETE (CUDA 13.0)" && \
+    echo "========================================" && \
+    echo "" && \
+    python3 << 'PYEOF'
 import torch
 import importlib.metadata as im
 print('Final Package Versions:')
 print(f'  PyTorch: {torch.__version__}')
-print(f'  CUDA available: {torch.cuda.is_available()}')
-if torch.cuda.is_available():
-    print(f'  CUDA version: {torch.version.cuda}')
+print(f'  CUDA: {torch.version.cuda}')
+print(f'  TensorRT-LLM: {im.version("tensorrt-llm")}')
+try:
+    print(f'  TensorRT: {im.version("tensorrt")}')
+except:
+    pass
 PYEOF
-
-# 10b. Final summary - Paths and test instructions
-RUN echo "" && \
+    echo "" && \
+    echo "" && \
     echo "Key paths:" && \
     echo "  DYNAMO_HOME: ${DYNAMO_HOME}" && \
     echo "  NIXL_PREFIX: ${NIXL_PREFIX}" && \
