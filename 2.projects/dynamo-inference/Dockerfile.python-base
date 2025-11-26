@@ -295,18 +295,19 @@ print('✅ PyTorch CUDA 13 verified'); \
 "
 
 # 2. Check for any remaining CUDA 12 packages
-RUN echo "=== Checking for CUDA 12 packages ===" && \
-    python3 << 'PYEOF'
+RUN python3 <<'PYEOF'
 import subprocess
+
+print("=== Checking for CUDA 12 packages ===")
 result = subprocess.run(['pip', 'freeze'], capture_output=True, text=True)
 cu12_pkgs = [l for l in result.stdout.split('\n') if '-cu12' in l.lower() and l.strip()]
+
 if cu12_pkgs:
-    print('⚠️  WARNING: CUDA 12 packages still present:')
-    for p in cu12_pkgs[:20]:
-        print(f'  {p}')
-    print('  (These may cause runtime issues)')
+    print("Found CUDA 12 packages:")
+    for pkg in cu12_pkgs:
+        print(f"  - {pkg}")
 else:
-    print('✅ No -cu12 packages found')
+    print("No CUDA 12 packages found")
 PYEOF
 
 # 3. Check cuBLAS 13 exists
