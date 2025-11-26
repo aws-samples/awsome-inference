@@ -52,6 +52,11 @@ ARG TENSORRT_LLM_DIR="${PYTHON_SITE_PACKAGES}/tensorrt_llm"
 ARG TENSORRT_LLM_LIBS="${TENSORRT_LLM_DIR}/libs"
 ARG TENSORRT_DIR="${PYTHON_SITE_PACKAGES}/tensorrt"
 
+# CUDA version enforcement
+ARG REQUIRED_CUDA_MAJOR=13
+ARG REQUIRED_CUDA_MINOR=0
+ARG MIN_DRIVER_VERSION=555
+
 ##############################
 # Environment variables
 ##############################
@@ -76,7 +81,12 @@ ENV LANG=C.UTF-8 \
     # Python paths for Dynamo
     PYTHONPATH=${DYNAMO_HOME}/components/backends/trtllm/src:${DYNAMO_HOME}/components/frontend/src \
     # System PATH
-    PATH=${CARGO_HOME}/bin:${CUDA_HOME}/bin:/usr/local/bin:${PATH}
+    PATH=${CARGO_HOME}/bin:${CUDA_HOME}/bin:/usr/local/bin:${PATH} \
+    # CUDA Version Enforcement
+    REQUIRED_CUDA_MAJOR=${REQUIRED_CUDA_MAJOR} \
+    REQUIRED_CUDA_MINOR=${REQUIRED_CUDA_MINOR} \
+    MIN_DRIVER_VERSION=${MIN_DRIVER_VERSION} \
+    CUDA_VERSION_ENFORCED=true 
 
 ############################
 # Install system dependencies
