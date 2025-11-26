@@ -338,29 +338,47 @@ RUN python3 -c "\
 import dynamo; \
 print('✅ Dynamo imported successfully'); \
 "
-
 # 7. Verify critical shared libraries
-RUN python3 << 'PYEOF'
+RUN python3 <<'PYEOF'
 import ctypes
-libs = ['libpython3.12.so.1.0', 'libmpi.so.40']
+
+libs = [
+    'libpython3.12.so.1.0',
+    'libmpi.so.40'
+]
+
+print("=== Checking Critical Shared Libraries ===")
 for lib in libs:
     try:
         ctypes.CDLL(lib)
         print(f'✅ {lib} found')
     except OSError as e:
-        print(f'⚠️ {lib}: {e}')
+        print(f'⚠️  {lib}: {e}')
 PYEOF
 
 # 8. Check NVIDIA library versions in LD path
-RUN echo "=== Checking NVIDIA libraries ===" && \
-    for lib in libcudart libcublas libcudnn libnccl; do \
-        found=$(ldconfig -p | grep "${lib}.so" | head -1); \
-        if [ -n "$found" ]; then \
-            echo "✅ $lib: $found"; \
-        else \
-            echo "⚠️ $lib not in ldconfig"; \
-        fi; \
-    done
+RUN python3 <<'PYEOF'
+import subprocess
+
+print("=== Checking NVIDIA Libraries ===")
+libs = ['libcudart', 'libcublas', 'libcudnn', 'libnccl']
+
+for lib in libs:
+    try:
+        result = subprocess.run(
+            ['ldconfig', '-p'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        matches = [line for line in result.stdout.split('\n') if f'{lib}.so' in line]
+        if matches:
+            print(f'✅ {lib}: {matches[0].strip()}')
+        else:
+            print(f'⚠️  {lib} not in ldconfig')
+    except Exception as e:
+        print(f'❌ Error checking {lib}: {e}')
+PYEOF
 
 # 9. Verify LD_LIBRARY_PATH directories exist
 RUN echo "=== Verifying Library Paths ===" && \
