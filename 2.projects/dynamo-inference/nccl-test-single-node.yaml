@@ -1,0 +1,71 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nccl-test-single-node-h100
+  namespace: default
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - image: public.ecr.aws/v9l4g5s4/aws-efa-dynamo-h100:v3
+        imagePullPolicy: Always
+        name: nccl-test
+        command:
+        - /bin/bash
+        - -c
+        - |
+          echo "=========================================="
+          echo "Single Node NCCL Test with Dynamo H100 Image"
+          echo "=========================================="
+          echo "Date: $(date)"
+          echo "Hostname: $(hostname)"
+          echo ""
+
+          # Display environment info
+          echo "Environment Configuration:"
+          echo "- NCCL Version: $(ls /opt/nccl*/lib/libnccl.so.* 2>/dev/null | head -1 | sed 's/.*libnccl.so.//')"
+          echo "- EFA Devices: $(ls /sys/class/infiniband/ 2>/dev/null || echo 'None detected')"
+          echo "- CUDA Architecture: SM90 (H100)"
+          echo "- GPU Count: $(nvidia-smi -L | wc -l)"
+          echo ""
+
+          # Set EFA environment variables for H100
+          export FI_PROVIDER=efa
+          export FI_EFA_USE_DEVICE_RDMA=1
+          export NCCL_PROTO=Simple
+          export NCCL_SOCKET_IFNAME=eth0
+          export NCCL_DEBUG=INFO
+          export NCCL_ALGO=Ring
+          export NCCL_MIN_NCHANNELS=8
+          export PATH="/opt/nccl-tests/build:$PATH"
+
+          echo "Running NCCL AllReduce test on single node with all available GPUs..."
+
+          # Run NCCL test directly without MPI (single process, multi-GPU)
+          /opt/nccl-tests/build/all_reduce_perf \
+            -b 8M -e 1G -f 2 -g $(nvidia-smi -L | wc -l) -c 1 -n 20
+
+          echo ""
+          echo "=========================================="
+          echo "NCCL Test Complete!"
+          echo "=========================================="
+        resources:
+          requests:
+            nvidia.com/gpu: 8
+            hugepages-2Mi: 5120Mi
+            vpc.amazonaws.com/efa: 1
+            memory: "256Gi"
+            cpu: "94"
+          limits:
+            nvidia.com/gpu: 8
+            hugepages-2Mi: 5120Mi
+            vpc.amazonaws.com/efa: 1
+            memory: "256Gi"
+            cpu: "94"
+      nodeSelector:
+        node.kubernetes.io/instance-type: "ml.p5.48xlarge"
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule

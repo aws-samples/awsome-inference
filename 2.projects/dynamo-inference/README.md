@@ -1,562 +1,395 @@
-# NVIDIA Dynamo + NIXL Container Suite for AWS
+# Dynamo Inference on AWS
 
-Deployment-ready containers for high-performance distributed ML workloads on AWS with EFA support, optimized for H100, A100, and A10G GPU instances.
-
-## Overview
-
-This container suite provides optimized Docker images for AWS GPU instances featuring:
-
-- **Multi-GPU Architecture Support**: H100 (p5.\*), A100 (p4d.\*), A10G (g5.\*)
-- **AWS EFA Networking**: Custom-built UCX and libfabric for AWS Elastic Fabric Adapter
-- **vLLM Integration**: Fast pip-based installation (10-15 min build time)
-- **TensorRT-LLM Support**: Optimized inference engine
-- **NIXL Framework**: Network Infrastructure for eXascale Learning
-- **Container Optimization**: Slim builds reduce size by 32% (17GB vs 25GB)
-
-## Quick Start
-
-### Build All Containers (Recommended)
-
-For H100 instances with 16+ CPU cores:
-
-```bash
-# Deployment-optimized slim builds (~17GB each)
-./build-all-slim.sh
-
-# Standard runtime builds (~25GB each)
-./build-all-runtime.sh
-```
-
-This builds all three containers:
-1. Base Container (nixl-h100-efa:optimized) - NIXL + EFA foundation
-2. Dynamo + vLLM - High-performance LLM serving
-3. Dynamo + TensorRT-LLM - Optimized inference engine
-
-**Build Time**: ~60-90 minutes on H100 with 16 cores
-
-### Individual Container Builds
-
-#### 1. Base Container (NIXL + EFA)
-
-```bash
-# H100 (default)
-./build.sh
-
-# A100
-CUDA_ARCH=80 CUDA_ARCH_NAME=A100 ./build.sh
-
-# A10G
-CUDA_ARCH=86 CUDA_ARCH_NAME=A10G ./build.sh
-```
-
-#### 2. Dynamo + vLLM
-
-```bash
-# H100 slim (recommended for deployment)
-BUILD_TARGET=slim CUDA_ARCH=90 ./build_vllm.sh
-
-# A100 runtime
-CUDA_ARCH=80 CUDA_ARCH_NAME=A100 ./build_vllm.sh
-
-# A10G slim
-BUILD_TARGET=slim CUDA_ARCH=86 CUDA_ARCH_NAME=A10G ./build_vllm.sh
-```
-
-#### 3. Dynamo + TensorRT-LLM
-
-```bash
-# H100 slim (recommended for deployment)
-BUILD_TARGET=slim CUDA_ARCH=90 ./build_trtllm.sh
-
-# A100 runtime
-CUDA_ARCH=80 CUDA_ARCH_NAME=A100 ./build_trtllm.sh
-
-# A10G slim
-BUILD_TARGET=slim CUDA_ARCH=86 CUDA_ARCH_NAME=A10G ./build_trtllm.sh
-```
-
-## Architecture Support
-
-| GPU  | CUDA Arch | Build Flag | AWS Instance | Default |
-|------|-----------|------------|--------------|---------|
-| H100 | 90 (SM90) | `CUDA_ARCH=90 CUDA_ARCH_NAME=H100` | p5.* | ✅ Yes |
-| A100 | 80 (SM80) | `CUDA_ARCH=80 CUDA_ARCH_NAME=A100` | p4d.* | |
-| A10G | 86 (SM86) | `CUDA_ARCH=86 CUDA_ARCH_NAME=A10G` | g5.* | |
-
-## Container Options
-
-### Build Targets
-
-| Target | Size | Use Case | Build Flag |
-|--------|------|----------|------------|
-| **slim** | ~17GB | Deployment environments | `BUILD_TARGET=slim` |
-| **runtime** | ~25GB | Development, debugging | `BUILD_TARGET=runtime` (default) |
-| **dev** | ~27GB | Active development | `BUILD_TARGET=dev` |
-
-**Slim builds remove** (safely):
-- Build artifacts and tools (cmake, ninja, etc.)
-- Documentation and man pages
-- Static libraries (shared libraries preserved)
-- Python cache and temporary files
-
-**Slim builds keep**:
-- All custom libraries (UCX, EFA, NIXL, NCCL)
-- Essential tools (nano, vim, curl, wget, htop, sed, grep)
-- Full runtime functionality
-
-See [DEBLOAT_GUIDE.md](DEBLOAT_GUIDE.md) for detailed optimization information.
-
-### vLLM Installation Methods
-
-**Pip Install (Default - Fast)**:
-```bash
-./build_vllm.sh  # 10-15 minutes
-```
-- Uses pre-built vLLM wheel
-- Works with all custom libraries (UCX, EFA, NIXL)
-- Recommended for deployment
-
-**Source Build (Optional - Slow)**:
-```bash
-USE_SOURCE_BUILD=true MAX_JOBS=8 ./build_vllm.sh  # 60-90 minutes
-```
-- Build vLLM from source
-- Useful for custom modifications
-- Requires more memory (64GB+ recommended)
-
-## Build Configuration
-
-### All Environment Variables
-
-#### Base Container (build.sh)
-```bash
-CUDA_ARCH=90              # GPU architecture (90=H100, 80=A100, 86=A10G)
-CUDA_ARCH_NAME=H100       # GPU name for environment variables
-INSTALL_NCCL=1            # Install NCCL (1=yes, 0=no)
-INSTALL_NVSHMEM=0         # Install NVSHMEM (1=yes, 0=no)
-NPROC=12                  # Parallel build jobs (12 recommended for 16-core)
-TAG=optimized            # Docker tag
-```
-
-#### vLLM Container (build_vllm.sh)
-```bash
-CUDA_ARCH=90              # GPU architecture
-CUDA_ARCH_NAME=H100       # GPU name
-BUILD_TARGET=runtime      # Container target (runtime/slim/dev)
-USE_SOURCE_BUILD=false    # Set to "true" to build vLLM from source
-MAX_JOBS=12               # Parallel jobs (for source builds only)
-TAG=dynamo-vllm:latest    # Docker tag
-```
-
-#### TensorRT-LLM Container (build_trtllm.sh)
-```bash
-CUDA_ARCH=90              # GPU architecture
-CUDA_ARCH_NAME=H100       # GPU name
-BUILD_TARGET=runtime      # Container target (runtime/slim/dev)
-TAG=dynamo-trtllm:latest  # Docker tag
-```
-
-### Performance Settings for H100 (16 cores)
-
-| Setting | Recommended Value | Notes |
-|---------|------------------|-------|
-| **NPROC** | 12 | For base container builds |
-| **MAX_JOBS** | 12 | For vLLM source builds |
-| **CUDA_ARCH** | 90 | H100 SM architecture |
-
-**Why 12 instead of 16?**
-- Leaves 4 cores for system overhead
-- Prevents out-of-memory issues during compilation
-- More stable builds
-
-## Running Containers
-
-### Basic Usage
-
-```bash
-# Run vLLM container
-docker run -it --rm --gpus all dynamo-vllm:slim
-
-# Run TensorRT-LLM container
-docker run -it --rm --gpus all dynamo-trtllm:slim
-```
-
-### vLLM Server
-
-```bash
-# Start vLLM server
-docker run -it --gpus all -p 8000:8000 dynamo-vllm:slim \
-  vllm serve meta-llama/Llama-2-7b-hf \
-  --host 0.0.0.0 --port 8000
-
-# Test the server
-curl http://localhost:8000/v1/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "meta-llama/Llama-2-7b-hf",
-    "prompt": "San Francisco is",
-    "max_tokens": 50
-  }'
-```
-
-### With EFA Support
-
-For EFA-enabled AWS instances (p5.\*, p4d.\*):
-
-```bash
-# Full EFA setup with networking
-docker run --gpus all --net=host --privileged \
-  -v /dev/infiniband:/dev/infiniband \
-  -it dynamo-vllm:slim
-
-# With ETCD coordination
-docker run -it --rm --gpus all \
-  -e NIXL_ETCD_ENDPOINTS=http://etcd-service:2379 \
-  dynamo-vllm:slim
-```
-
-## AWS Deployment
-
-### EKS (Elastic Kubernetes Service)
-
-1. **Build and push containers to ECR**:
-```bash
-# Tag for ECR
-docker tag dynamo-vllm:slim <account-id>.dkr.ecr.<region>.amazonaws.com/dynamo-vllm:slim
-
-# Login to ECR
-aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <account-id>.dkr.ecr.<region>.amazonaws.com
-
-# Push
-docker push <account-id>.dkr.ecr.<region>.amazonaws.com/dynamo-vllm:slim
-```
-
-2. **Deploy to EKS**:
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: vllm-server
-spec:
-  containers:
-  - name: vllm
-    image: <account-id>.dkr.ecr.<region>.amazonaws.com/dynamo-vllm:slim
-    resources:
-      limits:
-        nvidia.com/gpu: 1
-    command: ["vllm", "serve", "meta-llama/Llama-2-7b-hf", "--host", "0.0.0.0"]
-```
-
-### HyperPod
-
-These containers are optimized for AWS HyperPod clusters with EFA support. The NIXL networking stack integrates with HyperPod's cluster networking automatically.
-
-### EFA Requirements
-
-For EFA-enabled instances:
-- Mount EFA devices: `-v /dev/infiniband:/dev/infiniband`
-- Use host networking: `--net=host`
-- Privileged mode (for RDMA): `--privileged`
-
-## Installed Components
-
-### Core Stack
-
-| Component | Version | Purpose |
-|-----------|---------|---------|
-| **Base Image** | NVIDIA CUDA DL Base 25.01 | CUDA 12.8, Ubuntu 24.04 |
-| **CUDA** | 12.8 | GPU compute platform |
-| **NCCL** | v2.27.5-1 | Collective communications |
-| **UCX** | 1.19.0 | Unified communications with EFA |
-| **libfabric** | 2.3.0 | Fabric library with EFA provider |
-| **GDRCopy** | v2.4.4 | GPU-direct RDMA |
-
-### Networking
-
-| Component | Version | Purpose |
-|-----------|---------|---------|
-| **EFA Installer** | 1.42.0 | AWS EFA support |
-| **AWS OFI NCCL Plugin** | v1.16.0 | EFA integration for NCCL |
-| **NVSHMEM** | 3.2.5-1 | NVIDIA symmetric memory (optional) |
-| **PMIx** | 4.2.6 | Process management |
-
-### NIXL Framework
-
-| Component | Version | Purpose |
-|-----------|---------|---------|
-| **NIXL** | 0.4.1 | Network infrastructure library |
-| **nixlbench** | Latest | Benchmarking tools |
-| **ETCD** | v3.5.1 | Distributed coordination |
-| **AWS SDK C++** | 1.11.581 | AWS service integration |
-
-### ML Frameworks
-
-| Component | Container | Installation |
-|-----------|-----------|--------------|
-| **vLLM** | dynamo-vllm | Pip install (default) or source build |
-| **TensorRT-LLM** | dynamo-trtllm | Pip install (v0.17.0) |
-| **PyTorch** | All | CUDA 12.8 variant |
-
-## Environment Variables
-
-### CUDA Configuration
-```bash
-CUDAARCHS=90                        # Set by build (90/80/86)
-CUDA_ARCH_NAME=H100                 # Set by build (H100/A100/A10G)
-CMAKE_CUDA_ARCHITECTURES=90         # For CMake builds
-TORCH_CUDA_ARCH_LIST=9.0+PTX        # For PyTorch (9.0/8.0/8.6)
-CUDA_HOME=/usr/local/cuda
-```
-
-### NIXL Configuration
-```bash
-NIXL_PREFIX=/usr/local/nixl
-NIXL_PLUGIN_DIR=/usr/local/nixl/lib/x86_64-linux-gnu/plugins
-NIXL_ETCD_NAMESPACE=/nixl/agents
-NIXL_ETCD_ENDPOINTS=http://etcd-service:2379  # Optional
-```
-
-### Network Configuration
-```bash
-FI_PROVIDER=efa
-NCCL_DEBUG=INFO
-NCCL_SOCKET_IFNAME=^docker,lo,veth
-NVSHMEM_REMOTE_TRANSPORT=libfabric
-NVSHMEM_LIBFABRIC_PROVIDER=efa
-```
-
-## Validation & Testing
-
-### Built-in Tools
-
-```bash
-# Environment information
-env-info
-
-# EFA connectivity tests (requires EFA hardware)
-efa-test
-
-# NIXL performance benchmarks
-nixlbench-test
-
-# Container debloating (for custom optimization)
-debloat-container.sh
-```
-
-### Manual Testing
-
-```bash
-# Test vLLM installation
-python3 -c "import vllm; print(vllm.__version__)"
-
-# Test EFA detection
-fi_info -p efa
-
-# Test NCCL with EFA
-all_reduce_perf -b 8 -e 128M -f 2 -g 1
-
-# Test NIXL Python bindings
-python3 -c "import nixl; print(dir(nixl))"
-```
-
-## Build Time & Size Estimates
-
-### H100 with 16 cores, pip install (recommended)
-
-| Container | Slim Build | Runtime Build |
-|-----------|------------|---------------|
-| **Base** | ~30 min, 24GB | ~30 min, 24GB |
-| **vLLM** | ~12 min, 17GB | ~12 min, 25GB |
-| **TensorRT-LLM** | ~18 min, 17GB | ~18 min, 25GB |
-| **Total** | ~60 min | ~60 min |
-
-### With vLLM source build (optional, slower)
-
-| Container | Build Time | Notes |
-|-----------|------------|-------|
-| **vLLM (source)** | +60-90 min | Adds significant time, requires 64GB+ RAM |
-
-### Memory Requirements
-
-| Build Type | Recommended RAM |
-|-----------|----------------|
-| **Slim builds** | 64GB+ |
-| **Runtime builds** | 64GB+ |
-| **Source builds** | 128GB+ |
-
-## Troubleshooting
-
-### EFA Issues
-
-```bash
-# Check EFA hardware
-fi_info -p efa
-
-# Verify EFA driver
-cat /sys/class/infiniband/*/device/vendor
-
-# Check device mounting
-ls -la /dev/infiniband/
-
-# Ensure container has EFA access
-docker run --rm --privileged -v /dev/infiniband:/dev/infiniband \
-  dynamo-vllm:slim fi_info -p efa
-```
-
-### NCCL Communication Failures
-
-```bash
-# Run NCCL tests
-all_reduce_perf -b 8 -e 128M -f 2 -g 1
-
-# Enable debug output
-export NCCL_DEBUG=INFO
-
-# Check EFA plugin
-ls -la /usr/local/lib/libnccl-net.so
-```
-
-### Build Failures
-
-**Out of Memory**:
-```bash
-# Reduce parallel jobs
-MAX_JOBS=8 ./build_vllm.sh
-
-# Or for base builds
-NPROC=8 ./build.sh
-```
-
-**Container Too Large**:
-```bash
-# Use slim target
-BUILD_TARGET=slim ./build_vllm.sh  # Saves 8GB
-```
-
-**Slow vLLM Build**:
-```bash
-# Ensure using pip install (default)
-./build_vllm.sh  # Should be fast (10-15 min)
-
-# If accidentally using source build:
-USE_SOURCE_BUILD=false ./build_vllm.sh
-```
-
-### GPU Not Accessible
-
-```bash
-# Check GPU
-nvidia-smi
-
-# Test Docker GPU support
-docker run --rm --gpus all nvidia/cuda:12.8-runtime-ubuntu24.04 nvidia-smi
-
-# Ensure NVIDIA Container Toolkit is installed
-dpkg -l | grep nvidia-container-toolkit
-```
-
-## Advanced Usage
-
-### Custom Docker Build
-
-```bash
-# Direct docker build for A100 slim vLLM
-docker build \
-  --build-arg CUDA_ARCH=80 \
-  --build-arg CUDA_ARCH_NAME=A100 \
-  --target slim \
-  -f Dockerfile.dynamo-vllm \
-  -t dynamo-vllm:a100-slim \
-  .
-```
-
-### Custom Tags
-
-```bash
-# Build with custom tag
-BUILD_TARGET=slim TAG=vllm:prod-v1 ./build_vllm.sh
-```
-
-### Multi-Architecture Builds
-
-```bash
-# Build all architectures
-for arch in "80:A100" "86:A10G" "90:H100"; do
-  IFS=':' read -r cuda_arch name <<< "$arch"
-  BUILD_TARGET=slim \
-    CUDA_ARCH=$cuda_arch \
-    CUDA_ARCH_NAME=$name \
-    TAG=dynamo-vllm:$name-slim \
-    ./build_vllm.sh
-done
-```
-
-## Container Specifications
-
-**Expected Sizes**:
-- Base: ~24GB
-- vLLM slim: ~17GB
-- vLLM runtime: ~25GB
-- TensorRT-LLM slim: ~17GB
-- TensorRT-LLM runtime: ~25GB
-
-**Build Requirements**:
-- Memory: 64GB+ (128GB for source builds)
-- Storage: 100GB+ free space
-- Build Time: 60-90 minutes for all containers
-
-**Runtime Requirements**:
-- GPU: NVIDIA H100/A100/A10G with CUDA Compute 8.0+
-- Network: EFA-enabled instance for full functionality (p5.\*, p4d.\*)
-- Memory: 16GB+ system RAM
-- Docker: 20.10+ with NVIDIA Container Toolkit
-
-## Repository Structure
-
-```
-dynamo-workshop/
-├── Dockerfile.base              # Base NIXL+EFA container
-├── Dockerfile.dynamo-vllm            # vLLM container
-├── Dockerfile.dynamo-trtllm          # TensorRT-LLM container
-├── build.sh                          # Build base container
-├── build_vllm.sh                     # Build vLLM container
-├── build_trtllm.sh                   # Build TensorRT-LLM container
-├── build-all-slim.sh                 # Build all (optimized)
-├── build-all-runtime.sh              # Build all (standard)
-├── README.md                         # This file
-├── DEBLOAT_GUIDE.md                  # Size optimization guide
-├── LICENSE                           # Apache 2.0
-├── ATTRIBUTION.md                    # Credits
-├── nvidia_entrypoint.sh              # Container entrypoint
-├── benchmarks/                       # Performance benchmarks
-├── container/                        # Container dependencies
-│   ├── deps/                         # Python requirements
-│   └── nvidia_entrypoint.sh          # Entrypoint script
-├── pkg-config-files/                 # Build dependencies
-│   ├── efa.pc                        # EFA pkg-config
-│   └── gdrcopy.pc                    # GDRCopy pkg-config
-└── scripts/                          # Utility scripts
-    ├── debloat-container.sh          # Size optimization
-    ├── efa-test.sh                   # EFA testing
-    ├── env-info.sh                   # Environment info
-    └── nixlbench-test.sh             # Benchmarking
-```
-
-## Credits
-
-See [CREDITS.md](CREDITS.md) for contributor information and acknowledgments of open-source components.
-
-## License
-
-MIT-0 - See the repository [LICENSE](../../LICENSE) file for details.
-
-## Support
-
-For issues, questions, or contributions:
-- **Issues**: [GitHub Issues](https://github.com/aws-samples/awsome-inference/issues)
-- **Documentation**: This README and [DEBLOAT_GUIDE.md](DEBLOAT_GUIDE.md)
-- **AWS Support**: Contact AWS for EFA and GPU instance support
+This repository provides production-ready container images and deployment manifests for running [NVIDIA Dynamo](https://github.com/ai-dynamo/dynamo) inference workloads on AWS infrastructure with high-performance EFA networking.
 
 ---
 
-**Built for AWS | Optimized for H100/A100/A10G | Deployment-Ready**
+## Overview
+
+### What is NVIDIA Dynamo?
+
+NVIDIA Dynamo is an open-source inference runtime designed for serving large language models (LLMs) at scale. It provides a disaggregated architecture that separates the prefill and decode phases of LLM inference, enabling each phase to scale independently across multiple GPU nodes for optimal resource utilization.
+
+### How Dynamo Differs from Other Inference Solutions
+
+Dynamo introduces a distributed inference approach that separates traditionally coupled inference stages. This design allows organizations to achieve better cost-performance ratios compared to monolithic inference servers. Key characteristics include:
+
+- **Disaggregated prefill and decode** — The computationally intensive prefill phase and memory-bound decode phase run on separate GPU pools
+- **KV-cache transfer** — Efficiently moves key-value cache tensors between nodes using high-bandwidth EFA interconnects
+- **Multiple backend support** — Compatible with TensorRT-LLM, vLLM, and other inference backends
+- **Kubernetes-native** — Designed for cloud-native deployments on Amazon EKS and HyperPod
+
+Optional GPU-direct communication patterns using NIXL (NVIDIA Inference Xfer Library) and UCX can be enabled for maximum performance when available.
+
+---
+
+## Inference Modes
+
+### Aggregated Inference
+
+Aggregated inference runs the full inference pipeline (prefill and decode) on a single node or tightly coupled GPU set. This deployment model offers:
+
+- All inference phases execute on the same GPU(s)
+- No inter-node KV-cache transfer overhead
+- Simpler deployment and debugging
+- Suitable for smaller models or lower-throughput scenarios
+
+Use aggregated inference when starting with Dynamo or when workload characteristics don't require phase separation.
+
+### Disaggregated Inference
+
+Disaggregated inference separates the prefill and decode phases across different GPU pools. This repository demonstrates how to:
+
+- Run prefill workers on compute-optimized nodes (handling prompt processing)
+- Run decode workers on memory-bandwidth-optimized nodes (handling token generation)
+- Transfer KV-cache between phases using EFA's 400 Gbps networking
+
+Choose disaggregated inference for production workloads with high request concurrency, large context lengths, or when independent scaling of each phase provides cost benefits.
+
+---
+
+## Architecture Summary
+
+The following diagram illustrates the high-level components in a disaggregated Dynamo deployment on AWS P5 instances:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Client Requests                               │
+└─────────────────────────────────┬───────────────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     Dynamo Frontend Service                             │
+│                  (HTTP API - No GPU Required)                           │
+└───────────────┬─────────────────────────────────────┬───────────────────┘
+                │                                     │
+                ▼                                     ▼
+┌───────────────────────────────┐     ┌───────────────────────────────────┐
+│       Prefill Workers         │     │        Decode Workers             │
+│  ┌─────────────────────────┐  │     │  ┌─────────────────────────────┐  │
+│  │   P5.48xlarge Instance  │  │     │  │   P5.48xlarge Instance      │  │
+│  │   8x H100 80GB GPUs     │  │     │  │   8x H100 80GB GPUs         │  │
+│  │   8x EFA Adapters       │  │     │  │   8x EFA Adapters           │  │
+│  └─────────────────────────┘  │     │  └─────────────────────────────┘  │
+└───────────────┬───────────────┘     └───────────────┬───────────────────┘
+                │                                     │
+                └──────────────┬──────────────────────┘
+                               │
+                               ▼
+                ┌──────────────────────────────┐
+                │     KV-Cache Transfer        │
+                │   (EFA 400 Gbps / UCX / NIXL)│
+                └──────────────────────────────┘
+                               │
+                               ▼
+                ┌──────────────────────────────┐
+                │    FSx for Lustre Storage    │
+                │    (Model Weights & Engines) │
+                └──────────────────────────────┘
+```
+
+---
+
+## Dynamo Inference on AWS
+
+To leverage disaggregated inference on AWS, [Elastic Fabric Adapter (EFA)](https://aws.amazon.com/hpc/efa/) provides the critical high-bandwidth, low-latency networking required for efficient KV-cache transfer between nodes. This repository provides:
+
+- **Base EFA image** with optimized drivers, libraries, and NCCL configuration
+- **Dynamo runtime images** with TensorRT-LLM and backend support
+- **Production-ready Kubernetes manifests** for EKS deployment
+- **Automated build scripts** for custom container images
+- **SSH-enabled images** for distributed training and multi-node operations
+
+Deployment targets include:
+
+| Platform | Description |
+|----------|-------------|
+| Amazon EKS | Managed Kubernetes with GPU node pools and autoscaling |
+| Amazon EKS with HyperPod | Enhanced EKS with integrated cluster lifecycle management |
+| AWS ParallelCluster | HPC-style Slurm scheduling on EC2 instances |
+
+---
+
+## Prerequisites
+
+Before deploying these examples, ensure you have:
+
+- AWS account with permissions for EC2, EKS, ECR, and VPC resources
+- Docker or compatible container runtime installed locally
+- Access to P5.48xlarge instances (8x H100 80GB GPUs with EFA)
+- Amazon EKS cluster (version 1.28+) with GPU-enabled node groups
+- kubectl configured for cluster access
+- Helm 3.x installed
+- AWS CLI v2 configured
+- (Optional) NVIDIA Container Toolkit for local builds
+
+---
+
+## AWS Services Used
+
+This solution leverages the following AWS services:
+
+| Service | Purpose |
+|---------|---------|
+| Amazon EC2 P5 | GPU compute instances with H100 GPUs for inference workloads |
+| Elastic Fabric Adapter (EFA) | 400 Gbps low-latency networking for KV-cache transfer |
+| Amazon ECR | Container image registry for storing Docker images |
+| Amazon EKS | Kubernetes orchestration platform |
+| FSx for Lustre | High-performance parallel filesystem for model storage |
+| Amazon VPC | Network isolation and security groups |
+
+---
+
+## Build
+
+### Supported Architectures
+
+| Architecture | Status |
+|--------------|--------|
+| x86_64 (amd64) | ✅ Fully Supported |
+| ARM64 (Graviton) | 🚧 Not tested |
+
+### Base Image (EFA-enabled)
+
+The base image includes EFA drivers, libfabric, UCX, NCCL, and AWS OFI NCCL plugin:
+
+```bash
+docker build -f Dockerfile.base -t aws-efa-base:latest .
+```
+
+**Key components:**
+- CUDA 13.0.0 runtime and development libraries
+- EFA installer 1.43.1 with OpenMPI support
+- Libfabric 2.3.0 with EFA provider
+- UCX 1.19.0 with EFA and CUDA support
+- NCCL 2.27.5 optimized for H100 (SM86)
+- AWS OFI NCCL 1.17.1 for EFA integration
+- NIXL 0.7.1 for GPU-direct transfers
+
+**Expected image size:** ~8-9 GB
+
+### Dynamo Image with TensorRT-LLM
+
+Extended image with Dynamo runtime and TensorRT-LLM backend:
+
+```bash
+docker build -f Dockerfile.python-base -t dynamo-trtllm:latest .
+```
+
+**Additional components:**
+- Python 3.10 with TensorRT-LLM dependencies
+- SSH server for distributed operations
+- Torch 2.x with CUDA support
+- TensorRT-LLM runtime libraries
+
+**Expected image size:** ~34 GB
+
+### Build Options
+
+```bash
+# Build with specific CUDA architecture
+docker build --build-arg CUDA_ARCH=86 -f Dockerfile.base -t aws-efa-base:sm86 .
+
+# Build without cache
+docker build --no-cache -f Dockerfile.base -t aws-efa-base:latest .
+
+# Build and push to ECR
+./build-dynamo.sh --push
+```
+
+---
+
+## Prebuilt Images
+
+Pre-built container images optimized for P5 instances are available:
+
+```bash
+# Pull base EFA image
+docker pull public.ecr.aws/[your-registry]/aws-efa-base:latest
+
+# Pull Dynamo with TensorRT-LLM
+docker pull public.ecr.aws/[your-registry]/dynamo-trtllm:latest
+```
+
+---
+
+## Run
+
+### Quick Start (5 minutes)
+
+#### 1. Prepare Environment
+
+```bash
+# Set namespace and version
+export NAMESPACE=default
+export RELEASE_VERSION=0.4.0
+
+# Label P5 nodes for CUDA 12.x
+kubectl get nodes -l node.kubernetes.io/instance-type=p5.48xlarge -o name | \
+  xargs -I {} kubectl label {} cuda-driver=cuda12 --overwrite
+```
+
+#### 2. Install Dynamo Platform
+
+```bash
+# Install CRDs and platform
+helm fetch https://helm.ngc.nvidia.com/nvidia/ai-dynamo/charts/dynamo-crds-${RELEASE_VERSION}.tgz
+helm fetch https://helm.ngc.nvidia.com/nvidia/ai-dynamo/charts/dynamo-platform-${RELEASE_VERSION}.tgz
+
+helm install dynamo-crds dynamo-crds-${RELEASE_VERSION}.tgz --namespace ${NAMESPACE}
+helm install dynamo-platform dynamo-platform-${RELEASE_VERSION}.tgz --namespace ${NAMESPACE}
+
+# Patch etcd for compatibility
+kubectl patch statefulset dynamo-platform-etcd -n ${NAMESPACE} -p \
+  '{"spec":{"template":{"spec":{"containers":[{"name":"etcd","image":"docker.io/bitnamilegacy/etcd:3.5.18-debian-12-r5"}]}}}}'
+
+# Wait for readiness
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=dynamo-platform -n ${NAMESPACE} --timeout=300s
+```
+
+#### 3. Configure Storage
+
+```bash
+# Edit FSx configuration with your subnet and security group
+vi 01-fsx-storage.yaml  # Replace subnet-xxx and sg-xxx
+
+# Apply storage configuration
+kubectl apply -f 01-fsx-storage.yaml
+
+# Verify PVC binding
+kubectl get pvc fsx-claim -n ${NAMESPACE}
+```
+
+#### 4. Deploy Inference
+
+```bash
+# Apply engine configuration
+kubectl apply -f 02-engine-config.yaml
+
+# Deploy disaggregated inference
+kubectl apply -f 03-dynamo-deployment-p5.yaml
+
+# Monitor deployment (wait 10-15 minutes for model loading)
+watch kubectl get pods -n ${NAMESPACE}
+```
+
+#### 5. Test Deployment
+
+```bash
+# Health check
+kubectl run -it --rm test --image=curlimages/curl -- \
+  curl http://dynamo-disaggregated-frontend.default.svc.cluster.local:8000/health | jq .
+
+# Generate completion
+curl -X POST http://dynamo-disaggregated-frontend.default.svc.cluster.local:8000/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "meta-llama/Llama-3.2-3B",
+    "prompt": "Explain quantum computing:",
+    "max_tokens": 50
+  }' | jq .
+```
+
+For detailed deployment instructions, refer to **DEPLOYMENT_GUIDE.md**.
+
+---
+
+## Configuration
+
+### Backend Options for KV-Cache Transfer
+
+#### DEFAULT (UCX with EFA) - Recommended
+```yaml
+cache_transceiver_config:
+  backend: default
+```
+- Automatically configures UCX with AWS EFA
+- Production-ready with optimal compatibility
+- No additional configuration required
+
+#### NIXL (GPU-Direct)
+```yaml
+cache_transceiver_config:
+  backend: nixl
+```
+- NVIDIA Inference Xfer Library for GPU-direct transfers
+- Requires compatible GPU architecture
+- Best performance for supported configurations
+
+#### Switching Backends
+
+```bash
+# Edit ConfigMap
+kubectl edit configmap trtllm-engine-config
+
+# Restart workers to apply changes
+kubectl rollout restart deployment/dynamo-disaggregated-backend-prefill
+kubectl rollout restart deployment/dynamo-disaggregated-backend-decode
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+#### SSH Daemon Missing
+```
+Error: exec: "/usr/sbin/sshd": no such file or directory
+```
+**Solution:** Use the SSH-enabled Docker image from Dockerfile.python-base
+
+#### CUDA Symbol Errors
+```
+ImportError: undefined symbol: cudaLibraryGetKernel, version libcudart.so.12
+```
+**Solution:** Ensure nodes are labeled with `cuda-driver=cuda12`
+
+#### MPI Header Missing During Build
+```
+fatal error: mpi.h: No such file or directory
+```
+**Solution:** Install EFA dependencies before EFA installer (see Dockerfile.base lines 157-165)
+
+For detailed troubleshooting, see **QUICK_FIX.md** and **SSH_FIX_GUIDE.md**.
+
+---
+
+## References
+
+| Resource | Link |
+|----------|------|
+| NVIDIA Dynamo GitHub | [https://github.com/ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo) |
+| NVIDIA Dynamo Documentation | [https://docs.nvidia.com/dynamo](https://docs.nvidia.com/dynamo) |
+| AWS EFA Documentation | [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html) |
+| Amazon EKS User Guide | [https://docs.aws.amazon.com/eks/latest/userguide/](https://docs.aws.amazon.com/eks/latest/userguide/) |
+| AWS P5 Instances | [https://aws.amazon.com/ec2/instance-types/p5/](https://aws.amazon.com/ec2/instance-types/p5/) |
+| TensorRT-LLM | [https://github.com/NVIDIA/TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM) |
+| FSx for Lustre | [https://aws.amazon.com/fsx/lustre/](https://aws.amazon.com/fsx/lustre/) |
+| Awesome Distributed Training | [https://github.com/aws-samples/awsome-distributed-training](https://github.com/aws-samples/awsome-distributed-training) |
+
+---
+
+## License
+
+This library is licensed under the MIT-0 License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## Contributing
+
+Contributions are welcome. Please submit issues and pull requests following standard GitHub practices.
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | November 2025 | Initial release for P5 instances with H100 GPUs |
+| 1.1 | November 2025 | Fixed MPI header issues in Docker builds |
+
+---
+
+**Last Updated:** November 2025
+**Tested On:** AWS EKS 1.28+, P5.48xlarge instances with 8x H100 80GB GPUs
