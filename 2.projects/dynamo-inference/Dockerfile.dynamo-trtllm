@@ -13,7 +13,7 @@
 ##############################
 # Base Image
 ##############################
-ARG BASE_IMAGE=aws-efa-base-a10:latest
+ARG BASE_IMAGE=public.ecr.aws/v9l4g5s4/efa:a10g
 FROM ${BASE_IMAGE}
 
 ##############################
