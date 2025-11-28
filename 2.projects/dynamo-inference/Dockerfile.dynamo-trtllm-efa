@@ -116,14 +116,14 @@ RUN pip install --no-cache-dir --extra-index-url https://pypi.nvidia.com/ -e "."
 ############################
 # Create tensorrt_llm.metrics stub if needed
 ############################
-RUN python3 -c "import tensorrt_llm.metrics" 2>/dev/null || \
-    (echo '"""TensorRT-LLM metrics stub."""\n\
-class Metrics:\n\
-    def __init__(self): pass\n\
-    def report(self, *args, **kwargs): pass\n\
-def get_metrics(): return Metrics()\n\
-' > /usr/local/lib/python3.12/dist-packages/tensorrt_llm/metrics.py && \
-    echo "tensorrt_llm.metrics stub created")
+#RUN python3 -c "import tensorrt_llm.metrics" 2>/dev/null || \
+#    (echo '"""TensorRT-LLM metrics stub."""\n\
+#class Metrics:\n\
+#    def __init__(self): pass\n\
+#    def report(self, *args, **kwargs): pass\n\
+#def get_metrics(): return Metrics()\n\
+#' > /usr/local/lib/python3.12/dist-packages/tensorrt_llm/metrics.py && \
+#    echo "tensorrt_llm.metrics stub created")
 
 ############################
 # Validate MPI works without libevent conflict
