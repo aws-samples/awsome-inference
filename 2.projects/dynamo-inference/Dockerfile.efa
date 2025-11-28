@@ -1,8 +1,10 @@
 # syntax=docker/dockerfile:1.10.0
 #
-# CUDA 12.8 EFA/NIXL Base Image for Dynamo Production
-# =====================================================
-# Stack B: CUDA 12.8.1 based on NGC pytorch:25.03-py3
+# Dockerfile.base.cuda128 - Unified CUDA 12.8 EFA/NIXL Base Image
+# ================================================================
+# Common base for both vLLM and TRT-LLM backends
+#
+# Stack: CUDA 12.8.1 based on NGC pytorch:25.03-py3
 #
 # Features:
 # - CUDA 12.8.1 (DeepGEMM compatible)
@@ -12,6 +14,7 @@
 # - NCCL 2.25+ with aws-ofi-nccl
 # - NIXL 0.7.1 (C++ + Python)
 # - GDRCopy 2.4.1
+# - Rust toolchain for Dynamo
 #
 # Target: p5.48xlarge (H100 x 8, EFA x 32)
 # Driver: 550.163.01 (forward compat to CUDA 12.8)
@@ -37,7 +40,7 @@ ARG AWS_SDK_VERSION="1.11.581"
 ARG ETCD_CPP_VERSION="0.15.4"
 ARG RDMA_CORE_VERSION="v51.0"
 ARG EFA_INSTALLER_VERSION="1.43.1"
-ARG CUDA_ARCH="86"
+ARG CUDA_ARCH="90"
 ARG NCCL_TESTS_VERSION="v2.16.9"
 
 # Rust toolchain
@@ -65,7 +68,7 @@ RUN echo "=== CUDA 12.8 Build Environment Verification ===" && \
         echo "ERROR: Requires CUDA 12.8+, got CUDA $NVCC_VERSION"; \
         exit 1; \
     fi && \
-    echo "✅ CUDA 12.8+ verified ($NVCC_VERSION)" && \
+    echo "CUDA 12.8+ verified ($NVCC_VERSION)" && \
     python3 -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.version.cuda}')"
 
 ############################
@@ -157,7 +160,7 @@ RUN cd /tmp && \
     cd aws-efa-installer && \
     ./efa_installer.sh -y --skip-kmod --skip-limit-conf --enable-gdr --no-verify && \
     cd .. && rm -rf aws-efa-installer* && \
-    echo "✅ EFA installed to /opt/amazon/efa"
+    echo "EFA installed to /opt/amazon/efa"
 
 ENV EFA_INSTALLER_PATH=/opt/amazon/efa \
     OPENMPI_PATH=/opt/amazon/openmpi \
@@ -168,7 +171,7 @@ ENV EFA_INSTALLER_PATH=/opt/amazon/efa \
 RUN mkdir -p /opt/amazon/efa/lib /opt/amazon/efa/include && \
     if [ -f /usr/lib/x86_64-linux-gnu/libefa.so ]; then \
         ln -sf /usr/lib/x86_64-linux-gnu/libefa.so* /opt/amazon/efa/lib/ && \
-        echo "✅ EFA library symlinked"; \
+        echo "EFA library symlinked"; \
     fi && \
     if [ -d /usr/include/infiniband ]; then \
         ln -sfn /usr/include/infiniband /opt/amazon/efa/include/infiniband; \
@@ -383,7 +386,7 @@ RUN rm -rf build && \
     cd build && \
     ninja -j${NPROC:-$(nproc)} && \
     ninja install && \
-    echo "✅ NIXL C++ built"
+    echo "NIXL C++ built"
 
 RUN echo "${NIXL_LIB_DIR}" > /etc/ld.so.conf.d/nixl.conf && \
     echo "${NIXL_PLUGIN_DIR}" >> /etc/ld.so.conf.d/nixl.conf && \
@@ -393,7 +396,29 @@ ENV LIBCLANG_PATH=/usr/lib/llvm-18/lib
 
 RUN cd src/bindings/rust && \
     cargo build --release --locked && \
-    echo "✅ NIXL Rust bindings built"
+    echo "NIXL Rust bindings built"
+
+############################
+# 12b. NIXL Python Bindings
+############################
+# Install NIXL Python bindings to site-packages
+# Step 1: Install nixl-cu12 (the actual CUDA bindings)
+RUN cd /workspace/nixl && \
+    pip install --no-cache-dir . && \
+    python3 -c "import nixl_cu12; print('nixl-cu12 installed successfully')" && \
+    echo "nixl_cu12 module location:" && \
+    python3 -c "import nixl_cu12; print(nixl_cu12.__file__)"
+
+# Step 2: Install the nixl meta-package (wrapper that provides 'import nixl')
+RUN cd /workspace/nixl/src/bindings/python/nixl-meta && \
+    # Generate proper pyproject.toml from template
+    sed "s/@VERSION@/0.7.1/g; s/@WHEEL_DEP@/nixl-cu12/g" pyproject.toml.in > pyproject.toml && \
+    # Copy LICENSE from root
+    cp /workspace/nixl/LICENSE . && \
+    pip install --no-cache-dir . && \
+    python3 -c "import nixl; print('NIXL Python bindings installed successfully')" && \
+    echo "NIXL module location:" && \
+    python3 -c "import nixl; print(nixl.__file__)"
 
 ############################
 # 13. nixlbench
@@ -411,7 +436,7 @@ RUN echo "=== Building nixlbench ===" && \
     cd build && \
     ninja -j${NPROC:-$(nproc)} && \
     ninja install && \
-    echo "✅ nixlbench installed"
+    echo "nixlbench installed"
 
 ############################
 # 14. aws-ofi-nccl
@@ -438,6 +463,18 @@ FROM nvcr.io/nvidia/pytorch:25.03-py3 AS runtime
 
 ARG ARCH="x86_64"
 
+############################
+# CRITICAL FIX: Neutralize HPC-X/OpenMPI Conflict
+############################
+# The NGC base image includes HPC-X at /opt/hpcx with its own OpenMPI.
+# When MPI loads components, it finds HPC-X MCA plugins that expect
+# opal_libevent2022_event_assign symbol not in system libevent.
+# Fix: Remove HPC-X ompi directory and set MCA path explicitly.
+# NOTE: We keep /opt/hpcx/ucx because PyTorch is linked to its libucs.so
+RUN rm -rf /opt/hpcx/ompi 2>/dev/null || true && \
+    echo "HPC-X OpenMPI components removed to avoid symbol conflict" && \
+    ls -la /opt/hpcx/ucx/lib/libucs* 2>/dev/null | head -3 || true
+
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     CUDA_HOME=/usr/local/cuda \
@@ -453,9 +490,12 @@ ENV LANG=C.UTF-8 \
     FI_PROVIDER=efa \
     ETCD_CPP_API_DISABLE_URI_VALIDATION=1 \
     MPI_HOME=/opt/amazon/openmpi \
+    # CRITICAL: Force MPI to only use Amazon EFA OpenMPI components
+    OMPI_MCA_mca_base_component_path=/opt/amazon/openmpi/lib/openmpi \
     # Rust environment
     RUSTUP_HOME=/usr/local/rustup \
-    CARGO_HOME=/usr/local/cargo
+    CARGO_HOME=/usr/local/cargo \
+    PIP_BREAK_SYSTEM_PACKAGES=1
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -477,6 +517,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libnl-3-200 \
     libnl-route-3-200 \
     liburing2 \
+    libclang-dev \
+    git \
+    curl \
+    jq \
     && rm -rf /var/lib/apt/lists/*
 
 # Install etcd binary
@@ -495,6 +539,9 @@ COPY --from=build /opt/gdrcopy /opt/gdrcopy
 COPY --from=build /opt/aws-ofi-nccl /opt/aws-ofi-nccl
 COPY --from=build /opt/nccl-tests /opt/nccl-tests
 
+# Copy Python site-packages (includes NIXL Python bindings)
+COPY --from=build /usr/local/lib/python3.12/dist-packages /usr/local/lib/python3.12/dist-packages
+
 # Configure SSH
 RUN mkdir -p /var/run/sshd /run/sshd && \
     ssh-keygen -A && \
@@ -512,8 +559,31 @@ RUN sed -i 's/[ #]\(.*StrictHostKeyChecking \).*/\1no/g' /etc/ssh/ssh_config && 
     printf "Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  LogLevel ERROR\n" > /root/.ssh/config && \
     chmod 600 /root/.ssh/config
 
+# Generate SSH keys
+RUN ssh-keygen -q -t rsa -N '' -f /root/.ssh/id_rsa && \
+    cp /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys && \
+    chmod 600 /root/.ssh/id_rsa /root/.ssh/authorized_keys && \
+    chmod 644 /root/.ssh/id_rsa.pub
+
 # Set LD_LIBRARY_PATH
-ENV LD_LIBRARY_PATH="/usr/local/nixl/lib/x86_64-linux-gnu:/usr/local/nixl/lib/x86_64-linux-gnu/plugins:/opt/amazon/efa/lib:/opt/amazon/openmpi/lib:/opt/aws-ofi-nccl/lib:/usr/local/ucx/lib:/usr/local/ucx/lib/ucx:/opt/gdrcopy/lib64:/usr/local/lib:${LD_LIBRARY_PATH}"
+ENV LD_LIBRARY_PATH="/usr/local/nixl/lib/x86_64-linux-gnu:/usr/local/nixl/lib/x86_64-linux-gnu/plugins:/opt/amazon/efa/lib:/opt/amazon/openmpi/lib:/opt/aws-ofi-nccl/lib:/usr/local/ucx/lib:/usr/local/ucx/lib/ucx:/opt/gdrcopy/lib64:/usr/local/lib:/usr/local/cargo/bin:${LD_LIBRARY_PATH}"
+
+# Update PATH to include cargo
+ENV PATH="/usr/local/cargo/bin:${PATH}"
+
+############################
+# Configure dynamic linker for all libraries
+############################
+RUN echo "/usr/local/ucx/lib" > /etc/ld.so.conf.d/ucx.conf && \
+    echo "/usr/local/ucx/lib/ucx" >> /etc/ld.so.conf.d/ucx.conf && \
+    echo "/opt/hpcx/ucx/lib" >> /etc/ld.so.conf.d/ucx.conf && \
+    echo "/usr/local/nixl/lib/x86_64-linux-gnu" > /etc/ld.so.conf.d/nixl.conf && \
+    echo "/usr/local/nixl/lib/x86_64-linux-gnu/plugins" >> /etc/ld.so.conf.d/nixl.conf && \
+    echo "/opt/gdrcopy/lib64" > /etc/ld.so.conf.d/gdrcopy.conf && \
+    echo "/opt/aws-ofi-nccl/lib" > /etc/ld.so.conf.d/aws-ofi-nccl.conf && \
+    echo "/opt/amazon/efa/lib" > /etc/ld.so.conf.d/efa.conf && \
+    echo "/opt/amazon/openmpi/lib" > /etc/ld.so.conf.d/openmpi.conf && \
+    ldconfig
 
 ############################
 # Final Verification
@@ -521,7 +591,16 @@ ENV LD_LIBRARY_PATH="/usr/local/nixl/lib/x86_64-linux-gnu:/usr/local/nixl/lib/x8
 RUN echo "=== CUDA 12.8 Base Image Verification ===" && \
     nvcc --version && \
     python3 -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.version.cuda}')" && \
-    echo "✅ CUDA 12.8 base image ready"
+    rustc --version && cargo --version && \
+    echo "=== Verifying HPC-X neutralization ===" && \
+    (ls -la /opt/hpcx/ompi 2>/dev/null && echo "WARNING: HPC-X ompi still present" || echo "OK: HPC-X ompi removed") && \
+    echo "OMPI_MCA_mca_base_component_path=${OMPI_MCA_mca_base_component_path}" && \
+    echo "=== Verifying NIXL Python bindings ===" && \
+    python3 -c "import nixl; print(f'NIXL module: {nixl}'); print(f'NIXL file: {nixl.__file__}')" && \
+    echo "=== Verifying MPI ===" && \
+    mpirun --version && \
+    echo "=== All verifications passed ===" && \
+    echo "CUDA 12.8 base image ready"
 
 WORKDIR /workspace
 CMD ["/bin/bash"]
