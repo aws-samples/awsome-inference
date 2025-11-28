@@ -29,7 +29,7 @@ print_usage() {
     echo "  -r, --registry REGISTRY   Container registry (e.g., public.ecr.aws/xxxxx)"
     echo "  -t, --tag TAG             Image tag (default: latest)"
     echo "  -b, --build TARGET        Build target: efa, trtllm, vllm, all (default: all)"
-    echo "  -a, --arch ARCH           CUDA architecture: 75 (A10), 86 (A100), 90 (H100) (optional)"
+    echo "  -a, --arch ARCH           CUDA architecture: 80 (A100), 86 (A10), 90 (H100) (optional)"
     echo "  -p, --push                Push images to registry after build"
     echo "  -n, --no-cache            Build without Docker cache"
     echo "  -h, --help                Show this help message"
@@ -38,9 +38,9 @@ print_usage() {
     echo "  $0                                    # Build all images locally"
     echo "  $0 -b efa                             # Build only base EFA image"
     echo "  $0 -b efa -a 90                       # Build base EFA image for H100 GPUs"
-    echo "  $0 -b trtllm -a 86                    # Build TensorRT-LLM for A100 GPUs"
+    echo "  $0 -b trtllm -a 80                    # Build TensorRT-LLM for A100 GPUs"
     echo "  $0 -r public.ecr.aws/v9l4g5s4 -p     # Build and push to ECR"
-    echo "  $0 -t v1.0.0 -p -a 75                 # Build for A10 GPUs with specific tag and push"
+    echo "  $0 -t v1.0.0 -p -a 86                 # Build for A10 GPUs with specific tag and push"
 }
 
 log_info() {
@@ -109,14 +109,14 @@ VLLM_IMAGE="dynamo-vllm-efa"
 GPU_SUFFIX=""
 if [ -n "$CUDA_ARCH" ]; then
     case $CUDA_ARCH in
-        75)
-            GPU_SUFFIX="-a10"
+        80)
+            GPU_SUFFIX="-a100"  # SM80 - A100 GPUs (Compute Capability 8.0)
             ;;
         86)
-            GPU_SUFFIX="-a100"
+            GPU_SUFFIX="-a10"   # SM86 - A10 GPUs (Compute Capability 8.6)
             ;;
         90)
-            GPU_SUFFIX="-h100"
+            GPU_SUFFIX="-h100"  # SM90 - H100 GPUs (Compute Capability 9.0)
             ;;
         *)
             GPU_SUFFIX="-sm${CUDA_ARCH}"

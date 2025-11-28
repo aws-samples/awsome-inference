@@ -42,7 +42,7 @@ Disaggregated inference separates the prefill and decode phases across different
 
 - Run prefill workers on compute-optimized nodes (handling prompt processing)
 - Run decode workers on memory-bandwidth-optimized nodes (handling token generation)
-- Transfer KV-cache between phases using EFA's 400 Gbps networking
+- Transfer KV-cache between phases using EFA's high-bandwidth networking
 
 Choose disaggregated inference for production workloads with high request concurrency, large context lengths, or when independent scaling of each phase provides cost benefits.
 
@@ -50,7 +50,7 @@ Choose disaggregated inference for production workloads with high request concur
 
 ## Architecture Summary
 
-The following diagram illustrates the high-level components in a disaggregated Dynamo deployment on AWS P5 instances:
+The following diagram illustrates the high-level components in a disaggregated Dynamo deployment on AWS instances with supported GPUs:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -61,31 +61,31 @@ The following diagram illustrates the high-level components in a disaggregated D
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                     Dynamo Frontend Service                             │
 │                  (HTTP API - No GPU Required)                           │
-└───────────────┬─────────────────────────────────────┬───────────────────┘
-                │                                     │
-                ▼                                     ▼
+└───────────────┬─────────────────────────────────────────┬───────────────┘
+                │                                         │
+                ▼                                         ▼
 ┌───────────────────────────────┐     ┌───────────────────────────────────┐
 │       Prefill Workers         │     │        Decode Workers             │
 │  ┌─────────────────────────┐  │     │  ┌─────────────────────────────┐  │
-│  │   P5.48xlarge Instance  │  │     │  │   P5.48xlarge Instance      │  │
-│  │   8x H100 80GB GPUs     │  │     │  │   8x H100 80GB GPUs         │  │
-│  │   8x EFA Adapters       │  │     │  │   8x EFA Adapters           │  │
+│  │   GPU Instance          │  │     │  │   GPU Instance              │  │
+│  │   Supported GPUs        │  │     │  │   Supported GPUs            │  │
+│  │   EFA Adapters          │  │     │  │   EFA Adapters              │  │
 │  └─────────────────────────┘  │     │  └─────────────────────────────┘  │
 └───────────────┬───────────────┘     └───────────────┬───────────────────┘
                 │                                     │
-                └──────────────┬──────────────────────┘
-                               │
-                               ▼
-                ┌──────────────────────────────┐
-                │     KV-Cache Transfer        │
-                │   (EFA 400 Gbps / UCX / NIXL)│
-                └──────────────────────────────┘
-                               │
-                               ▼
-                ┌──────────────────────────────┐
-                │    FSx for Lustre Storage    │
-                │    (Model Weights & Engines) │
-                └──────────────────────────────┘
+                └──────────────────┬──────────────────┘
+                                   │
+                                   ▼
+                    ┌──────────────────────────────┐
+                    │     KV-Cache Transfer        │
+                    │   (EFA / UCX / NIXL)         │
+                    └──────────────────────────────┘
+                                   │
+                                   ▼
+                    ┌──────────────────────────────┐
+                    │    FSx for Lustre Storage    │
+                    │    (Model Weights & Engines) │
+                    └──────────────────────────────┘
 ```
 
 ---
@@ -105,8 +105,8 @@ Deployment targets include:
 | Platform | Description |
 |----------|-------------|
 | Amazon EKS | Managed Kubernetes with GPU node pools and autoscaling |
-| Amazon EKS with HyperPod | Enhanced EKS with integrated cluster lifecycle management |
-| AWS ParallelCluster | HPC-style Slurm scheduling on EC2 instances |
+| Amazon SMHP with EKS | Enhanced EKS with integrated cluster lifecycle management |
+| Amazon SMHP with SLURM | HPC-style Slurm scheduling on Sagemaker |
 
 ---
 
@@ -116,7 +116,7 @@ Before deploying these examples, ensure you have:
 
 - AWS account with permissions for EC2, EKS, ECR, and VPC resources
 - Docker or compatible container runtime installed locally
-- Access to P5.48xlarge instances (8x H100 80GB GPUs with EFA)
+- Access to EC2 instances with supported GPUs and EFA
 - Amazon EKS cluster (version 1.28+) with GPU-enabled node groups
 - kubectl configured for cluster access
 - Helm 3.x installed
@@ -131,8 +131,8 @@ This solution leverages the following AWS services:
 
 | Service | Purpose |
 |---------|---------|
-| Amazon EC2 P5 | GPU compute instances with H100 GPUs for inference workloads |
-| Elastic Fabric Adapter (EFA) | 400 Gbps low-latency networking for KV-cache transfer |
+| Amazon EC2  | GPU compute instances with supported GPUs for inference workloads |
+| Elastic Fabric Adapter (EFA) | High-bandwidth low-latency networking for KV-cache transfer |
 | Amazon ECR | Container image registry for storing Docker images |
 | Amazon EKS | Kubernetes orchestration platform |
 | FSx for Lustre | High-performance parallel filesystem for model storage |
@@ -158,13 +158,13 @@ docker build -f Dockerfile.base -t aws-efa-base:latest .
 ```
 
 **Key components:**
-- CUDA 13.0.0 runtime and development libraries
-- EFA installer 1.43.1 with OpenMPI support
+- CUDA 12.8.1 runtime and development libraries
+- EFA installer with OpenMPI support
 - Libfabric 2.3.0 with EFA provider
-- UCX 1.19.0 with EFA and CUDA support
-- NCCL 2.27.5 optimized for H100 (SM86)
-- AWS OFI NCCL 1.17.1 for EFA integration
-- NIXL 0.7.1 for GPU-direct transfers
+- UCX 1.19.0 with EFA and GDRCopy support
+- NCCL 2.25+ with AWS OFI NCCL plugin
+- NIXL 0.7.1 for GPU-direct transfers (C++ and Python)
+- GDRCopy 2.4.1
 
 **Expected image size:** ~8-9 GB
 
@@ -177,7 +177,7 @@ docker build -f Dockerfile.python-base -t dynamo-trtllm:latest .
 ```
 
 **Additional components:**
-- Python 3.10 with TensorRT-LLM dependencies
+- Python 3.12 with TensorRT-LLM dependencies
 - SSH server for distributed operations
 - Torch 2.x with CUDA support
 - TensorRT-LLM runtime libraries
@@ -201,7 +201,7 @@ docker build --no-cache -f Dockerfile.base -t aws-efa-base:latest .
 
 ## Prebuilt Images
 
-Pre-built container images optimized for P5 instances are available:
+Pre-built container images optimized for supported GPU instances are available:
 
 ```bash
 # Pull base EFA image
@@ -222,10 +222,10 @@ docker pull public.ecr.aws/[your-registry]/dynamo-trtllm:latest
 ```bash
 # Set namespace and version
 export NAMESPACE=default
-export RELEASE_VERSION=0.4.0
+export RELEASE_VERSION=0.6.1
 
-# Label P5 nodes for CUDA 12.x
-kubectl get nodes -l node.kubernetes.io/instance-type=p5.48xlarge -o name | \
+# Label GPU nodes for CUDA 12.x
+kubectl get nodes -l node.kubernetes.io/instance-type -o name | \
   xargs -I {} kubectl label {} cuda-driver=cuda12 --overwrite
 ```
 
@@ -267,7 +267,7 @@ kubectl get pvc fsx-claim -n ${NAMESPACE}
 kubectl apply -f 02-engine-config.yaml
 
 # Deploy disaggregated inference
-kubectl apply -f 03-dynamo-deployment-p5.yaml
+kubectl apply -f 03-dynamo-deployment.yaml
 
 # Monitor deployment (wait 10-15 minutes for model loading)
 watch kubectl get pods -n ${NAMESPACE}
@@ -284,9 +284,9 @@ kubectl run -it --rm test --image=curlimages/curl -- \
 curl -X POST http://dynamo-disaggregated-frontend.default.svc.cluster.local:8000/v1/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "meta-llama/Llama-3.2-3B",
-    "prompt": "Explain quantum computing:",
-    "max_tokens": 50
+  "model": "meta-llama/Llama-3.2-3B",
+  "prompt": "Explain quantum computing:",
+  "max_tokens": 50
   }' | jq .
 ```
 
@@ -363,7 +363,7 @@ For detailed troubleshooting, see **QUICK_FIX.md** and **SSH_FIX_GUIDE.md**.
 | NVIDIA Dynamo Documentation | [https://docs.nvidia.com/dynamo](https://docs.nvidia.com/dynamo) |
 | AWS EFA Documentation | [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html) |
 | Amazon EKS User Guide | [https://docs.aws.amazon.com/eks/latest/userguide/](https://docs.aws.amazon.com/eks/latest/userguide/) |
-| AWS P5 Instances | [https://aws.amazon.com/ec2/instance-types/p5/](https://aws.amazon.com/ec2/instance-types/p5/) |
+| AWS GPU Instances | [https://aws.amazon.com/ec2/instance-types/#Accelerated_Computing](https://aws.amazon.com/ec2/instance-types/#Accelerated_Computing) |
 | TensorRT-LLM | [https://github.com/NVIDIA/TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM) |
 | FSx for Lustre | [https://aws.amazon.com/fsx/lustre/](https://aws.amazon.com/fsx/lustre/) |
 | Awesome Distributed Training | [https://github.com/aws-samples/awsome-distributed-training](https://github.com/aws-samples/awsome-distributed-training) |
@@ -372,24 +372,14 @@ For detailed troubleshooting, see **QUICK_FIX.md** and **SSH_FIX_GUIDE.md**.
 
 ## License
 
-This library is licensed under the MIT-0 License. See the [LICENSE](LICENSE) file for details.
+This library is licensed under the MIT-0 License. See the [LICENSE](../../LICENSE) file for details.
 
 ---
 
 ## Contributing
 
-Contributions are welcome. Please submit issues and pull requests following standard GitHub practices.
-
----
-
-## Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0 | November 2025 | Initial release for P5 instances with H100 GPUs |
-| 1.1 | November 2025 | Fixed MPI header issues in Docker builds |
+[Contributions](../../CONTRIBUTING.md) are welcome. Please submit issues and pull requests following standard GitHub practices. 
 
 ---
 
 **Last Updated:** November 2025
-**Tested On:** AWS EKS 1.28+, P5.48xlarge instances with 8x H100 80GB GPUs

@@ -2,6 +2,7 @@
 
 This project incorporates components from various open-source projects. We acknowledge and are grateful to the developers and maintainers of these projects.
 
+
 ---
 
 ## NVIDIA Components
@@ -119,6 +120,14 @@ This project incorporates components from various open-source projects. We ackno
 | vLLM | Apache-2.0 |
 | PyTorch | BSD-3-Clause |
 | Transformers | Apache-2.0 |
+
+---
+
+## Contributors
+This project was developed with contributions from:
+
+- **Anton Alexander** - Sr. Specialist, WW Foundation Models
+- **Alex Iankoulski** - Principal WW Specialist SA GenAI
 
 ---
 

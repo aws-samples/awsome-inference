@@ -1,0 +1,33 @@
+# Claude Code session data
+.claude/
+
+# Generated deployment YAML files
+deployment/
+
+# Temporary files
+*.log
+*.tmp
+*.swp
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+.idea/
+
+# Fix/compatibility scripts
+fix_buildconfig_compat.py
+fix_engine_args_compat.py
+tensorrt_llm_metrics_stub.py
+
+# Documentation and notes
+gpu-cluster-performance-tests.md
+docs/
+
+# Library directories
+nccl/
+nixl/
+ucx/
