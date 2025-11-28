@@ -1,0 +1,15 @@
+--- a/clientv3/client.go
++++ b/clientv3/client.go
+@@ -244,7 +244,11 @@ func (c *Client) dialSetupOpts(creds grpccredentials.TransportCredentials, dopts
+ 		if url.Scheme == "unix" || url.Scheme == "unixs" {
+ 			// unix sockets don't have ports, so no need to dial
+ 			opts = append(opts, grpc.WithAuthority(url.Host))
+-		} else {
++		} else if strings.Contains(url.Host, ":") {
++			// For proper IPv4/IPv6 addresses with ports
++			opts = append(opts, grpc.WithAuthority(url.Host))
++		} else {
++			// For hostnames without explicit ports
+ 			opts = append(opts, grpc.WithAuthority(url.Host+":"+url.Port()))
+ 		}
+ 	}
