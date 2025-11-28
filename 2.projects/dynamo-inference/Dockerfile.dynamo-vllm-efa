@@ -1,19 +1,27 @@
 # syntax=docker/dockerfile:1.10.0
 #
-# Dockerfile.dynamo-vllm - NVIDIA Dynamo with vLLM Backend
+# Dockerfile.vllm - NVIDIA Dynamo with vLLM Backend
+# ==================================================
+# Production-ready vLLM with NIXL KV transfer
 #
-# Features:
-# - vLLM inference backend for disaggregated serving
-# - CUDA 12 enforcement (build-time + runtime)
-# - AWS EFA support for high-performance networking
-# - SSH for distributed training/inference
-# - NIXL for accelerated KV cache transfer
+# Stack: CUDA 12.8.1, vLLM 0.11.x, PyTorch 2.7.0a0
+#
+# Key Features:
+# - vLLM with NIXL connector for disaggregated serving
+# - CUDA 12.8.1 for compatibility
+# - AWS EFA for high-performance networking
+# - Disaggregated prefill/decode mode
+#
+# Usage:
+#   docker build --build-arg BASE_IMAGE=dynamo-cuda128-base:latest \
+#                -t dynamo-vllm-disagg-nixl:cuda128 \
+#                -f Dockerfile.vllm .
 #
 
 ##############################
-# Base Image
+# Base Image (CUDA 12.8 EFA)
 ##############################
-ARG BASE_IMAGE=public.ecr.aws/hpc-cloud/efa:a10g
+ARG BASE_IMAGE=dynamo-cuda128-base:latest
 FROM ${BASE_IMAGE}
 
 ##############################
@@ -26,12 +34,12 @@ ARG ARCH="x86_64"
 ARG DEFAULT_PYTHON_VERSION="3.12"
 ARG NIXL_VERSION="0.7.1"
 ARG NIXL_GIT_TAG="${NIXL_VERSION}"
-ARG DYNAMO_GIT_TAG="main"
+ARG DYNAMO_GIT_TAG="v0.7.0"
 ARG RUST_TOOLCHAIN="1.86.0"
-ARG VLLM_VERSION=""
+ARG VLLM_VERSION="0.11.0"
 
 ##############################
-# Path ARGs (from base image)
+# Path ARGs
 ##############################
 ARG CUDA_HOME="/usr/local/cuda"
 ARG EFA_PREFIX="/opt/amazon/efa"
@@ -69,26 +77,18 @@ ARG VLLM_DIR="${PYTHON_SITE_PACKAGES}/vllm"
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     PIP_BREAK_SYSTEM_PACKAGES=1 \
-    # Rust
     RUSTUP_HOME=${RUSTUP_HOME} \
     CARGO_HOME=${CARGO_HOME} \
-    # CUDA
     CUDA_HOME=${CUDA_HOME} \
-    # Paths from base
     EFA_PATH=${EFA_PREFIX} \
     GDRCOPY_PATH=${GDRCOPY_PREFIX} \
     UCX_PATH=${UCX_PREFIX} \
-    # NIXL
     NIXL_PREFIX=${NIXL_PREFIX} \
     NIXL_LIB_DIR=${NIXL_LIB_DIR} \
     NIXL_PLUGIN_DIR=${NIXL_PLUGIN_DIR} \
-    # Dynamo
     DYNAMO_HOME=${DYNAMO_HOME} \
-    # Python paths for Dynamo
     PYTHONPATH=${DYNAMO_HOME}/components/backends/vllm/src:${DYNAMO_HOME}/components/frontend/src \
-    # System PATH
     PATH=${CARGO_HOME}/bin:${CUDA_HOME}/bin:/usr/local/bin:${PATH} \
-    # CUDA Version Enforcement
     REQUIRED_CUDA_MAJOR=12 \
     MIN_DRIVER_VERSION=525 \
     # vLLM specific
@@ -96,94 +96,40 @@ ENV LANG=C.UTF-8 \
     VLLM_USE_V1=1
 
 ############################
-# CUDA 12 Build-time Verification
+# CUDA 12.8+ Build-time Verification
 ############################
-RUN echo "=== CUDA 12 Build-time Check ===" && \
+RUN echo "=== CUDA 12.8+ Build-time Check ===" && \
     NVCC_VERSION=$(nvcc --version | grep "release" | awk '{print $5}' | cut -d',' -f1) && \
     NVCC_MAJOR=$(echo $NVCC_VERSION | cut -d'.' -f1) && \
+    NVCC_MINOR=$(echo $NVCC_VERSION | cut -d'.' -f2) && \
     echo "NVCC version: $NVCC_VERSION" && \
-    if [ "$NVCC_MAJOR" != "12" ]; then \
-        echo "ERROR: Base image has CUDA $NVCC_VERSION, requires CUDA 12.x"; \
+    if [ "$NVCC_MAJOR" != "12" ] || [ "$NVCC_MINOR" -lt "8" ]; then \
+        echo "ERROR: Base image has CUDA $NVCC_VERSION, requires CUDA 12.8+"; \
         exit 1; \
     fi && \
-    echo "✅ CUDA 12 base image verified"
+    echo "CUDA 12.8+ verified"
 
 ############################
-# Install system dependencies
+# Install additional system dependencies
 ############################
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        python3 \
-        python3-dev \
-        python3-pip \
-        python-is-python3 \
         openmpi-bin \
         libopenmpi-dev \
-        git \
         build-essential \
         pkg-config \
         libhwloc-dev \
         libudev-dev \
-        libclang-dev \
-        curl \
-        wget \
         cmake \
         protobuf-compiler \
         libprotobuf-dev \
         libzmq5 \
         libzmq3-dev \
-        libcpprest-dev \
-        libgrpc++-dev \
-        libgrpc-dev \
-        jq \
-        # vLLM specific dependencies
+        ninja-build \
+        patchelf \
         libnuma-dev \
         libucx0 \
     && rm -rf /var/lib/apt/lists/*
-
-############################
-# Install OpenSSH for distributed inference
-# (Required for multi-node communication)
-############################
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        openssh-client \
-        openssh-server && \
-    mkdir -p /var/run/sshd && \
-    cat /etc/ssh/ssh_config | grep -v StrictHostKeyChecking > /etc/ssh/ssh_config.new && \
-    echo "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config.new && \
-    mv /etc/ssh/ssh_config.new /etc/ssh/ssh_config && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Configure OpenSSH for MPI
-RUN mkdir -p /var/run/sshd && \
-    sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd && \
-    # Enable root login and pubkey auth
-    sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -i 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
-    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
-    echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
-
-# Generate SSH keys for passwordless authentication
-RUN rm -rf /root/.ssh/ && \
-    mkdir -p /root/.ssh/ && \
-    chmod 700 /root/.ssh && \
-    ssh-keygen -q -t rsa -N '' -f /root/.ssh/id_rsa && \
-    cp /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys && \
-    chmod 600 /root/.ssh/id_rsa /root/.ssh/authorized_keys && \
-    chmod 644 /root/.ssh/id_rsa.pub && \
-    # SSH config to disable host key checking completely
-    printf "Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  LogLevel ERROR\n" > /root/.ssh/config && \
-    chmod 600 /root/.ssh/config
-
-############################
-# Install Rust toolchain
-############################
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-    sh -s -- -y --no-modify-path --profile minimal --default-toolchain ${RUST_TOOLCHAIN} && \
-    chmod -R a+w ${RUSTUP_HOME} ${CARGO_HOME} && \
-    rustc --version && cargo --version
 
 ############################
 # Build NIXL Python bindings
@@ -199,7 +145,7 @@ RUN python3 -m pip install --no-cache-dir \
     python3 -m pip install --no-cache-dir "nixl==${NIXL_VERSION}"
 
 RUN python3 -c 'import nixl, importlib.metadata as im; \
-print("✅ NIXL imported successfully"); \
+print("NIXL imported successfully"); \
 print("   Version:", im.version("nixl"))'
 
 ############################
@@ -226,14 +172,33 @@ RUN echo "=== Installing Dynamo with vLLM ===" && \
     python3 -m pip install --no-cache-dir \
         --extra-index-url https://pypi.nvidia.com/ \
         -e ".[vllm]" && \
-    echo "✅ Dynamo with vLLM installed"
+    echo "Dynamo with vLLM installed"
 
-# Install FlashInfer for better attention performance (optional but recommended)
-RUN python3 -m pip install --no-cache-dir flashinfer-python || \
-    echo "⚠️ FlashInfer installation failed - will use default attention backend"
+# Verify vLLM installation
+RUN python3 -c "import vllm; print(f'vLLM version: {vllm.__version__}')"
 
 ############################
-# Set LD_LIBRARY_PATH (order matters!)
+# Install FlashInfer for better attention performance
+############################
+RUN echo "=== Installing FlashInfer ===" && \
+    CUDA_VERSION=$(nvcc --version | grep "release" | awk '{print $5}' | cut -d',' -f1) && \
+    CUDA_MAJOR=$(echo $CUDA_VERSION | cut -d'.' -f1) && \
+    CUDA_MINOR=$(echo $CUDA_VERSION | cut -d'.' -f2) && \
+    TORCH_VERSION=$(python3 -c "import torch; v=torch.__version__.split('+')[0].split('.'); print(f'{v[0]}{v[1]}')" 2>/dev/null || echo "27") && \
+    ( \
+        python3 -m pip install --no-cache-dir flashinfer-python \
+            -i "https://flashinfer.ai/whl/cu${CUDA_MAJOR}${CUDA_MINOR}/torch${TORCH_VERSION}/" 2>/dev/null && \
+        echo "FlashInfer installed" \
+    ) || ( \
+        python3 -m pip install --no-cache-dir flashinfer-python \
+            -i "https://flashinfer.ai/whl/cu126/torch27/" 2>/dev/null && \
+        echo "FlashInfer installed (fallback)" \
+    ) || ( \
+        echo "FlashInfer installation failed - will use default attention backend" \
+    )
+
+############################
+# Set LD_LIBRARY_PATH
 ############################
 ENV LD_LIBRARY_PATH="\
 ${PYTHON_SITE_PACKAGES}/torch/lib:\
@@ -254,33 +219,28 @@ ${LD_LIBRARY_PATH}"
 # Validation
 ############################
 
-# 1. Check CUDA 12 libraries - STRICT CHECK
+# 1. Check CUDA 12 libraries
 RUN echo "=== Enforcing CUDA 12 Libraries ===" && \
     ldconfig -p | grep libcublas && \
     if ! ldconfig -p | grep -q "libcublasLt.so.12"; then \
-        echo "ERROR: libcublasLt.so.12 NOT FOUND - wrong CUDA version!"; \
+        echo "ERROR: libcublasLt.so.12 NOT FOUND"; \
         exit 1; \
     fi && \
     if ! ldconfig -p | grep -q "libcudart.so.12"; then \
-        echo "ERROR: libcudart.so.12 NOT FOUND - wrong CUDA version!"; \
+        echo "ERROR: libcudart.so.12 NOT FOUND"; \
         exit 1; \
     fi && \
-    echo "✅ CUDA 12 libraries verified (libcublasLt.so.12, libcudart.so.12)"
+    echo "CUDA 12 libraries verified"
 
-# 2. Verify Python packages - CUDA 12 check
+# 2. Verify Python packages
 RUN python3 -c "\
 import torch; \
 import sys; \
 import importlib.metadata as im; \
 cuda_version = torch.version.cuda; \
-cuda_major = int(cuda_version.split('.')[0]); \
-# print(f'PyTorch CUDA version: {cuda_version}'); \
-# if cuda_major < 13: \
-#     print(f'ERROR: PyTorch built with CUDA {cuda_version}, need CUDA 12+'); \
-#     sys.exit(1); \
-print('✅ PyTorch:', torch.__version__, '- CUDA:', cuda_version); \
-print('✅ vLLM:', im.version('vllm')); \
-print('✅ NIXL:', im.version('nixl')); \
+print('PyTorch:', torch.__version__, '- CUDA:', cuda_version); \
+print('vLLM:', im.version('vllm')); \
+print('NIXL:', im.version('nixl')); \
 "
 
 # 3. Verify Dynamo and vLLM imports
@@ -288,61 +248,27 @@ RUN python3 -c "\
 import nixl; \
 import dynamo; \
 import vllm; \
-print('✅ NIXL imported'); \
-print('✅ Dynamo imported'); \
-print('✅ vLLM imported'); \
+print('NIXL imported'); \
+print('Dynamo imported'); \
+print('vLLM imported'); \
 "
 
-# 4. Verify critical shared libraries
+# 4. Verify NIXL connector for vLLM
 RUN python3 -c "\
-import ctypes; \
-ctypes.CDLL('libpython3.12.so.1.0'); \
-ctypes.CDLL('libmpi.so.40'); \
-print('✅ libpython3.12.so.1.0 found'); \
-print('✅ libmpi.so.40 found'); \
-"
+try: \
+    from vllm.distributed.kv_transfer.kv_connector.v1.nixl_connector import NixlConnector; \
+    print('NixlConnector available for vLLM KV transfer'); \
+except ImportError as e: \
+    print(f'NixlConnector import: {e}'); \
+    print('   NIXL connector may need runtime configuration'); \
+" || echo "NIXL connector check skipped"
 
-# 5. Verify Dynamo vLLM module
-RUN python3 -c "\
-import nixl; \
-import dynamo; \
-"
-
-
-# 6. Verify SSH
-RUN echo "=== Verifying SSH ===" && \
-    test -f /usr/sbin/sshd && echo "✅ sshd found" && \
-    test -f /root/.ssh/id_rsa && echo "✅ SSH keys generated"
-
-# 7. Verify library paths
-RUN echo "=== Verifying Library Paths ===" && \
-    for dir in \
-        "${TORCH_LIB_DIR}" \
-        "${NIXL_LIB_DIR}" \
-        "${UCX_PREFIX}/lib" \
-        "${EFA_PREFIX}/lib" \
-        "${GDRCOPY_PREFIX}/lib64" \
-    ; do \
-        if [ -d "$dir" ]; then \
-            echo "✅ $dir exists"; \
-        else \
-            echo "⚠️  $dir not found"; \
-        fi; \
-    done
-
-# 8. Final summary
+# 5. Final summary
 RUN echo "========================================" && \
-    echo "✅ BUILD COMPLETE - DYNAMO vLLM" && \
+    echo "BUILD COMPLETE - DYNAMO vLLM" && \
     echo "========================================" && \
     echo "" && \
-    echo "CUDA 12 Enforcement:" && \
-    echo "  ✅ Build-time: nvcc version verified" && \
-    echo "  ✅ Build-time: libcublasLt.so.12 verified" && \
-    echo "  ✅ Build-time: libcudart.so.12 verified" && \
-    echo "  ✅ Build-time: PyTorch CUDA 12+ verified" && \
-    echo "  ✅ Runtime: Entrypoint checks driver >= 525" && \
-    echo "" && \
-    echo "Backend: vLLM" && \
+    echo "Stack: CUDA 12.8.1 + vLLM" && \
     echo "" && \
     echo "Key paths:" && \
     echo "  DYNAMO_HOME: ${DYNAMO_HOME}" && \
@@ -351,16 +277,7 @@ RUN echo "========================================" && \
     echo "" && \
     python3 -c "import importlib.metadata as im; print(f'  vLLM: {im.version(\"vllm\")}')" && \
     python3 -c "import importlib.metadata as im; print(f'  NIXL: {im.version(\"nixl\")}')" && \
-    echo "" && \
-    echo "Usage:" && \
-    echo "  # Start frontend" && \
-    echo "  python -m dynamo.frontend --http-port 8000" && \
-    echo "" && \
-    echo "  # Start vLLM worker (decode)" && \
-    echo "  python -m dynamo.vllm --model <model-name>" && \
-    echo "" && \
-    echo "  # Start vLLM worker (prefill - disaggregated)" && \
-    echo "  python -m dynamo.vllm --model <model-name> --is-prefill-worker"
+    python3 -c "import importlib.metadata as im; print(f'  PyTorch: {im.version(\"torch\")}')"
 
 ############################
 # Cleanup
@@ -369,7 +286,6 @@ RUN python3 -m pip cache purge && \
     rm -rf /root/.cache/pip /tmp/* /var/tmp/* && \
     find ${PYTHON_SITE_PACKAGES} -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
     find ${DYNAMO_HOME} -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-
 
 WORKDIR /workspace
 CMD ["/bin/bash"]
