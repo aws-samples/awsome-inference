@@ -1,31 +1,28 @@
 # syntax=docker/dockerfile:1.10.0
 #
-# Canonical NIXL + EFA base for Dynamo on AWS/EKS
-# - CUDA 12.6, Ubuntu 24.04
-# - NIXL 0.7.1 (C++ core + Rust bindings)
-# - libfabric v2.3.0 to /usr/local
-# - UCX v1.19.0 with EFA + GDRCopy
-# - GDRCopy 2.4.1
-# - EFA userspace via aws-efa-installer (no kernel)
-# - etcd-cpp-apiv3 + URI patch + AWS SDK C++ (S3)
-# - Optional NCCL + aws-ofi-nccl
+# CUDA 12.8 EFA/NIXL Base Image for Dynamo Production
+# =====================================================
+# Stack B: CUDA 12.8.1 based on NGC pytorch:25.03-py3
 #
-# Build stage image
-# NEW (correct tags):
-ARG BASE_IMAGE_DEVEL="nvidia/cuda"
-ARG BASE_IMAGE_DEVEL_TAG="12.6.0-devel-ubuntu24.04"
+# Features:
+# - CUDA 12.8.1 (DeepGEMM compatible)
+# - PyTorch 2.7.0a0 from NGC
+# - AWS EFA + libfabric v2.3.0
+# - UCX v1.19.0 with EFA + GDRCopy
+# - NCCL 2.25+ with aws-ofi-nccl
+# - NIXL 0.7.1 (C++ + Python)
+# - GDRCopy 2.4.1
+#
+# Target: p5.48xlarge (H100 x 8, EFA x 32)
+# Driver: 550.163.01 (forward compat to CUDA 12.8)
+#
 
-ARG BASE_IMAGE_RUNTIME="nvidia/cuda"
-ARG BASE_IMAGE_RUNTIME_TAG="12.6.0-runtime-ubuntu24.04"
-
-
-##########
-# Build stage
-##########
-FROM ${BASE_IMAGE_DEVEL}:${BASE_IMAGE_DEVEL_TAG} AS build
+##############################
+# Stage 1: Build Stage
+##############################
+FROM nvcr.io/nvidia/pytorch:25.03-py3 AS build
 
 ARG ARCH="x86_64"
-ARG DEFAULT_PYTHON_VERSION="3.12"
 ARG NPROC
 
 # Core versions
@@ -40,11 +37,12 @@ ARG AWS_SDK_VERSION="1.11.581"
 ARG ETCD_CPP_VERSION="0.15.4"
 ARG RDMA_CORE_VERSION="v51.0"
 ARG EFA_INSTALLER_VERSION="1.43.1"
-ARG INSTALL_NCCL="1"
-ARG INSTALL_AWS_OFI_NCCL="1"
-ARG NCCL_VERSION="v2.27.5"
-ARG CUDA_ARCH="90"     # H100 (Hopper)
+ARG CUDA_ARCH="90"
 ARG NCCL_TESTS_VERSION="v2.16.9"
+
+# Rust toolchain
+ARG RUSTUP_VERSION="1.28.1"
+ARG RUST_TOOLCHAIN="1.86.0"
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
@@ -55,11 +53,26 @@ ENV DEBIAN_FRONTEND=noninteractive \
 WORKDIR /opt/build
 
 ############################
+# Verify CUDA 12.8 environment
+############################
+RUN echo "=== CUDA 12.8 Build Environment Verification ===" && \
+    nvcc --version && \
+    NVCC_VERSION=$(nvcc --version | grep "release" | awk '{print $5}' | cut -d',' -f1) && \
+    NVCC_MAJOR=$(echo $NVCC_VERSION | cut -d'.' -f1) && \
+    NVCC_MINOR=$(echo $NVCC_VERSION | cut -d'.' -f2) && \
+    echo "CUDA Toolkit: $NVCC_VERSION" && \
+    if [ "$NVCC_MAJOR" != "12" ] || [ "$NVCC_MINOR" -lt "8" ]; then \
+        echo "ERROR: Requires CUDA 12.8+, got CUDA $NVCC_VERSION"; \
+        exit 1; \
+    fi && \
+    echo "✅ CUDA 12.8+ verified ($NVCC_VERSION)" && \
+    python3 -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.version.cuda}')"
+
+############################
 # 1. System build toolchain
 ############################
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
-        # Build toolchain
         build-essential \
         gcc \
         autoconf \
@@ -69,11 +82,9 @@ RUN apt-get update -y && \
         ninja-build \
         meson \
         pkg-config \
-        # Version control and download tools
         git \
         wget \
         curl \
-        # Certificates and utilities
         ca-certificates \
         apt-utils \
         vim \
@@ -81,7 +92,6 @@ RUN apt-get update -y && \
         pandoc \
         gdb \
         kmod \
-        # RDMA / EFA dependencies
         libibverbs-dev \
         rdma-core \
         ibverbs-utils \
@@ -90,7 +100,6 @@ RUN apt-get update -y && \
         libnuma-dev \
         hwloc \
         libhwloc-dev \
-        # TLS / HTTP / GRPC
         libssl-dev \
         zlib1g-dev \
         libcurl4-openssl-dev \
@@ -99,38 +108,19 @@ RUN apt-get update -y && \
         protobuf-compiler-grpc \
         libgrpc++-dev \
         libgrpc-dev \
-        # I/O libraries
         libaio-dev \
         liburing-dev \
-        # Testing
         check \
         libsubunit-dev \
-        # Debian packaging
         debhelper \
         devscripts \
-        # SSH for distributed training
         openssh-client \
         openssh-server \
-        # Python for meson/nixl build
-        python${DEFAULT_PYTHON_VERSION} \
-        python${DEFAULT_PYTHON_VERSION}-dev \
-        python3-pip \
-        python-is-python3 \
-        git \
-        cmake \
-        build-essential \
-        wget \
-        curl \
-        ca-certificates \
-        libtool \
-        autoconf \
-        automake \
-        libnuma-dev \
-        libhwloc-dev \
-        openssh-server \
-        openssh-client \
-        pkg-config \
-        && rm -rf /var/lib/apt/lists/*
+        pybind11-dev \
+        libgflags-dev \
+        clang \
+        libclang-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 ############################
 # 2. RDMA core
@@ -152,71 +142,46 @@ RUN cd /opt/build && \
 ############################
 # 3. EFA userspace (no kmod)
 ############################
-# MPI paths
-
-# Install EFA installer dependencies FIRST to ensure OpenMPI installation succeeds
 RUN apt-get update && apt-get install -y --no-install-recommends \
     pciutils \
     environment-modules \
     tcl \
     libevent-core-2.1-7t64 \
     libevent-pthreads-2.1-7t64 \
-    && rm -rf /var/lib/apt/lists/* && \
-    echo "=== EFA installer dependencies installed ==="
+    && rm -rf /var/lib/apt/lists/*
 
 RUN cd /tmp && \
-    echo "=== Installing EFA Installer (with OpenMPI, skipping libfabric for custom build) ===" && \
+    echo "=== Installing EFA Installer ===" && \
     curl -O https://efa-installer.amazonaws.com/aws-efa-installer-${EFA_INSTALLER_VERSION}.tar.gz && \
     tar -xf aws-efa-installer-${EFA_INSTALLER_VERSION}.tar.gz && \
     cd aws-efa-installer && \
     ./efa_installer.sh -y --skip-kmod --skip-limit-conf --enable-gdr --no-verify && \
     cd .. && rm -rf aws-efa-installer* && \
-    echo "=== EFA installed to /opt/amazon/efa ===" && \
-    echo "=== OpenMPI installed to /opt/amazon/openmpi ===" && \
-    ls -la /opt/amazon/efa/lib/ 2>/dev/null || echo "EFA lib directory check" && \
-    ls -la /opt/amazon/openmpi/bin/mpirun 2>/dev/null || echo "OpenMPI check"
+    echo "✅ EFA installed to /opt/amazon/efa"
 
 ENV EFA_INSTALLER_PATH=/opt/amazon/efa \
     OPENMPI_PATH=/opt/amazon/openmpi \
     PATH=/opt/amazon/openmpi/bin:/opt/amazon/efa/bin:${PATH} \
     LD_LIBRARY_PATH=/opt/amazon/efa/lib:/opt/amazon/openmpi/lib:${LD_LIBRARY_PATH}
 
-RUN echo "=== Setting up EFA library paths for downstream builds ===" && \
-    mkdir -p /opt/amazon/efa/lib /opt/amazon/efa/include
-
-RUN if [ -f /usr/lib/x86_64-linux-gnu/libefa.so ]; then \
+# Set up EFA library paths
+RUN mkdir -p /opt/amazon/efa/lib /opt/amazon/efa/include && \
+    if [ -f /usr/lib/x86_64-linux-gnu/libefa.so ]; then \
         ln -sf /usr/lib/x86_64-linux-gnu/libefa.so* /opt/amazon/efa/lib/ && \
-        echo "✅ EFA library symlinked from /usr/lib/x86_64-linux-gnu/"; \
-    elif [ -f /usr/lib/aarch64-linux-gnu/libefa.so ]; then \
-        ln -sf /usr/lib/aarch64-linux-gnu/libefa.so* /opt/amazon/efa/lib/ && \
-        echo "✅ EFA library symlinked from /usr/lib/aarch64-linux-gnu/"; \
-    elif [ -f /opt/amazon/efa/lib/libefa.so ]; then \
-        echo "✅ EFA library already at /opt/amazon/efa/lib/"; \
-    else \
-        echo "⚠️  WARNING: EFA library not found, searching..." && \
-        find /usr /opt -name "libefa.so*" 2>/dev/null | head -1 | xargs -I {} dirname {} | xargs -I {} ln -sf {}/libefa.so* /opt/amazon/efa/lib/ && \
-        echo "✅ EFA library linked"; \
-    fi
-
-RUN if [ -d /usr/include/infiniband ]; then \
-        rm -rf /opt/amazon/efa/include/infiniband && \
-        ln -sfn /usr/include/infiniband /opt/amazon/efa/include/infiniband && \
-        echo "✅ EFA headers symlinked from /usr/include/infiniband"; \
+        echo "✅ EFA library symlinked"; \
+    fi && \
+    if [ -d /usr/include/infiniband ]; then \
+        ln -sfn /usr/include/infiniband /opt/amazon/efa/include/infiniband; \
     fi && \
     if [ -d /usr/include/rdma ]; then \
-        rm -rf /opt/amazon/efa/include/rdma && \
-        ln -sfn /usr/include/rdma /opt/amazon/efa/include/rdma && \
-        echo "✅ RDMA headers symlinked from /usr/include/rdma"; \
+        ln -sfn /usr/include/rdma /opt/amazon/efa/include/rdma; \
     fi
 
 ENV MPI_HOME=/opt/amazon/openmpi \
-    # Compiler include paths - THIS IS THE FIX
     C_INCLUDE_PATH=/opt/amazon/openmpi/include:${CUDA_HOME}/include \
     CPLUS_INCLUDE_PATH=/opt/amazon/openmpi/include:${CUDA_HOME}/include \
     CPATH=/opt/amazon/openmpi/include:${CUDA_HOME}/include \
-    # Linker paths
     LIBRARY_PATH=/opt/amazon/openmpi/lib:${CUDA_HOME}/lib64
-    
 
 ############################
 # 4. GDRCopy
@@ -231,7 +196,7 @@ RUN git clone --depth 1 --branch v${GDRCOPY_VERSION} https://github.com/NVIDIA/g
 ENV GDRCOPY_PATH=/opt/gdrcopy
 
 ############################
-# 5. libfabric v2.3.0 -> /usr/local (CRITICAL)
+# 5. libfabric v2.3.0
 ############################
 RUN cd /opt/build && \
     wget --tries=3 --waitretry=5 \
@@ -255,8 +220,6 @@ RUN cd /opt/build && \
     echo "${LIBFABRIC_INSTALL_PATH}/lib" > /etc/ld.so.conf.d/libfabric.conf && \
     ldconfig && \
     cd / && rm -rf /opt/build/libfabric-*
-
-RUN fi_info -p efa || echo "⚠️ Warning: EFA provider not available (may need hardware)"
 
 ############################
 # 6. UCX v1.19 with EFA+GDRCopy
@@ -289,8 +252,7 @@ RUN cd /opt/build && \
 ENV UCX_PATH=/usr/local/ucx
 
 ############################
-## Install NCCL-tests
-## Use EFA-installed OpenMPI at /opt/amazon/openmpi
+# 7. Build NCCL-tests
 ############################
 RUN git clone -b ${NCCL_TESTS_VERSION} https://github.com/NVIDIA/nccl-tests.git /opt/nccl-tests && \
     cd /opt/nccl-tests && \
@@ -303,8 +265,9 @@ RUN git clone -b ${NCCL_TESTS_VERSION} https://github.com/NVIDIA/nccl-tests.git 
 
 ENV NCCL_TESTS_PATH=/opt/nccl-tests
 
-
-# Set up SSH for MPI
+############################
+# 8. SSH setup
+############################
 RUN mkdir -p /var/run/sshd \
     && ssh-keygen -A \
     && sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
@@ -312,43 +275,49 @@ RUN mkdir -p /var/run/sshd \
     && echo "* soft memlock unlimited" >> /etc/security/limits.conf \
     && echo "* hard memlock unlimited" >> /etc/security/limits.conf
 
-# SSH server setup for distributed training
 RUN sed -i 's/[ #]\(.*StrictHostKeyChecking \).*/\1no/g' /etc/ssh/ssh_config && \
     echo "UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config && \
     sed -i 's/#\(StrictModes \).*/\1no/g' /etc/ssh/sshd_config
 
-# Set environment variables - Add all necessary paths
-ENV PATH="/opt/amazon/openmpi/bin:/usr/local/ucx/bin:/opt/nccl-tests/build:/usr/local/bin:${PATH}"
-ENV LD_LIBRARY_PATH="/opt/nccl/lib:/opt/amazon/efa/lib:/opt/aws-ofi-nccl/lib:/usr/local/ucx/lib:${LD_LIBRARY_PATH}"
-ENV MPI_HOME="/opt/amazon/openmpi"
-
-
 ############################
-# 7. etcd-cpp-apiv3 + AWS SDK C++ (S3 only)
+# 9. etcd-cpp-apiv3 + AWS SDK
 ############################
-RUN apt-get update && apt-get install -y \
-    libcpprest-dev && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libcpprest-dev && rm -rf /var/lib/apt/lists/*
+
+# Fix the utf8_range library path issue by creating symlinks
+RUN mkdir -p /usr/lib && \
+    if [ -f /usr/lib/x86_64-linux-gnu/libutf8_validity.a ]; then \
+        ln -sf /usr/lib/x86_64-linux-gnu/libutf8_validity.a /usr/lib/libutf8_validity.a; \
+    elif [ -f /usr/lib/x86_64-linux-gnu/libutf8_range.a ]; then \
+        ln -sf /usr/lib/x86_64-linux-gnu/libutf8_range.a /usr/lib/libutf8_range.a; \
+    fi && \
+    ldconfig
+
+# Install grpc and protobuf from source properly
+RUN cd /tmp && \
+    git clone --recurse-submodules -b v1.62.1 --depth 1 --shallow-submodules https://github.com/grpc/grpc && \
+    cd grpc && \
+    mkdir -p cmake/build && cd cmake/build && \
+    cmake ../.. \
+        -DgRPC_INSTALL=ON \
+        -DgRPC_BUILD_TESTS=OFF \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    make -j${NPROC:-$(nproc)} && \
+    make install && \
+    cd / && rm -rf /tmp/grpc && \
+    ldconfig
 
 RUN git clone --depth 1 -b v${ETCD_CPP_VERSION} https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3.git && \
     cd etcd-cpp-apiv3 && \
     sed -i '/^find_dependency(cpprestsdk)$/d' etcd-cpp-api-config.in.cmake && \
     mkdir build && cd build && \
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DCMAKE_PREFIX_PATH=/usr/local && \
     make -j${NPROC:-$(nproc)} && make install && \
     cd / && rm -rf etcd-cpp-apiv3
 
 ENV ETCD_CPP_API_DISABLE_URI_VALIDATION=1
-
-RUN echo '#!/bin/bash' > /usr/local/bin/nixlbench-test && \
-    echo 'echo "Testing nixlbench with ETCD fix..."' >> /usr/local/bin/nixlbench-test && \
-    echo 'echo "ETCD_CPP_API_DISABLE_URI_VALIDATION=$ETCD_CPP_API_DISABLE_URI_VALIDATION"' >> /usr/local/bin/nixlbench-test && \
-    echo 'if strings /usr/local/lib/libetcd-cpp-api-core.so | grep -q ETCD_CPP_API_DISABLE_URI_VALIDATION; then' >> /usr/local/bin/nixlbench-test && \
-    echo '    echo "✅ Fix is applied - nixlbench should work"' >> /usr/local/bin/nixlbench-test && \
-    echo 'else' >> /usr/local/bin/nixlbench-test && \
-    echo '    echo "❌ Fix not found - nixlbench may fail"' >> /usr/local/bin/nixlbench-test && \
-    echo 'fi' >> /usr/local/bin/nixlbench-test && \
-    chmod +x /usr/local/bin/nixlbench-test
 
 RUN git clone --recurse-submodules --depth 1 --shallow-submodules \
         https://github.com/aws/aws-sdk-cpp.git --branch ${AWS_SDK_VERSION} && \
@@ -360,24 +329,19 @@ RUN git clone --recurse-submodules --depth 1 --shallow-submodules \
         -DCMAKE_INSTALL_PREFIX=/usr/local && \
     make -j${NPROC:-$(nproc)} && make install && \
     cd / && rm -rf aws-sdk-cpp aws_sdk_build && \
-    ldconfig && \
-    echo "✅ AWS SDK C++ (S3 only) installed"
+    ldconfig
 
 ############################
-# 8. gusli (optional)
+# 10. gusli
 ############################
 RUN git clone https://github.com/nvidia/gusli.git && \
     cd gusli && \
     make all BUILD_RELEASE=1 BUILD_FOR_UNITEST=0 VERBOSE=1 ALLOW_USE_URING=0 && \
-    cd .. && rm -rf gusli && \
-    echo "✅ gusli built"
+    cd .. && rm -rf gusli
 
 ############################
-# 9. Rust toolchain for NIXL
+# 11. Rust toolchain
 ############################
-ARG RUSTUP_VERSION="1.28.1"
-ARG RUST_TOOLCHAIN="1.86.0"
-
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH \
@@ -390,19 +354,16 @@ RUN cd /tmp && \
     rm rustup-init && \
     chmod -R a+w ${RUSTUP_HOME} ${CARGO_HOME} && \
     rustup default ${RUST_TOOLCHAIN} && \
-    rustc --version && \
-    cargo --version && \
-    echo "✅ Rust toolchain ${RUST_TOOLCHAIN} installed"
+    rustc --version && cargo --version
 
 ############################
-# 10. NIXL C++ + Rust
+# 12. NIXL C++ + Rust
 ############################
 WORKDIR /workspace/nixl
 RUN git clone --depth 1 --branch ${NIXL_GIT_TAG} \
     https://github.com/ai-dynamo/nixl.git /workspace/nixl
 
-WORKDIR /workspace/nixl
-
+# Fix event_type compilation issue
 RUN sed -i 's/<< event.event_type()/<< static_cast<int>(event.event_type())/' \
     src/core/nixl_listener.cpp && \
     sed -i 's/static_cast<int>(event.event_type()) == etcd::Event::EventType::DELETE_/event.event_type() == etcd::Event::EventType::DELETE_/' \
@@ -413,8 +374,6 @@ ENV NIXL_PREFIX=/usr/local/nixl \
     NIXL_PLUGIN_DIR=/usr/local/nixl/lib/${ARCH}-linux-gnu/plugins \
     LD_LIBRARY_PATH=/usr/local/lib:${LIBFABRIC_INSTALL_PATH}/lib:${LD_LIBRARY_PATH}
 
-RUN apt-get update && apt-get install -y pybind11-dev && rm -rf /var/lib/apt/lists/*
-
 RUN rm -rf build && \
     mkdir build && \
     meson setup \
@@ -424,15 +383,11 @@ RUN rm -rf build && \
     cd build && \
     ninja -j${NPROC:-$(nproc)} && \
     ninja install && \
-    echo "✅ NIXL built with libfabric_path=${LIBFABRIC_INSTALL_PATH}"
+    echo "✅ NIXL C++ built"
 
 RUN echo "${NIXL_LIB_DIR}" > /etc/ld.so.conf.d/nixl.conf && \
     echo "${NIXL_PLUGIN_DIR}" >> /etc/ld.so.conf.d/nixl.conf && \
     ldconfig
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends clang libclang-dev && \
-    rm -rf /var/lib/apt/lists/*
 
 ENV LIBCLANG_PATH=/usr/lib/llvm-18/lib
 
@@ -441,12 +396,8 @@ RUN cd src/bindings/rust && \
     echo "✅ NIXL Rust bindings built"
 
 ############################
-# 11. nixlbench
+# 13. nixlbench
 ############################
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends libgflags-dev && \
-    rm -rf /var/lib/apt/lists/*
-
 RUN echo "=== Building nixlbench ===" && \
     cd /workspace/nixl/benchmark/nixlbench && \
     rm -rf build && mkdir build && \
@@ -463,49 +414,27 @@ RUN echo "=== Building nixlbench ===" && \
     echo "✅ nixlbench installed"
 
 ############################
-# 12. (Optional) NCCL + aws-ofi-nccl
+# 14. aws-ofi-nccl
 ############################
-ARG NCCL_VERSION="v2.27.5"
-RUN if [ "${INSTALL_NCCL}" = "1" ]; then \
-        echo "=== Building NCCL v${NCCL_VERSION} for SM${CUDA_ARCH} ===" && \
-        cd /tmp && \
-        git clone --depth 1 --branch v${NCCL_VERSION} https://github.com/NVIDIA/nccl.git && \
-        cd nccl && \
-        make -j${NPROC:-$(nproc)} src.build \
-            CUDA_HOME=${CUDA_HOME} \
-            NVCC_GENCODE="-gencode=arch=compute_${CUDA_ARCH},code=sm_${CUDA_ARCH}" && \
-        make install PREFIX=/usr/local && \
-        echo "/usr/local/lib" > /etc/ld.so.conf.d/nccl.conf && \
-        ldconfig && \
-        echo "✅ NCCL ${NCCL_VERSION} installed"; \
-        cd / && rm -rf /tmp/nccl; \
-    else \
-        echo "⏭️ Skipping NCCL build (INSTALL_NCCL=0)"; \
-    fi
+RUN cd /opt/build && \
+    echo "=== Building aws-ofi-nccl ${AWS_OFI_NCCL_VERSION} ===" && \
+    git clone --depth 1 --branch ${AWS_OFI_NCCL_VERSION} https://github.com/aws/aws-ofi-nccl.git aws-ofi-nccl && \
+    cd aws-ofi-nccl && \
+    ./autogen.sh && \
+    ./configure \
+        --prefix=/opt/aws-ofi-nccl \
+        --with-libfabric=/usr/local \
+        --with-cuda=${CUDA_HOME} && \
+    make -j${NPROC:-$(nproc)} && \
+    make install && \
+    echo "/opt/aws-ofi-nccl/lib" > /etc/ld.so.conf.d/aws-ofi-nccl.conf && \
+    ldconfig && \
+    cd / && rm -rf /opt/build/aws-ofi-nccl*
 
-RUN if [ "${INSTALL_AWS_OFI_NCCL}" = "1" ]; then \
-        cd /opt/build && \
-        echo "=== Building aws-ofi-nccl ${AWS_OFI_NCCL_VERSION} from git ===" && \
-        git clone --depth 1 --branch ${AWS_OFI_NCCL_VERSION} https://github.com/aws/aws-ofi-nccl.git aws-ofi-nccl && \
-        cd aws-ofi-nccl && \
-        ./autogen.sh && \
-        ./configure \
-            --prefix=/opt/aws-ofi-nccl \
-            --with-libfabric=/usr/local \
-            --with-cuda=${CUDA_HOME} && \
-        make -j${NPROC:-$(nproc)} && \
-        make install && \
-        echo "/opt/aws-ofi-nccl/lib" > /etc/ld.so.conf.d/aws-ofi-nccl.conf && \
-        ldconfig && \
-        cd / && rm -rf /opt/build/aws-ofi-nccl*; \
-    else \
-        echo "⏭️ Skipping aws-ofi-nccl build (INSTALL_AWS_OFI_NCCL=0)"; \
-    fi
-
-##########
-# Runtime stage – HPC base (no Python)
-##########
-FROM ${BASE_IMAGE_RUNTIME}:${BASE_IMAGE_RUNTIME_TAG} AS runtime
+##############################
+# Stage 2: Runtime Image
+##############################
+FROM nvcr.io/nvidia/pytorch:25.03-py3 AS runtime
 
 ARG ARCH="x86_64"
 
@@ -523,9 +452,12 @@ ENV LANG=C.UTF-8 \
     NCCL_DEBUG=INFO \
     FI_PROVIDER=efa \
     ETCD_CPP_API_DISABLE_URI_VALIDATION=1 \
-    MPI_HOME=/opt/amazon/openmpi
+    MPI_HOME=/opt/amazon/openmpi \
+    # Rust environment
+    RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo
 
-# Install runtime dependencies - CRITICAL FIX: Added missing libraries for nixlbench and etcd-cpp-api
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libnuma1 \
     libhwloc15 \
@@ -542,9 +474,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgrpc29 \
     wget \
     ca-certificates \
+    libnl-3-200 \
+    libnl-route-3-200 \
+    liburing2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install etcd binary from official release
+# Install etcd binary
 RUN cd /tmp && \
     wget https://github.com/etcd-io/etcd/releases/download/v3.5.11/etcd-v3.5.11-linux-amd64.tar.gz && \
     tar xzf etcd-v3.5.11-linux-amd64.tar.gz && \
@@ -553,18 +488,40 @@ RUN cd /tmp && \
     rm -rf etcd-v3.5.11-linux-amd64* && \
     chmod +x /usr/local/bin/etcd /usr/local/bin/etcdctl
 
-# Copy libs and tools from build
+# Copy all built artifacts from build stage
 COPY --from=build /usr/local /usr/local
 COPY --from=build /opt/amazon /opt/amazon
 COPY --from=build /opt/gdrcopy /opt/gdrcopy
 COPY --from=build /opt/aws-ofi-nccl /opt/aws-ofi-nccl
 COPY --from=build /opt/nccl-tests /opt/nccl-tests
 
-# Note: SSH configuration removed - NCCL tests already compiled with MPI support in build stage
-# If SSH is needed for multi-node, it can be added via runtime configuration
+# Configure SSH
+RUN mkdir -p /var/run/sshd /run/sshd && \
+    ssh-keygen -A && \
+    sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PermitUserEnvironment no/PermitUserEnvironment yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
+    sed -i 's/#PermitEmptyPasswords.*/PermitEmptyPasswords yes/' /etc/ssh/sshd_config
 
-ENV LD_LIBRARY_PATH="/opt/nccl/lib:/opt/amazon/efa/lib:/opt/aws-ofi-nccl/lib:/usr/local/ucx/lib:/usr/local/ucx/lib/ucx:/opt/gdrcopy/lib64:/usr/local/libfabric/lib:/usr/local/lib:${LD_LIBRARY_PATH}"
+RUN sed -i 's/[ #]\(.*StrictHostKeyChecking \).*/\1no/g' /etc/ssh/ssh_config && \
+    echo "UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config && \
+    sed -i 's/#\(StrictModes \).*/\1no/g' /etc/ssh/sshd_config && \
+    mkdir -p /root/.ssh && \
+    chmod 700 /root/.ssh && \
+    printf "Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  LogLevel ERROR\n" > /root/.ssh/config && \
+    chmod 600 /root/.ssh/config
+
+# Set LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH="/usr/local/nixl/lib/x86_64-linux-gnu:/usr/local/nixl/lib/x86_64-linux-gnu/plugins:/opt/amazon/efa/lib:/opt/amazon/openmpi/lib:/opt/aws-ofi-nccl/lib:/usr/local/ucx/lib:/usr/local/ucx/lib/ucx:/opt/gdrcopy/lib64:/usr/local/lib:${LD_LIBRARY_PATH}"
+
+############################
+# Final Verification
+############################
+RUN echo "=== CUDA 12.8 Base Image Verification ===" && \
+    nvcc --version && \
+    python3 -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.version.cuda}')" && \
+    echo "✅ CUDA 12.8 base image ready"
 
 WORKDIR /workspace
-
 CMD ["/bin/bash"]

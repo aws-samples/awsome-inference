@@ -1,42 +1,33 @@
-# Build artifacts
+# Claude Code session data
+.claude/
+
+# Generated deployment YAML files
+deployment/
+
+# Temporary files
 *.log
 *.tmp
-build/
-dist/
-*.egg-info/
+*.swp
 
-# Docker
-.dockerignore
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# OS
-.DS_Store
-Thumbs.db
+# Fix/compatibility scripts
+fix_buildconfig_compat.py
+fix_engine_args_compat.py
+tensorrt_llm_metrics_stub.py
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-.env
+# Documentation and notes
+gpu-cluster-performance-tests.md
+docs/
 
-# Temporary files
-tmp/
-temp/
-*.backup
-
-# Local workspace files
-.claude/
-.cursor/
-.vscode/settings.json
-.idea/workspace.xml
-.mailmap
+# Library directories
+nccl/
+nixl/
+ucx/

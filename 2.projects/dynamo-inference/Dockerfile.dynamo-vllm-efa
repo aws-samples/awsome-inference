@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.10.0
 #
-# Dockerfile.dynamo-trtllm-efa - NVIDIA Dynamo with TensorRT-LLM Backend
+# Dockerfile.dynamo-vllm - NVIDIA Dynamo with vLLM Backend
 #
 # Features:
-# - TensorRT-LLM inference backend for high-performance serving
+# - vLLM inference backend for disaggregated serving
 # - CUDA 12 enforcement (build-time + runtime)
 # - AWS EFA support for high-performance networking
 # - SSH for distributed training/inference
@@ -13,7 +13,7 @@
 ##############################
 # Base Image
 ##############################
-ARG BASE_IMAGE=public.ecr.aws/v9l4g5s4/efa:a10g
+ARG BASE_IMAGE=public.ecr.aws/hpc-cloud/efa:a10g
 FROM ${BASE_IMAGE}
 
 ##############################
@@ -28,6 +28,7 @@ ARG NIXL_VERSION="0.7.1"
 ARG NIXL_GIT_TAG="${NIXL_VERSION}"
 ARG DYNAMO_GIT_TAG="main"
 ARG RUST_TOOLCHAIN="1.86.0"
+ARG VLLM_VERSION=""
 
 ##############################
 # Path ARGs (from base image)
@@ -60,9 +61,7 @@ ARG CARGO_HOME="/usr/local/cargo"
 # Derived paths
 ##############################
 ARG TORCH_LIB_DIR="${PYTHON_SITE_PACKAGES}/torch/lib"
-ARG TENSORRT_LLM_DIR="${PYTHON_SITE_PACKAGES}/tensorrt_llm"
-ARG TENSORRT_LLM_LIBS="${TENSORRT_LLM_DIR}/libs"
-ARG TENSORRT_DIR="${PYTHON_SITE_PACKAGES}/tensorrt"
+ARG VLLM_DIR="${PYTHON_SITE_PACKAGES}/vllm"
 
 ##############################
 # Environment variables
@@ -86,12 +85,15 @@ ENV LANG=C.UTF-8 \
     # Dynamo
     DYNAMO_HOME=${DYNAMO_HOME} \
     # Python paths for Dynamo
-    PYTHONPATH=${DYNAMO_HOME}/components/backends/trtllm/src:${DYNAMO_HOME}/components/frontend/src \
+    PYTHONPATH=${DYNAMO_HOME}/components/backends/vllm/src:${DYNAMO_HOME}/components/frontend/src \
     # System PATH
     PATH=${CARGO_HOME}/bin:${CUDA_HOME}/bin:/usr/local/bin:${PATH} \
     # CUDA Version Enforcement
     REQUIRED_CUDA_MAJOR=12 \
-    MIN_DRIVER_VERSION=525
+    MIN_DRIVER_VERSION=525 \
+    # vLLM specific
+    VLLM_ATTENTION_BACKEND=FLASHINFER \
+    VLLM_USE_V1=1
 
 ############################
 # CUDA 12 Build-time Verification
@@ -134,9 +136,9 @@ RUN apt-get update && \
         libgrpc++-dev \
         libgrpc-dev \
         jq \
-        # TensorRT-LLM specific dependencies
-        ninja-build \
-        patchelf \
+        # vLLM specific dependencies
+        libnuma-dev \
+        libucx0 \
     && rm -rf /var/lib/apt/lists/*
 
 ############################
@@ -217,66 +219,25 @@ RUN maturin build --release --locked -j ${NPROC:-$(nproc)} && \
     python3 -m pip install --no-cache-dir target/wheels/*.whl
 
 ############################
-# Install FlashInfer (OPTIONAL - may not have CUDA 12 wheels)
-############################
-# FlashInfer is optional for TensorRT-LLM - it provides attention optimizations
-# but TRT-LLM works without it. As of now, FlashInfer only has wheels for:
-# - CUDA 12.1, 12.4, 12.6
-# - PyTorch 2.4, 2.5, 2.6
-RUN echo "=== Attempting FlashInfer Installation (Optional) ===" && \
-    CUDA_VERSION=$(nvcc --version | grep "release" | awk '{print $5}' | cut -d',' -f1) && \
-    CUDA_MAJOR=$(echo $CUDA_VERSION | cut -d'.' -f1) && \
-    CUDA_MINOR=$(echo $CUDA_VERSION | cut -d'.' -f2) && \
-    TORCH_VERSION=$(python3 -c "import torch; v=torch.__version__.split('+')[0].split('.'); print(f'{v[0]}{v[1]}')" 2>/dev/null || echo "unknown") && \
-    echo "Detected: CUDA ${CUDA_VERSION}, PyTorch version code: ${TORCH_VERSION}" && \
-    # Try multiple fallback options
-    ( \
-        # Option 1: Try exact CUDA version
-        python3 -m pip install --no-cache-dir flashinfer-python \
-            -i "https://flashinfer.ai/whl/cu${CUDA_MAJOR}${CUDA_MINOR}/torch${TORCH_VERSION}/" 2>/dev/null && \
-        echo "✅ FlashInfer installed from cu${CUDA_MAJOR}${CUDA_MINOR}/torch${TORCH_VERSION}" \
-    ) || ( \
-        # Option 2: Try cu126
-        python3 -m pip install --no-cache-dir flashinfer-python \
-            -i "https://flashinfer.ai/whl/cu126/torch26/" 2>/dev/null && \
-        echo "✅ FlashInfer installed from cu126/torch26 (fallback)" \
-    ) || ( \
-        # Option 3: Try cu124
-        python3 -m pip install --no-cache-dir flashinfer-python \
-            -i "https://flashinfer.ai/whl/cu124/torch26/" 2>/dev/null && \
-        echo "✅ FlashInfer installed from cu124/torch26 (fallback)" \
-    ) || ( \
-        # Option 4: Skip FlashInfer entirely
-        echo "⚠️  FlashInfer not available for CUDA ${CUDA_VERSION} / PyTorch ${TORCH_VERSION}" && \
-        echo "⚠️  TensorRT-LLM will use default attention backend (still functional)" && \
-        echo "⚠️  This is OK - FlashInfer is an optional optimization" \
-    )
-
-############################
-# Install Dynamo with TensorRT-LLM backend
+# Install Dynamo with vLLM backend
 ############################
 WORKDIR ${DYNAMO_HOME}
-RUN echo "=== Installing Dynamo with TensorRT-LLM ===" && \
-    # Install tensorrt-llm with all its dependencies
+RUN echo "=== Installing Dynamo with vLLM ===" && \
     python3 -m pip install --no-cache-dir \
         --extra-index-url https://pypi.nvidia.com/ \
-        tensorrt-llm && \
-    # Then install Dynamo
-    python3 -m pip install --no-cache-dir \
-        --extra-index-url https://pypi.nvidia.com/ \
-        -e "." && \
-    echo "✅ Dynamo with TensorRT-LLM installed"
+        -e ".[vllm]" && \
+    echo "✅ Dynamo with vLLM installed"
+
+# Install FlashInfer for better attention performance (optional but recommended)
+RUN python3 -m pip install --no-cache-dir flashinfer-python || \
+    echo "⚠️ FlashInfer installation failed - will use default attention backend"
 
 ############################
 # Set LD_LIBRARY_PATH (order matters!)
 ############################
 ENV LD_LIBRARY_PATH="\
 ${PYTHON_SITE_PACKAGES}/torch/lib:\
-${PYTHON_SITE_PACKAGES}/tensorrt_libs:\
-${PYTHON_SITE_PACKAGES}/tensorrt_llm/libs:\
 ${TORCH_LIB_DIR}:\
-${TENSORRT_LLM_LIBS}:\
-${TENSORRT_DIR}:\
 /usr/local/lib:\
 ${NIXL_LIB_DIR}:\
 ${NIXL_PLUGIN_DIR}:\
@@ -313,21 +274,23 @@ import sys; \
 import importlib.metadata as im; \
 cuda_version = torch.version.cuda; \
 cuda_major = int(cuda_version.split('.')[0]); \
+# print(f'PyTorch CUDA version: {cuda_version}'); \
+# if cuda_major < 13: \
+#     print(f'ERROR: PyTorch built with CUDA {cuda_version}, need CUDA 12+'); \
+#     sys.exit(1); \
 print('✅ PyTorch:', torch.__version__, '- CUDA:', cuda_version); \
-print('✅ TensorRT-LLM:', im.version('tensorrt-llm')); \
+print('✅ vLLM:', im.version('vllm')); \
 print('✅ NIXL:', im.version('nixl')); \
 "
 
-# 3. Verify Dynamo and TensorRT-LLM imports
-# Note: tensorrt_llm requires libcuda.so.1 at import time, which is only available
-# at runtime with GPU access. We verify the package is installed but skip import.
+# 3. Verify Dynamo and vLLM imports
 RUN python3 -c "\
 import nixl; \
 import dynamo; \
-import importlib.metadata as im; \
+import vllm; \
 print('✅ NIXL imported'); \
 print('✅ Dynamo imported'); \
-print('✅ TensorRT-LLM installed:', im.version('tensorrt-llm')); \
+print('✅ vLLM imported'); \
 "
 
 # 4. Verify critical shared libraries
@@ -339,12 +302,19 @@ print('✅ libpython3.12.so.1.0 found'); \
 print('✅ libmpi.so.40 found'); \
 "
 
-# 5. Verify SSH
+# 5. Verify Dynamo vLLM module
+RUN python3 -c "\
+import nixl; \
+import dynamo; \
+"
+
+
+# 6. Verify SSH
 RUN echo "=== Verifying SSH ===" && \
     test -f /usr/sbin/sshd && echo "✅ sshd found" && \
     test -f /root/.ssh/id_rsa && echo "✅ SSH keys generated"
 
-# 6. Verify library paths
+# 7. Verify library paths
 RUN echo "=== Verifying Library Paths ===" && \
     for dir in \
         "${TORCH_LIB_DIR}" \
@@ -360,9 +330,9 @@ RUN echo "=== Verifying Library Paths ===" && \
         fi; \
     done
 
-# 7. Final summary
+# 8. Final summary
 RUN echo "========================================" && \
-    echo "✅ BUILD COMPLETE - DYNAMO TensorRT-LLM" && \
+    echo "✅ BUILD COMPLETE - DYNAMO vLLM" && \
     echo "========================================" && \
     echo "" && \
     echo "CUDA 12 Enforcement:" && \
@@ -372,27 +342,25 @@ RUN echo "========================================" && \
     echo "  ✅ Build-time: PyTorch CUDA 12+ verified" && \
     echo "  ✅ Runtime: Entrypoint checks driver >= 525" && \
     echo "" && \
-    echo "Backend: TensorRT-LLM" && \
+    echo "Backend: vLLM" && \
     echo "" && \
     echo "Key paths:" && \
     echo "  DYNAMO_HOME: ${DYNAMO_HOME}" && \
     echo "  NIXL_PREFIX: ${NIXL_PREFIX}" && \
     echo "  CUDA_HOME: ${CUDA_HOME}" && \
-    echo "  EFA_PATH: ${EFA_PREFIX}" && \
     echo "" && \
-    python3 -c "import importlib.metadata as im; print(f'  TensorRT-LLM: {im.version(\"tensorrt-llm\")}')" && \
+    python3 -c "import importlib.metadata as im; print(f'  vLLM: {im.version(\"vllm\")}')" && \
     python3 -c "import importlib.metadata as im; print(f'  NIXL: {im.version(\"nixl\")}')" && \
-    echo "" && \
-    echo "FlashInfer Status:" && \
-    python3 -c "import importlib.metadata as im; print(f'  Installed: {im.version(\"flashinfer-python\")}')" 2>/dev/null || \
-    echo "  Not installed (TRT-LLM will use default attention)" && \
     echo "" && \
     echo "Usage:" && \
     echo "  # Start frontend" && \
     echo "  python -m dynamo.frontend --http-port 8000" && \
     echo "" && \
-    echo "  # Start TensorRT-LLM worker" && \
-    echo "  python -m dynamo.trtllm --model <model-name>"
+    echo "  # Start vLLM worker (decode)" && \
+    echo "  python -m dynamo.vllm --model <model-name>" && \
+    echo "" && \
+    echo "  # Start vLLM worker (prefill - disaggregated)" && \
+    echo "  python -m dynamo.vllm --model <model-name> --is-prefill-worker"
 
 ############################
 # Cleanup
