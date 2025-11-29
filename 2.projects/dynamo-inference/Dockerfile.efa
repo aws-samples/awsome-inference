@@ -27,7 +27,7 @@
 FROM nvcr.io/nvidia/pytorch:25.03-py3 AS build
 
 ARG ARCH="x86_64"
-ARG NPROC
+ARG NPROC="48"
 
 ############################
 # Remove HPC-X to avoid conflicts with custom-built UCX/MPI
@@ -284,7 +284,7 @@ RUN echo "=== Removing any existing UCX installation ===" && \
     rm -f /etc/ld.so.conf.d/*ucx* && \
     ldconfig && \
     echo "✓ Existing UCX removed"
-    
+
 RUN cd /opt/build && \
     git clone https://github.com/openucx/ucx.git && \
     cd ucx && \
@@ -417,6 +417,40 @@ RUN cd /tmp && \
     rustup default ${RUST_TOOLCHAIN} && \
     rustc --version && cargo --version
 
+
+############################
+# 6b. UCC (master branch - compatible with UCX 1.19)
+############################
+RUN echo "=== Removing any existing UCC ===" && \
+    apt-get update && \
+    apt-get remove -y libucc* ucc 2>/dev/null || true && \
+    apt-get autoremove -y && \
+    rm -rf /usr/local/ucc /opt/ucc && \
+    echo "✓ Old UCC removed"
+
+RUN cd /opt/build && \
+    echo "=== Building UCC from master (sm_${CUDA_ARCH} only) ===" && \
+    git clone https://github.com/openucx/ucc.git && \
+    cd ucc && \
+    git checkout master && \
+    ./autogen.sh && \
+    NVCC_GENCODE="-gencode=arch=compute_${CUDA_ARCH},code=sm_${CUDA_ARCH}" \
+    ./configure \
+        --prefix=/usr/local/ucc \
+        --with-ucx=${UCX_PATH} \
+        --with-cuda=${CUDA_HOME} \
+        --enable-gtest=no \
+        --with-nvcc-gencode="-gencode arch=compute_${CUDA_ARCH},code=sm_${CUDA_ARCH}" && \
+    make -j${NPROC:-$(nproc)} \
+        NVCC_GENCODE="-gencode=arch=compute_${CUDA_ARCH},code=sm_${CUDA_ARCH}" && \
+    make install && \
+    echo "/usr/local/ucc/lib" > /etc/ld.so.conf.d/ucc.conf && \
+    ldconfig && \
+    cd / && rm -rf /opt/build/ucc && \
+    echo "✓ UCC built for sm_${CUDA_ARCH} (H100)"
+
+ENV UCC_PATH=/usr/local/ucc \
+    LD_LIBRARY_PATH=/usr/local/ucc/lib:${LD_LIBRARY_PATH}
 ############################
 # 12. NIXL C++ + Rust
 ############################
@@ -439,6 +473,7 @@ RUN rm -rf build && \
     mkdir build && \
     meson setup \
         -Dlibfabric_path=${LIBFABRIC_INSTALL_PATH} \
+        -Ducx_path=/usr/local/ucx \
         build/ \
         --prefix=${NIXL_PREFIX} && \
     cd build && \
@@ -460,12 +495,15 @@ RUN cd src/bindings/rust && \
 # 12b. NIXL Python Bindings
 ############################
 # Install NIXL Python bindings to site-packages
-# Step 1: Install nixl-cu12 (the actual CUDA bindings)
+# Step 1: Install nixl-cu12 with libfabric and UCX paths
 RUN cd /workspace/nixl && \
-    pip install --no-cache-dir . && \
-    python3 -c "import nixl_cu12; print('nixl-cu12 installed successfully')" && \
-    echo "nixl_cu12 module location:" && \
-    python3 -c "import nixl_cu12; print(nixl_cu12.__file__)"
+    echo "Installing NIXL Python bindings with:" && \
+    echo "  - libfabric: ${LIBFABRIC_INSTALL_PATH}" && \
+    echo "  - UCX: ${UCX_PATH}" && \
+    pip install --no-cache-dir . \
+        --config-settings=setup-args="-Dlibfabric_path=${LIBFABRIC_INSTALL_PATH} -Ducx_path=${UCX_PATH}" && \
+    python3 -c "import nixl_cu12; print('✓ nixl-cu12 installed successfully')" && \
+    python3 -c "import nixl_cu12; print(f'Location: {nixl_cu12.__file__}')"
 
 # Step 2: Install the nixl meta-package (wrapper that provides 'import nixl')
 RUN cd /workspace/nixl/src/bindings/python/nixl-meta && \
@@ -521,24 +559,38 @@ FROM nvcr.io/nvidia/pytorch:25.03-py3 AS runtime
 
 ARG ARCH="x86_64"
 
+
 ############################
-# Complete HPC-X Removal
+# Step 1: Clean ALL conflicting paths first
 ############################
-RUN echo "=== Removing HPC-X from runtime image ===" && \
-    # Remove HPC-X packages
+RUN echo "=== Cleaning runtime base image ===" && \
     apt-get update && \
-    apt-get remove -y hpcx libhpcx* hpcx-* 2>/dev/null || true && \
+    apt-get remove -y hpcx* libhpcx* ucx* libucx* ucc* libucc* 2>/dev/null || true && \
     apt-get autoremove -y && \
     apt-get clean && \
-    # Remove all HPC-X directories
-    rm -rf /opt/hpcx \
-           /usr/local/hpcx \
-           /opt/mellanox/hpcx && \
-    # Clean environment files
-    sed -i '/HPCX/d' /etc/profile.d/* 2>/dev/null || true && \
-    sed -i '/hpcx/d' /etc/environment 2>/dev/null || true && \
+    # Remove ALL potentially conflicting paths
+    rm -rf \
+        /opt/hpcx \
+        /usr/local/hpcx \
+        /opt/mellanox/hpcx \
+        /usr/local/ucx \
+        /usr/local/ucc \
+        /usr/local/nixl \
+        /opt/ucx \
+        /opt/ucc \
+        /opt/amazon/openmpi \
+        /opt/amazon/efa \
+        /opt/gdrcopy \
+        /opt/aws-ofi-nccl && \
+    # Clean ldconfig
+    rm -f /etc/ld.so.conf.d/*hpcx* \
+          /etc/ld.so.conf.d/*ucx* \
+          /etc/ld.so.conf.d/*ucc* \
+          /etc/ld.so.conf.d/*nixl* && \
+    ldconfig && \
     rm -rf /var/lib/apt/lists/* && \
-    echo "HPC-X completely removed"
+    echo "✓ Runtime image cleaned"
+
 
 ############################
 # Set environment variables (custom UCX/MPI priority)
