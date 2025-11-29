@@ -537,6 +537,20 @@ RUN echo "=== Building nixlbench ===" && \
 ############################
 # 14. aws-ofi-nccl
 ############################
+ARG NCCL_VERSION="2.27.7-1"
+RUN echo "=== Building NCCL v${NCCL_VERSION} for SM${CUDA_ARCH} ===" && \
+        cd /tmp && \
+        git clone --depth 1 --branch v${NCCL_VERSION} https://github.com/NVIDIA/nccl.git && \
+        cd nccl && \
+        make -j${NPROC:-$(nproc)} src.build \
+            CUDA_HOME=${CUDA_HOME} \
+            NVCC_GENCODE="-gencode=arch=compute_${CUDA_ARCH},code=sm_${CUDA_ARCH}" && \
+        make install PREFIX=/usr/local -j ${NPROC:-$(nproc)} && \
+        echo "/usr/local/lib" > /etc/ld.so.conf.d/nccl.conf && \
+        ldconfig && \
+        echo "NCCL ${NCCL_VERSION} installed"; \
+        cd / && rm -rf /tmp/nccl;
+
 RUN cd /opt/build && \
     echo "=== Building aws-ofi-nccl ${AWS_OFI_NCCL_VERSION} ===" && \
     git clone --depth 1 --branch ${AWS_OFI_NCCL_VERSION} https://github.com/aws/aws-ofi-nccl.git aws-ofi-nccl && \
