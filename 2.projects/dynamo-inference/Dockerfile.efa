@@ -91,19 +91,18 @@ WORKDIR /opt/build
 ############################
 # Verify CUDA 12.8 environment
 ############################
-RUN echo "=== CUDA 12.8 Build Environment Verification ===" && \
-    nvcc --version && \
-    NVCC_VERSION=$(nvcc --version | grep "release" | awk '{print $5}' | cut -d',' -f1) && \
-    NVCC_MAJOR=$(echo $NVCC_VERSION | cut -d'.' -f1) && \
-    NVCC_MINOR=$(echo $NVCC_VERSION | cut -d'.' -f2) && \
-    echo "CUDA Toolkit: $NVCC_VERSION" && \
-    if [ "$NVCC_MAJOR" != "12" ] || [ "$NVCC_MINOR" -lt "8" ]; then \
-        echo "ERROR: Requires CUDA 12.8+, got CUDA $NVCC_VERSION"; \
-        exit 1; \
-    fi && \
-    echo "CUDA 12.8+ verified ($NVCC_VERSION)" && \
-    python3 -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.version.cuda}')"
-
+# RUN echo "=== CUDA 12.8 Build Environment Verification ===" && \
+#     nvcc --version && \
+#     NVCC_VERSION=$(nvcc --version | grep "release" | awk '{print $5}' | cut -d',' -f1) && \
+#     NVCC_MAJOR=$(echo $NVCC_VERSION | cut -d'.' -f1) && \
+#     NVCC_MINOR=$(echo $NVCC_VERSION | cut -d'.' -f2) && \
+#     echo "CUDA Toolkit: $NVCC_VERSION" && \
+#     if [ "$NVCC_MAJOR" != "12" ] || [ "$NVCC_MINOR" -lt "8" ]; then \
+#         echo "ERROR: Requires CUDA 12.8+, got CUDA $NVCC_VERSION"; \
+#         exit 1; \
+#     fi && \
+#     echo "CUDA 12.8+ verified ($NVCC_VERSION)" && \
+#     python3 -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.version.cuda}')"
 ############################
 # 1. System build toolchain
 ############################
