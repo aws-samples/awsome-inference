@@ -4,13 +4,14 @@
 # ================================================================
 # Common base for both vLLM and TRT-LLM backends
 #
-# Stack: CUDA 12.8.1 based on NGC pytorch:25.03-py3
+# Stack: CUDA 12.8.1 based on NGC pytorch:25.03-py3 (HPC-X removed)
 #
 # Features:
 # - CUDA 12.8.1 (DeepGEMM compatible)
 # - PyTorch 2.7.0a0 from NGC
 # - AWS EFA + libfabric v2.3.0
-# - UCX v1.19.0 with EFA + GDRCopy
+# - UCX v1.19.0 with EFA + GDRCopy (custom built, no HPC-X)
+# - OpenMPI from EFA installer (custom built, no HPC-X)
 # - NCCL 2.25+ with aws-ofi-nccl
 # - NIXL 0.7.1 (C++ + Python)
 # - GDRCopy 2.4.1
@@ -28,6 +29,38 @@ FROM nvcr.io/nvidia/pytorch:25.03-py3 AS build
 ARG ARCH="x86_64"
 ARG NPROC
 
+############################
+# Remove HPC-X to avoid conflicts with custom-built UCX/MPI
+############################
+RUN echo "=== Removing HPC-X from base image ===" && \
+    # Remove HPC-X packages if installed via apt
+    apt-get update && \
+    apt-get remove -y hpcx libhpcx* hpcx-* 2>/dev/null || true && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    # Remove HPC-X directories
+    rm -rf /opt/hpcx \
+           /usr/local/hpcx \
+           /opt/mellanox/hpcx && \
+    # Unset HPC-X environment variables in system profile
+    sed -i '/HPCX/d' /etc/profile.d/* 2>/dev/null || true && \
+    sed -i '/hpcx/d' /etc/environment 2>/dev/null || true && \
+    rm -rf /var/lib/apt/lists/* && \
+    echo "HPC-X removed successfully"
+
+# Unset HPC-X environment variables for build
+ENV HPCX_DIR="" \
+    HPCX_HOME="" \
+    HPCX_UCX_DIR="" \
+    HPCX_SHARP_DIR="" \
+    HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR="" \
+    HPCX_CLUSTERKIT_DIR="" \
+    HPCX_MPI_DIR="" \
+    HPCX_OSHMEM_DIR="" \
+    HPCX_MPI_TESTS_DIR="" \
+    HPCX_OSU_DIR="" \
+    HPCX_IPM_DIR=""
+
 # Core versions
 ARG NIXL_VERSION="0.7.1"
 ARG NIXL_GIT_TAG="${NIXL_VERSION}"
@@ -40,7 +73,7 @@ ARG AWS_SDK_VERSION="1.11.581"
 ARG ETCD_CPP_VERSION="0.15.4"
 ARG RDMA_CORE_VERSION="v51.0"
 ARG EFA_INSTALLER_VERSION="1.43.1"
-ARG CUDA_ARCH="86"
+ARG CUDA_ARCH="90"
 ARG NCCL_TESTS_VERSION="v2.16.9"
 
 # Rust toolchain
@@ -464,38 +497,60 @@ FROM nvcr.io/nvidia/pytorch:25.03-py3 AS runtime
 ARG ARCH="x86_64"
 
 ############################
-# CRITICAL FIX: Neutralize HPC-X/OpenMPI Conflict
+# Complete HPC-X Removal
 ############################
-# The NGC base image includes HPC-X at /opt/hpcx with its own OpenMPI.
-# When MPI loads components, it finds HPC-X MCA plugins that expect
-# opal_libevent2022_event_assign symbol not in system libevent.
-# Fix: Remove HPC-X ompi directory and set MCA path explicitly.
-# NOTE: We keep /opt/hpcx/ucx because PyTorch is linked to its libucs.so
-RUN rm -rf /opt/hpcx/ompi 2>/dev/null || true && \
-    echo "HPC-X OpenMPI components removed to avoid symbol conflict" && \
-    ls -la /opt/hpcx/ucx/lib/libucs* 2>/dev/null | head -3 || true
+RUN echo "=== Removing HPC-X from runtime image ===" && \
+    # Remove HPC-X packages
+    apt-get update && \
+    apt-get remove -y hpcx libhpcx* hpcx-* 2>/dev/null || true && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    # Remove all HPC-X directories
+    rm -rf /opt/hpcx \
+           /usr/local/hpcx \
+           /opt/mellanox/hpcx && \
+    # Clean environment files
+    sed -i '/HPCX/d' /etc/profile.d/* 2>/dev/null || true && \
+    sed -i '/hpcx/d' /etc/environment 2>/dev/null || true && \
+    rm -rf /var/lib/apt/lists/* && \
+    echo "HPC-X completely removed"
 
+############################
+# Set environment variables (custom UCX/MPI priority)
+############################
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     CUDA_HOME=/usr/local/cuda \
-    PATH=/opt/amazon/openmpi/bin:/usr/local/ucx/bin:/opt/nccl-tests/build:/usr/local/bin:/usr/local/cuda/bin:${PATH} \
+    # Unset all HPC-X variables
+    HPCX_DIR="" \
+    HPCX_HOME="" \
+    HPCX_UCX_DIR="" \
+    HPCX_SHARP_DIR="" \
+    HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR="" \
+    # Set custom-built paths
     EFA_PATH=/opt/amazon/efa \
     GDRCOPY_PATH=/opt/gdrcopy \
     UCX_PATH=/usr/local/ucx \
+    MPI_HOME=/opt/amazon/openmpi \
     NIXL_PREFIX=/usr/local/nixl \
     NIXL_LIB_DIR=/usr/local/nixl/lib/${ARCH}-linux-gnu \
     NIXL_PLUGIN_DIR=/usr/local/nixl/lib/${ARCH}-linux-gnu/plugins \
     NCCL_TESTS_PATH=/opt/nccl-tests \
+    # NCCL configuration
     NCCL_DEBUG=INFO \
     FI_PROVIDER=efa \
     ETCD_CPP_API_DISABLE_URI_VALIDATION=1 \
-    MPI_HOME=/opt/amazon/openmpi \
-    # CRITICAL: Force MPI to only use Amazon EFA OpenMPI components
+    # Force use of custom-built MPI/UCX
     OMPI_MCA_mca_base_component_path=/opt/amazon/openmpi/lib/openmpi \
+    UCX_TLS=sm,cuda_copy,cuda_ipc,efa \
     # Rust environment
     RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
-    PIP_BREAK_SYSTEM_PACKAGES=1
+    PIP_BREAK_SYSTEM_PACKAGES=1 \
+    # Critical: Ensure custom UCX/MPI come first in PATH
+    PATH=/opt/amazon/openmpi/bin:/usr/local/ucx/bin:/opt/nccl-tests/build:/usr/local/cargo/bin:/usr/local/bin:/usr/local/cuda/bin:${PATH} \
+    # Critical: Ensure custom libraries come first in LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=/usr/local/ucx/lib:/usr/local/ucx/lib/ucx:/opt/amazon/openmpi/lib:/opt/amazon/efa/lib:/opt/aws-ofi-nccl/lib:/opt/gdrcopy/lib64:/usr/local/nixl/lib/x86_64-linux-gnu:/usr/local/nixl/lib/x86_64-linux-gnu/plugins:/usr/local/lib:/usr/local/cargo/bin:${LD_LIBRARY_PATH}
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -565,42 +620,48 @@ RUN ssh-keygen -q -t rsa -N '' -f /root/.ssh/id_rsa && \
     chmod 600 /root/.ssh/id_rsa /root/.ssh/authorized_keys && \
     chmod 644 /root/.ssh/id_rsa.pub
 
-# Set LD_LIBRARY_PATH
-ENV LD_LIBRARY_PATH="/usr/local/nixl/lib/x86_64-linux-gnu:/usr/local/nixl/lib/x86_64-linux-gnu/plugins:/opt/amazon/efa/lib:/opt/amazon/openmpi/lib:/opt/aws-ofi-nccl/lib:/usr/local/ucx/lib:/usr/local/ucx/lib/ucx:/opt/gdrcopy/lib64:/usr/local/lib:/usr/local/cargo/bin:${LD_LIBRARY_PATH}"
-
-# Update PATH to include cargo
-ENV PATH="/usr/local/cargo/bin:${PATH}"
-
 ############################
-# Configure dynamic linker for all libraries
+# Configure dynamic linker (custom builds take precedence)
 ############################
-RUN echo "/usr/local/ucx/lib" > /etc/ld.so.conf.d/ucx.conf && \
-    echo "/usr/local/ucx/lib/ucx" >> /etc/ld.so.conf.d/ucx.conf && \
-    echo "/opt/hpcx/ucx/lib" >> /etc/ld.so.conf.d/ucx.conf && \
+RUN echo "# Custom-built libraries (higher priority)" > /etc/ld.so.conf.d/00-custom.conf && \
+    echo "/usr/local/ucx/lib" >> /etc/ld.so.conf.d/00-custom.conf && \
+    echo "/usr/local/ucx/lib/ucx" >> /etc/ld.so.conf.d/00-custom.conf && \
+    echo "/opt/amazon/openmpi/lib" >> /etc/ld.so.conf.d/00-custom.conf && \
+    echo "/opt/amazon/efa/lib" >> /etc/ld.so.conf.d/00-custom.conf && \
     echo "/usr/local/nixl/lib/x86_64-linux-gnu" > /etc/ld.so.conf.d/nixl.conf && \
     echo "/usr/local/nixl/lib/x86_64-linux-gnu/plugins" >> /etc/ld.so.conf.d/nixl.conf && \
     echo "/opt/gdrcopy/lib64" > /etc/ld.so.conf.d/gdrcopy.conf && \
     echo "/opt/aws-ofi-nccl/lib" > /etc/ld.so.conf.d/aws-ofi-nccl.conf && \
-    echo "/opt/amazon/efa/lib" > /etc/ld.so.conf.d/efa.conf && \
-    echo "/opt/amazon/openmpi/lib" > /etc/ld.so.conf.d/openmpi.conf && \
-    ldconfig
+    # Remove any HPC-X ldconfig entries
+    rm -f /etc/ld.so.conf.d/*hpcx* && \
+    ldconfig && \
+    echo "=== Library paths configured ==="
 
 ############################
 # Final Verification
 ############################
 RUN echo "=== CUDA 12.8 Base Image Verification ===" && \
     nvcc --version && \
-    python3 -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.version.cuda}')" && \
+    echo "=== Verifying PyTorch (should work without HPC-X) ===" && \
+    python3 -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.version.cuda}'); print(f'CUDA available: {torch.cuda.is_available()}')" && \
+    echo "=== Verifying Rust ===" && \
     rustc --version && cargo --version && \
-    echo "=== Verifying HPC-X neutralization ===" && \
-    (ls -la /opt/hpcx/ompi 2>/dev/null && echo "WARNING: HPC-X ompi still present" || echo "OK: HPC-X ompi removed") && \
-    echo "OMPI_MCA_mca_base_component_path=${OMPI_MCA_mca_base_component_path}" && \
+    echo "=== Verifying HPC-X removal ===" && \
+    (ls /opt/hpcx 2>/dev/null && echo "ERROR: HPC-X still present!" && exit 1 || echo "✓ HPC-X completely removed") && \
+    echo "=== Verifying custom UCX ===" && \
+    ucx_info -v && \
+    ls -la /usr/local/ucx/lib/libucp* && \
+    echo "=== Verifying custom MPI ===" && \
+    mpirun --version && \
+    ompi_info | grep -i ucx && \
+    echo "=== Verifying library paths (no HPC-X deps) ===" && \
+    ldconfig -p | grep -E "(ucx|ucp|uct)" | head -5 && \
     echo "=== Verifying NIXL Python bindings ===" && \
     python3 -c "import nixl; print(f'NIXL module: {nixl}'); print(f'NIXL file: {nixl.__file__}')" && \
-    echo "=== Verifying MPI ===" && \
-    mpirun --version && \
+    echo "=== Testing UCX has no HPC-X dependencies ===" && \
+    ldd /usr/local/ucx/lib/libucp.so | grep -i hpcx && echo "ERROR: Found HPC-X dependency!" && exit 1 || echo "✓ No HPC-X dependencies in UCX" && \
     echo "=== All verifications passed ===" && \
-    echo "CUDA 12.8 base image ready"
+    echo "CUDA 12.8 base image ready (HPC-X free, custom UCX v1.19.0, custom OpenMPI)"
 
 WORKDIR /workspace
 CMD ["/bin/bash"]
