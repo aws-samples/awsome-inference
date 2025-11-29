@@ -103,6 +103,7 @@ WORKDIR /opt/build
 #     fi && \
 #     echo "CUDA 12.8+ verified ($NVCC_VERSION)" && \
 #     python3 -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.version.cuda}')"
+
 ############################
 # 1. System build toolchain
 ############################
@@ -259,6 +260,31 @@ RUN cd /opt/build && \
 ############################
 # 6. UCX v1.19 with EFA+GDRCopy
 ############################
+
+
+RUN echo "=== Removing any existing UCX installation ===" && \
+    # Remove UCX packages
+    apt-get update && \
+    apt-get remove -y ucx libucx* 2>/dev/null || true && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    # Remove UCX directories
+    rm -rf /usr/local/ucx \
+           /opt/ucx \
+           /usr/lib/x86_64-linux-gnu/libucx* \
+           /usr/lib/x86_64-linux-gnu/libucp* \
+           /usr/lib/x86_64-linux-gnu/libuct* \
+           /usr/lib/x86_64-linux-gnu/libucs* \
+           /usr/lib/x86_64-linux-gnu/ucx \
+           /usr/include/ucx \
+           /usr/include/ucp \
+           /usr/include/uct \
+           /usr/include/ucs && \
+    # Clean ldconfig entries
+    rm -f /etc/ld.so.conf.d/*ucx* && \
+    ldconfig && \
+    echo "✓ Existing UCX removed"
+    
 RUN cd /opt/build && \
     git clone https://github.com/openucx/ucx.git && \
     cd ucx && \
