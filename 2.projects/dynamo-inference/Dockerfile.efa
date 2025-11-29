@@ -598,36 +598,28 @@ RUN echo "=== Cleaning runtime base image ===" && \
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     CUDA_HOME=/usr/local/cuda \
-    # Unset all HPC-X variables
     HPCX_DIR="" \
     HPCX_HOME="" \
     HPCX_UCX_DIR="" \
-    HPCX_SHARP_DIR="" \
-    HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR="" \
-    # Set custom-built paths
     EFA_PATH=/opt/amazon/efa \
     GDRCOPY_PATH=/opt/gdrcopy \
     UCX_PATH=/usr/local/ucx \
+    UCC_PATH=/usr/local/ucc \
     MPI_HOME=/opt/amazon/openmpi \
     NIXL_PREFIX=/usr/local/nixl \
     NIXL_LIB_DIR=/usr/local/nixl/lib/${ARCH}-linux-gnu \
     NIXL_PLUGIN_DIR=/usr/local/nixl/lib/${ARCH}-linux-gnu/plugins \
     NCCL_TESTS_PATH=/opt/nccl-tests \
-    # NCCL configuration
     NCCL_DEBUG=INFO \
     FI_PROVIDER=efa \
     ETCD_CPP_API_DISABLE_URI_VALIDATION=1 \
-    # Force use of custom-built MPI/UCX
     OMPI_MCA_mca_base_component_path=/opt/amazon/openmpi/lib/openmpi \
     UCX_TLS=sm,cuda_copy,cuda_ipc,efa \
-    # Rust environment
     RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PIP_BREAK_SYSTEM_PACKAGES=1 \
-    # Critical: Ensure custom UCX/MPI come first in PATH
     PATH=/opt/amazon/openmpi/bin:/usr/local/ucx/bin:/opt/nccl-tests/build:/usr/local/cargo/bin:/usr/local/bin:/usr/local/cuda/bin:${PATH} \
-    # Critical: Ensure custom libraries come first in LD_LIBRARY_PATH
-    LD_LIBRARY_PATH=/usr/local/ucx/lib:/usr/local/ucx/lib/ucx:/opt/amazon/openmpi/lib:/opt/amazon/efa/lib:/opt/aws-ofi-nccl/lib:/opt/gdrcopy/lib64:/usr/local/nixl/lib/x86_64-linux-gnu:/usr/local/nixl/lib/x86_64-linux-gnu/plugins:/usr/local/lib:/usr/local/cargo/bin:${LD_LIBRARY_PATH}
+    LD_LIBRARY_PATH=/usr/local/ucc/lib:/usr/local/ucx/lib:/usr/local/ucx/lib/ucx:/opt/amazon/openmpi/lib:/opt/amazon/efa/lib:/opt/aws-ofi-nccl/lib:/opt/gdrcopy/lib64:/usr/local/nixl/lib/x86_64-linux-gnu:/usr/local/nixl/lib/x86_64-linux-gnu/plugins:/usr/local/lib:${LD_LIBRARY_PATH}
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -698,21 +690,30 @@ RUN ssh-keygen -q -t rsa -N '' -f /root/.ssh/id_rsa && \
     chmod 644 /root/.ssh/id_rsa.pub
 
 ############################
-# Configure dynamic linker (custom builds take precedence)
+# Step 4: Verify UCC was copied and configure ldconfig
 ############################
-RUN echo "# Custom-built libraries (higher priority)" > /etc/ld.so.conf.d/00-custom.conf && \
+RUN echo "=== Verifying UCC was copied from build stage ===" && \
+    ls -la /usr/local/ucc/lib/libucc.so* && \
+    echo "✓ UCC libraries present"
+
+############################
+# Step 5: Configure dynamic linker (custom builds take precedence)
+############################
+RUN echo "# Custom-built libraries (HIGHEST priority)" > /etc/ld.so.conf.d/00-custom.conf && \
+    echo "/usr/local/ucc/lib" >> /etc/ld.so.conf.d/00-custom.conf && \
     echo "/usr/local/ucx/lib" >> /etc/ld.so.conf.d/00-custom.conf && \
     echo "/usr/local/ucx/lib/ucx" >> /etc/ld.so.conf.d/00-custom.conf && \
     echo "/opt/amazon/openmpi/lib" >> /etc/ld.so.conf.d/00-custom.conf && \
     echo "/opt/amazon/efa/lib" >> /etc/ld.so.conf.d/00-custom.conf && \
-    echo "/usr/local/nixl/lib/x86_64-linux-gnu" > /etc/ld.so.conf.d/nixl.conf && \
-    echo "/usr/local/nixl/lib/x86_64-linux-gnu/plugins" >> /etc/ld.so.conf.d/nixl.conf && \
-    echo "/opt/gdrcopy/lib64" > /etc/ld.so.conf.d/gdrcopy.conf && \
-    echo "/opt/aws-ofi-nccl/lib" > /etc/ld.so.conf.d/aws-ofi-nccl.conf && \
-    # Remove any HPC-X ldconfig entries
-    rm -f /etc/ld.so.conf.d/*hpcx* && \
+    echo "/usr/local/nixl/lib/x86_64-linux-gnu" > /etc/ld.so.conf.d/01-nixl.conf && \
+    echo "/usr/local/nixl/lib/x86_64-linux-gnu/plugins" >> /etc/ld.so.conf.d/01-nixl.conf && \
+    echo "/opt/gdrcopy/lib64" > /etc/ld.so.conf.d/02-gdrcopy.conf && \
+    echo "/opt/aws-ofi-nccl/lib" > /etc/ld.so.conf.d/03-aws-ofi-nccl.conf && \
     ldconfig && \
-    echo "=== Library paths configured ==="
+    echo "=== Verifying UCC is in ldconfig ===" && \
+    ldconfig -p | grep libucc && \
+    echo "✓ ldconfig configured with UCC"
+
 
 ############################
 # Final Verification
