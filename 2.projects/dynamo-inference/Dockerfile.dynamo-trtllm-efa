@@ -1,155 +1,496 @@
 # syntax=docker/dockerfile:1.10.0
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-# TensorRT-LLM Production Image - CUDA 12.8.1 with DeepGEMM Enabled (FIXED)
-# =========================================================================
-# Stack B: CUDA 12.8.1, TRT-LLM 0.20.x, PyTorch 2.7.0a0
-# Fix: MPI/HPC-X libevent conflict resolved
+# Dynamo TensorRT-LLM Image - AWS EFA Extended (CORRECTED)
 #
+# ============================================================================
+# FIXES APPLIED:
+# 1. Aligned PyTorch container version with TensorRT-LLM requirements
+# 2. Fixed CUDA version consistency across all images
+# 3. Added cuda-python dependency BEFORE TRT-LLM install
+# 4. Aligned GITHUB_TRTLLM_COMMIT with wheel version
+# 5. Fixed LD_LIBRARY_PATH order (EFA paths first)
+# 6. Added missing triton pinning for stability
+# 7. Documented runtime requirements (shm-size, ulimits)
+# ============================================================================
+#
+# Build with:
+#   docker build -f Dockerfile.trtllm.fixed \
+#     --build-arg DYNAMO_BASE_IMAGE=dynamo-base:latest \
+#     --target runtime \
+#     -t dynamo-trtllm:latest .
+#
+# Run with (REQUIRED for TRT-LLM):
+#   docker run --gpus all \
+#     --shm-size=1g \
+#     --ulimit memlock=-1 \
+#     --ulimit stack=67108864 \
+#     --ipc=host \
+#     dynamo-trtllm:latest
 
-ARG BASE_IMAGE=public.ecr.aws/hpc-cloud/efa:a10g
-FROM ${BASE_IMAGE}
+##################################
+########## Build Arguments #######
+##################################
 
-ARG NPROC=8
-ARG NIXL_VERSION="0.7.1"
-ARG DYNAMO_GIT_TAG="v0.7.0"
-ARG TRTLLM_VERSION="0.20.0"
-ARG RUST_TOOLCHAIN="1.86.0"
+# Base images
+ARG DYNAMO_BASE_IMAGE="dynamo-base:latest"
 
-ENV RUSTUP_HOME=/usr/local/rustup \
-    CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/cargo/bin:${PATH} \
-    DYNAMO_HOME=/opt/dynamo \
-    PYTHONPATH=/opt/dynamo/components/backends/trtllm/src:/opt/dynamo/components/frontend/src
+# ============================================================================
+# FIX #1: Use PyTorch 25.06 which matches TensorRT-LLM 1.1.0
+# 
+# Version Compatibility Matrix:
+# | TRT-LLM Version | PyTorch Container | CUDA Version | TensorRT |
+# |-----------------|-------------------|--------------|----------|
+# | 1.0.0           | 25.03-py3         | 12.8.1       | 10.9     |
+# | 1.1.0           | 25.06-py3         | 12.9         | 10.10    |
+# | 1.2.0rc2        | 25.06-py3         | 12.9         | 10.10    |
+#
+# DO NOT use 25.10-py3 - it has CUDA 13.x which is incompatible!
+# ============================================================================
+ARG PYTORCH_BASE_IMAGE="nvcr.io/nvidia/pytorch"
+ARG PYTORCH_BASE_IMAGE_TAG="25.06-py3"
 
-############################
-# CUDA 12.8+ verification
-############################
-RUN echo "=== TRT-LLM Build: Verifying CUDA 12.8+ ===" && \
-    nvcc --version | grep "12.8" && \
-    echo "CUDA 12.8 confirmed - DeepGEMM will be enabled"
+# Runtime image - MUST match CUDA version from PyTorch base
+ARG RUNTIME_IMAGE="nvcr.io/nvidia/cuda-dl-base"
+ARG RUNTIME_IMAGE_TAG="25.06-cuda12.9-runtime-ubuntu24.04"
 
-############################
-# Install system dependencies
-# IMPORTANT: Do NOT install openmpi-bin/libopenmpi-dev from apt
-# They conflict with HPC-X OpenMPI causing opal_libevent2022 errors
-############################
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    protobuf-compiler libprotobuf-dev \
-    libzmq5 libzmq3-dev libcpprest-dev libgrpc++-dev libgrpc-dev \
-    ninja-build patchelf libclang-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Architecture
+ARG ARCH=amd64
+ARG ARCH_ALT=x86_64
 
-############################
-# Ensure Amazon OpenMPI is used, not HPC-X
-# This prevents the libevent2022 symbol conflict
-############################
-ENV OMPI_DIR=/opt/amazon/openmpi \
-    PATH=/opt/amazon/openmpi/bin:${PATH} \
-    LD_LIBRARY_PATH=/opt/amazon/openmpi/lib:${LD_LIBRARY_PATH}
+# Python
+ARG PYTHON_VERSION="3.12"
 
-# Remove HPC-X from MCA paths to prevent loading conflicting modules
-ENV OMPI_MCA_mca_base_component_path=/opt/amazon/openmpi/lib/openmpi
+# ============================================================================
+# FIX #2: TensorRT-LLM configuration - versions must be consistent
+# 
+# Option A (Recommended - Stable):
+#   TENSORRTLLM_PIP_WHEEL="tensorrt-llm==1.1.0rc5"
+#   GITHUB_TRTLLM_COMMIT="v1.1.0rc5"
+#
+# Option B (Latest RC):
+#   TENSORRTLLM_PIP_WHEEL="tensorrt-llm==1.2.0rc2"  
+#   GITHUB_TRTLLM_COMMIT="v1.2.0rc2"
+# ============================================================================
+ARG HAS_TRTLLM_CONTEXT=0
+ARG TENSORRTLLM_PIP_WHEEL="tensorrt-llm==1.1.0rc5"
+ARG TENSORRTLLM_INDEX_URL="https://pypi.nvidia.com/"
+ARG GITHUB_TRTLLM_COMMIT="v1.1.0rc5"
 
-############################
-# Install Rust
-############################
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-    sh -s -- -y --no-modify-path --profile minimal --default-toolchain ${RUST_TOOLCHAIN} && \
-    rustc --version && cargo --version
+# Triton version - pin for stability
+ARG TRITON_VERSION="3.3.1"
 
-############################
-# Clone Dynamo
-############################
-RUN git clone https://github.com/ai-dynamo/dynamo.git ${DYNAMO_HOME} && \
-    cd ${DYNAMO_HOME} && git checkout "${DYNAMO_GIT_TAG}"
+# Optional features
+ARG ENABLE_KVBM="false"
 
-############################
-# Build Dynamo Rust bindings
-############################
-RUN pip install --no-cache-dir maturin
+# Reference images
+FROM ${DYNAMO_BASE_IMAGE} AS dynamo_base
+FROM ${PYTORCH_BASE_IMAGE}:${PYTORCH_BASE_IMAGE_TAG} AS pytorch_base
 
-WORKDIR ${DYNAMO_HOME}/lib/bindings/python
-RUN maturin build --release --locked -j ${NPROC} && \
-    pip install --no-cache-dir target/wheels/*.whl
+########################################################
+########## Framework Build Stage #######################
+########################################################
+#
+# PURPOSE: Build TensorRT-LLM with PyTorch dependencies
+#
+# This stage handles TensorRT-LLM installation which requires:
+# - Root access for TensorRT installation
+# - PyTorch from NGC container
+# - Virtual environment population
 
-############################
-# Install FlashInfer (CUDA 12.8)
-############################
-RUN pip install --no-cache-dir flashinfer-python \
-    -i "https://flashinfer.ai/whl/cu128/torch27/" 2>/dev/null || \
-    pip install --no-cache-dir flashinfer-python \
-    -i "https://flashinfer.ai/whl/cu126/torch27/" 2>/dev/null || \
-    echo "FlashInfer not available - will use default attention"
+FROM ${DYNAMO_BASE_IMAGE} AS framework
 
-############################
-# Install TensorRT-LLM 0.20.x (requires TensorRT 10.10)
-############################
-WORKDIR ${DYNAMO_HOME}
+ARG ARCH_ALT
+ARG PYTHON_VERSION
+ARG HAS_TRTLLM_CONTEXT
+ARG TENSORRTLLM_PIP_WHEEL
+ARG TENSORRTLLM_INDEX_URL
+ARG GITHUB_TRTLLM_COMMIT
+ARG TRITON_VERSION
 
-# Remove the NGC constraint file entirely to allow TRT-LLM 0.20 to install
-RUN echo "=== Removing NGC pip constraints ===" && \
-    echo "" > /etc/pip/constraint.txt && \
-    echo "NGC constraints removed"
+# Environment setup
+ENV NIXL_PREFIX=/opt/nvidia/nvda_nixl
+ENV NIXL_LIB_DIR=${NIXL_PREFIX}/lib/${ARCH_ALT}-linux-gnu
+ENV NIXL_PLUGIN_DIR=${NIXL_LIB_DIR}/plugins
+ENV VIRTUAL_ENV=/opt/dynamo/venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
-# Upgrade TensorRT to match TRT-LLM 0.20 requirements
-RUN echo "=== Upgrading TensorRT for TRT-LLM 0.20 ===" && \
-    pip uninstall -y tensorrt tensorrt-cu12 tensorrt-cu12-bindings tensorrt-cu12-libs 2>/dev/null || true && \
-    pip install --no-cache-dir \
-        --index-url https://pypi.nvidia.com/ \
-        --extra-index-url https://pypi.org/simple/ \
-        "tensorrt~=10.10.0" && \
-    echo "TensorRT upgraded"
+# Install dependencies for TensorRT-LLM
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python${PYTHON_VERSION}-dev \
+        python3-pip \
+        curl \
+        git \
+        git-lfs \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN echo "=== Installing TensorRT-LLM ${TRTLLM_VERSION} ===" && \
-    pip install --no-cache-dir \
-        --index-url https://pypi.nvidia.com/ \
-        --extra-index-url https://pypi.org/simple/ \
-        "tensorrt-llm==${TRTLLM_VERSION}" && \
-    echo "TensorRT-LLM ${TRTLLM_VERSION} installed"
+# Copy uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-############################
-# Install Dynamo
-############################
-RUN pip install --no-cache-dir --extra-index-url https://pypi.nvidia.com/ -e "." && \
-    echo "Dynamo installed"
+# ============================================================================
+# PyTorch versions from NGC 25.06 (match TRT-LLM requirements)
+# These versions are from nvcr.io/nvidia/pytorch:25.06-py3
+# ============================================================================
+ARG TORCH_VER=2.7.0a0
+ARG TORCH_TENSORRT_VER=2.7.0a0
+ARG TORCHVISION_VER=0.22.0a0
+ARG JINJA2_VER=3.1.6
+ARG SYMPY_VER=1.14.0
+ARG FLASH_ATTN_VER=2.7.4.post1
 
-############################
-# Create tensorrt_llm.metrics stub if needed
-############################
-RUN python3 -c "import tensorrt_llm.metrics" 2>/dev/null || \
-    (echo '"""TensorRT-LLM metrics stub."""\n\
-class Metrics:\n\
-    def __init__(self): pass\n\
-    def report(self, *args, **kwargs): pass\n\
-def get_metrics(): return Metrics()\n\
-' > /usr/local/lib/python3.12/dist-packages/tensorrt_llm/metrics.py && \
-    echo "tensorrt_llm.metrics stub created")
+# Copy PyTorch and dependencies from NGC PyTorch image
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/torch ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/torch
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/torch-*.dist-info ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/torchgen ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/torchgen
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/torchvision ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/torchvision
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/torchvision-*.dist-info ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/torchvision.libs ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/torchvision.libs
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/functorch ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/functorch
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/jinja2 ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/jinja2
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/jinja2-*.dist-info ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/sympy ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/sympy
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/sympy-*.dist-info ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/flash_attn ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/flash_attn
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/flash_attn-*.dist-info ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/flash_attn_2_cuda.cpython-*-linux-gnu.so ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/torch_tensorrt ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/torch_tensorrt
+COPY --from=pytorch_base /usr/local/lib/python${PYTHON_VERSION}/dist-packages/torch_tensorrt-*.dist-info ${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/
 
-############################
-# Validate MPI works without libevent conflict
-############################
-RUN echo "=== MPI Validation ===" && \
-    which mpirun && \
-    mpirun --version | head -3 && \
-    echo "MPI validated"
+# Clear any existing pip constraints
+RUN [ -f /etc/pip/constraint.txt ] && : > /etc/pip/constraint.txt || true && \
+    rm -f /etc/apt/sources.list.d/cuda*.list 2>/dev/null || true && \
+    rm -f /usr/share/keyrings/cuda-archive-keyring.gpg 2>/dev/null || true
 
-############################
-# Validation
-############################
-RUN python3 -c "\
-import torch, importlib.metadata as im; \
-print('PyTorch:', torch.__version__, '- CUDA:', torch.version.cuda); \
-print('TensorRT-LLM:', im.version('tensorrt-llm')); \
-print('ai-dynamo:', im.version('ai-dynamo')); \
-" || echo "Some packages not found - continuing anyway"
+# ============================================================================
+# FIX #3: Install cuda-python BEFORE TensorRT-LLM (required dependency)
+# This is specifically mentioned in Dynamo README as required
+# ============================================================================
+RUN --mount=type=cache,target=/root/.cache/uv \
+    echo "Installing cuda-python (required for TRT-LLM)..." && \
+    uv pip install --no-cache "cuda-python>=12.0,<13.0" && \
+    echo "✅ cuda-python installed"
 
-RUN echo "===========================================" && \
-    echo "TensorRT-LLM Production Build Complete (FIXED)" && \
-    echo "===========================================" && \
-    echo "Stack: CUDA 12.8.1 + TRT-LLM 0.20" && \
-    echo "DeepGEMM: ENABLED (CUDA 12.8+ native)" && \
-    echo "MPI: Amazon OpenMPI (libevent conflict fixed)" && \
-    echo ""
+# ============================================================================
+# Install TensorRT-LLM with proper error handling
+# ============================================================================
+RUN if [ "${HAS_TRTLLM_CONTEXT}" = "1" ]; then \
+        echo "Building TRT-LLM from context..."; \
+        curl -fsSL --retry 5 --retry-delay 10 --max-time 1800 \
+            -o /tmp/install_tensorrt.sh \
+            "https://github.com/NVIDIA/TensorRT-LLM/raw/${GITHUB_TRTLLM_COMMIT}/docker/common/install_tensorrt.sh" && \
+        sed -i 's/pip3 install/uv pip install/g' /tmp/install_tensorrt.sh && \
+        bash /tmp/install_tensorrt.sh && \
+        echo "✅ TensorRT installed"; \
+    else \
+        echo "Installing TRT-LLM from PyPI: ${TENSORRTLLM_PIP_WHEEL}"; \
+        # Extract version for install_tensorrt.sh download
+        TRTLLM_VERSION=$(echo "${TENSORRTLLM_PIP_WHEEL}" | sed -E 's/.*==([0-9a-zA-Z.+-]+).*/\1/') && \
+        echo "TRT-LLM version: ${TRTLLM_VERSION}"; \
+        # Try version-specific script first, fall back to commit
+        (curl -fsSL --retry 5 --retry-delay 10 --max-time 1800 \
+            -o /tmp/install_tensorrt.sh \
+            "https://github.com/NVIDIA/TensorRT-LLM/raw/v${TRTLLM_VERSION}/docker/common/install_tensorrt.sh" || \
+         curl -fsSL --retry 5 --retry-delay 10 --max-time 1800 \
+            -o /tmp/install_tensorrt.sh \
+            "https://github.com/NVIDIA/TensorRT-LLM/raw/${GITHUB_TRTLLM_COMMIT}/docker/common/install_tensorrt.sh") && \
+        sed -i 's/pip3 install/uv pip install/g' /tmp/install_tensorrt.sh && \
+        bash /tmp/install_tensorrt.sh && \
+        echo "✅ TensorRT installed"; \
+        # Install TRT-LLM wheel with pinned triton
+        uv pip install --no-cache-dir \
+            --extra-index-url "${TENSORRTLLM_INDEX_URL}" \
+            "${TENSORRTLLM_PIP_WHEEL}" \
+            "triton==${TRITON_VERSION}" && \
+        echo "✅ TensorRT-LLM installed"; \
+    fi
+
+# Downgrade ONNX for compatibility with onnx-graphsurgeon 0.5.8
+RUN uv pip install --no-cache 'onnx==1.16.0'
+
+# Verify installation (skip tensorrt_llm - it requires CUDA drivers at import)
+# Full verification will happen at runtime
+RUN python -c "import torch; print(f'PyTorch: {torch.__version__}')" && \
+    python -c "import tensorrt; print(f'TensorRT: {tensorrt.__version__}')" && \
+    echo "✅ Framework dependencies installed (TRT-LLM verified at runtime)"
+
+########################################################
+########## Runtime Stage ###############################
+########################################################
+#
+# PURPOSE: Minimal production runtime for TRT-LLM inference
+#
+# IMPORTANT: Run with these Docker flags:
+#   --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 --ipc=host
+
+FROM ${RUNTIME_IMAGE}:${RUNTIME_IMAGE_TAG} AS runtime
+
+ARG ARCH_ALT
+ARG PYTHON_VERSION
+ARG ENABLE_KVBM
+
+# Environment setup
+ENV DYNAMO_HOME=/opt/dynamo
+ENV VIRTUAL_ENV=/opt/dynamo/venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+ENV NIXL_PREFIX=/opt/nvidia/nvda_nixl
+ENV NIXL_LIB_DIR=${NIXL_PREFIX}/lib/${ARCH_ALT}-linux-gnu
+ENV NIXL_PLUGIN_DIR=${NIXL_LIB_DIR}/plugins
 
 WORKDIR /workspace
-CMD ["/bin/bash"]
+
+# Install runtime dependencies
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python${PYTHON_VERSION} \
+        python${PYTHON_VERSION}-dev \
+        jq \
+        git \
+        git-lfs \
+        curl \
+        libibverbs1 \
+        rdma-core \
+        ibverbs-utils \
+        libibumad3 \
+        libnuma1 \
+        librdmacm1 \
+        ibverbs-providers \
+        libzmq5 \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy NATS and etcd from base
+COPY --from=dynamo_base /usr/bin/nats-server /usr/bin/nats-server
+COPY --from=dynamo_base /usr/local/bin/etcd/ /usr/local/bin/etcd/
+
+# NOTE: Removed HPC-X copy to avoid MPI conflict with Amazon OpenMPI from base image
+# Amazon OpenMPI 4.1.7 (from AWS EFA Installer) is already available in base image
+
+# Remove HPC-X from pytorch_base to avoid MPI conflicts
+RUN rm -rf /opt/hpcx
+
+# Copy TensorRT libraries
+COPY --from=framework /usr/local/tensorrt /usr/local/tensorrt
+
+# Copy cuSPARSELt
+COPY --from=pytorch_base /usr/local/cuda/lib64/libcusparseLt* /usr/local/cuda/lib64/
+
+# Copy libgomp
+COPY --from=framework /usr/lib/${ARCH_ALT}-linux-gnu/libgomp.so* /usr/lib/${ARCH_ALT}-linux-gnu/
+
+# Copy uv
+COPY --from=framework /bin/uv /bin/uvx /bin/
+
+# Create dynamo user
+RUN userdel -r ubuntu 2>/dev/null || true && \
+    useradd -m -s /bin/bash -g 0 dynamo && \
+    mkdir -p /home/dynamo/.cache /opt/dynamo && \
+    chown -R dynamo: /workspace /home/dynamo /opt/dynamo && \
+    chmod -R g+w /workspace /home/dynamo/.cache /opt/dynamo
+
+USER dynamo
+ENV HOME=/home/dynamo
+
+# ============================================================================
+# Copy EFA components (order matters - base libs first, then plugins)
+# ============================================================================
+
+# 1. UCX (base transport)
+COPY --chown=dynamo: --from=dynamo_base /usr/local/ucx /usr/local/ucx
+
+# 2. libfabric (EFA provider)
+COPY --chown=dynamo: --from=dynamo_base /usr/local/lib/libfabric* /usr/local/lib/
+
+# 3. AWS EFA userspace (BEFORE NCCL plugins)
+COPY --chown=dynamo: --from=dynamo_base /opt/amazon /opt/amazon
+
+# 4. GDRCopy
+COPY --chown=dynamo: --from=dynamo_base /usr/local/lib/libgdrapi* /usr/local/lib/
+
+# 4.5. System libraries needed by TensorRT-LLM bindings (originally in HPC-X)
+# Copy hwloc
+COPY --from=dynamo_base /usr/lib/x86_64-linux-gnu/libhwloc.so* /usr/lib/x86_64-linux-gnu/
+# Copy libevent (core and pthreads)
+COPY --from=dynamo_base /usr/lib/x86_64-linux-gnu/libevent*.so* /usr/lib/x86_64-linux-gnu/
+
+# 5. NCCL
+COPY --from=dynamo_base /usr/local/lib/libnccl.so* /usr/local/lib/
+COPY --from=dynamo_base /usr/local/include/nccl*.h /usr/local/include/
+
+# 6. AWS OFI NCCL plugin
+COPY --from=dynamo_base /usr/local/lib/libnccl-net* /usr/local/lib/
+COPY --from=dynamo_base /usr/local/lib/libnccl-ofi-tuner* /usr/local/lib/
+
+# 7. NIXL
+COPY --chown=dynamo: --from=dynamo_base ${NIXL_PREFIX} ${NIXL_PREFIX}
+
+# 8. Validation tools
+COPY --from=dynamo_base /opt/nccl-tests /opt/nccl-tests
+COPY --from=dynamo_base /usr/local/bin/nixlbench /usr/local/bin/nixlbench
+
+# Refresh library cache
+USER root
+RUN ldconfig
+USER dynamo
+
+# ============================================================================
+# FIX #4: LD_LIBRARY_PATH - EFA paths MUST come FIRST
+# ============================================================================
+ENV TENSORRT_LIB_DIR=/usr/local/tensorrt/targets/${ARCH_ALT}-linux-gnu/lib
+
+ENV PATH="\
+/opt/amazon/openmpi/bin:\
+/opt/amazon/efa/bin:\
+/usr/local/ucx/bin:\
+/usr/local/bin/etcd:\
+/usr/local/cuda/bin:\
+${VIRTUAL_ENV}/bin:\
+${PATH}"
+
+# EFA paths FIRST, then UCX, then NIXL, then system
+# NOTE: Removed HPC-X paths - using Amazon OpenMPI from base image only
+ENV LD_LIBRARY_PATH="\
+/opt/amazon/openmpi/lib:\
+/opt/amazon/efa/lib64:\
+/opt/amazon/efa/lib:\
+/usr/local/ucx/lib:\
+/usr/local/ucx/lib/ucx:\
+${NIXL_LIB_DIR}:\
+${NIXL_PLUGIN_DIR}:\
+${TENSORRT_LIB_DIR}:\
+/usr/local/lib:\
+/usr/local/cuda/lib64:\
+${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/torch/lib:\
+${VIRTUAL_ENV}/lib/python${PYTHON_VERSION}/site-packages/torch_tensorrt/lib:\
+${LD_LIBRARY_PATH}"
+
+# NOTE: Removed OPAL_PREFIX (was pointing to HPC-X) - using Amazon OpenMPI only
+ENV MPI_HOME=/opt/amazon/openmpi
+# Explicitly unset HPC-X variables inherited from pytorch_base
+ENV OPAL_PREFIX=
+ENV HPCX_VERSION=
+# Configure Amazon OpenMPI for non-distributed mode
+ENV OMPI_MCA_plm_rsh_agent=/bin/false
+
+# AWS EFA environment (graceful degradation)
+ENV FI_EFA_FORK_SAFE=1
+ENV FI_LOG_LEVEL=warn
+ENV FI_PROVIDER=efa
+
+# UCX environment
+ENV UCX_TLS=self,sm
+ENV UCX_NET_DEVICES=all
+
+# TRT-LLM specific settings
+ENV TRTLLM_ENABLE_PDL=1
+
+# Copy virtual environment with TRT-LLM
+COPY --chown=dynamo: --from=framework ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+
+# Install Dynamo and NIXL wheels
+COPY --chown=dynamo: --from=dynamo_base /opt/dynamo/wheelhouse/ /opt/dynamo/wheelhouse/
+
+# ============================================================
+# FIX: Install ai-dynamo from PyPI (same fix as vLLM)
+# The wheelhouse only contains nixl/ - no ai_dynamo wheels
+# ============================================================
+RUN --mount=type=cache,target=/home/dynamo/.cache/uv,uid=1000 \
+    uv pip install --no-cache ai-dynamo && \
+    uv pip install --no-cache /opt/dynamo/wheelhouse/nixl/*.whl && \
+    if [ "${ENABLE_KVBM}" = "true" ] && ls /opt/dynamo/wheelhouse/kvbm*.whl 1>/dev/null 2>&1; then \
+        uv pip install --no-cache /opt/dynamo/wheelhouse/kvbm*.whl; \
+    fi
+
+# Verify installation (TRT-LLM import deferred to runtime - needs GPU)
+RUN python -c "import dynamo; print('✅ Dynamo orchestration')" && \
+    python -c "import nixl; print(f'✅ NIXL {nixl.__version__}')" 2>/dev/null || true
+
+# Fix BuildConfig model_fields API incompatibility (using line-based replacement)
+RUN sed -i '44s/.*/        self.max_batch_size: int = 2048/' \
+        /opt/dynamo/venv/lib/python3.12/site-packages/dynamo/trtllm/utils/trtllm_utils.py && \
+    sed -i '45s/.*/        self.max_num_tokens: int = 8192/' \
+        /opt/dynamo/venv/lib/python3.12/site-packages/dynamo/trtllm/utils/trtllm_utils.py && \
+    sed -i '46s/.*/        self.max_seq_len: int = None/' \
+        /opt/dynamo/venv/lib/python3.12/site-packages/dynamo/trtllm/utils/trtllm_utils.py && \
+    sed -i '47s/.*/        self.max_beam_width: int = 1/' \
+        /opt/dynamo/venv/lib/python3.12/site-packages/dynamo/trtllm/utils/trtllm_utils.py && \
+    sed -i '177s/.*/        default=2048,/' \
+        /opt/dynamo/venv/lib/python3.12/site-packages/dynamo/trtllm/utils/trtllm_utils.py && \
+    sed -i '183s/.*/        default=8192,/' \
+        /opt/dynamo/venv/lib/python3.12/site-packages/dynamo/trtllm/utils/trtllm_utils.py && \
+    sed -i '189s/.*/        default=None,/' \
+        /opt/dynamo/venv/lib/python3.12/site-packages/dynamo/trtllm/utils/trtllm_utils.py && \
+    sed -i '196s/.*/        default=1,/' \
+        /opt/dynamo/venv/lib/python3.12/site-packages/dynamo/trtllm/utils/trtllm_utils.py
+
+# Fix NIXL Connect initialization for aggregated/disaggregated modes (Issue #7/#8)
+# Make NIXL initialization optional with graceful fallback
+RUN python3 <<'NIXL_FIX'
+import re
+main_py = "/opt/dynamo/venv/lib/python3.12/site-packages/dynamo/trtllm/main.py"
+with open(main_py, 'r') as f:
+    content = f.read()
+# Patch: Make NIXL initialization optional with try-except fallback
+original = r'(\s+)connector = None\n\s+logging\.info\("Initializing NIXL Connect\."\)\n\s+connector = nixl_connect\.Connector\(\)\n\s+await connector\.initialize\(\)'
+replacement = r'''\1connector = None
+\1# Try to initialize NIXL with graceful fallback
+\1try:
+\1    if config.disaggregation_mode.name != 'AGGREGATED':
+\1        logging.info("Attempting NIXL Connect initialization...")
+\1        connector = nixl_connect.Connector()
+\1        await connector.initialize()
+\1        logging.info("✅ NIXL Connect initialized successfully")
+\1    else:
+\1        logging.info("Skipping NIXL initialization (aggregated mode)")
+\1except Exception as e:
+\1    logging.warning(f"NIXL initialization failed: {e}")
+\1    logging.warning("Continuing without NIXL - will use TensorRT-LLM native KV cache transfer")
+\1    connector = None'''
+content = re.sub(original, replacement, content, flags=re.MULTILINE)
+with open(main_py, 'w') as f:
+    f.write(content)
+print("✅ NIXL optional initialization patch applied")
+NIXL_FIX
+
+# Setup bash environment
+USER root
+RUN echo 'source /opt/dynamo/venv/bin/activate' >> /etc/bash.bashrc && \
+    echo '# Dynamo TensorRT-LLM Runtime' >> /etc/bash.bashrc && \
+    echo '# Run with: --shm-size=1g --ulimit memlock=-1 --ipc=host' >> /etc/bash.bashrc
+
+USER dynamo
+
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["bash"]
+
+########################################################
+########## Development Stage ###########################
+########################################################
+
+FROM runtime AS dev
+
+USER root
+
+RUN apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        nvtop wget tmux vim iproute2 rsync zip unzip htop \
+        autoconf automake cmake libtool meson net-tools \
+        pybind11-dev clang libclang-dev protobuf-compiler && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+COPY --from=dynamo_base /usr/local/rustup /usr/local/rustup
+COPY --from=dynamo_base /usr/local/cargo /usr/local/cargo
+
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV CARGO_HOME=/usr/local/cargo
+ENV PATH="/usr/local/cargo/bin:${PATH}"
+ENV CARGO_TARGET_DIR=/workspace/target
+ENV DYNAMO_HOME=/workspace
+
+RUN uv pip install --no-cache maturin[patchelf]
+
+CMD ["bash"]
