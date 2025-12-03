@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
 # Dynamo Base Image - Optimized for AWS EFA
 # ALIGNED with official NVIDIA Dynamo patterns
 #
@@ -110,7 +107,30 @@ RUN apt-get update && \
 
 WORKDIR /opt/build
 
+# ==============================================================================
 # etcd-cpp-apiv3
+# ==============================================================================
+# 
+# This section handles the installation and configuration of the etcd-cpp-apiv3
+# library, which provides a C++ client for etcd's v3 API.
+#
+# NOTE: Patch for AWS Environment Compatibility
+# ---------------------------------------------
+# The following sed command removes the cpprestsdk dependency check from the
+# CMake configuration file. This patch is required because:
+# - The cpprestsdk find_dependency call can cause build failures in certain
+#   AWS deployment environments where cpprestsdk is installed but not
+#   discoverable via standard CMake mechanisms.
+# - This modification allows the build to proceed without the automatic
+#   dependency resolution, assuming cpprestsdk is properly linked elsewhere.
+#
+# Command Reference:
+#   sed -i '/^find_dependency(cpprestsdk)$/d' etcd-cpp-api-config.in.cmake
+#   - Removes lines exactly matching "find_dependency(cpprestsdk)" from the
+#     CMake configuration template file.
+#
+# ==============================================================================
+
 RUN git clone --depth 1 https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3.git && \
     cd etcd-cpp-apiv3 && \
     sed -i '/^find_dependency(cpprestsdk)$/d' etcd-cpp-api-config.in.cmake && \
@@ -268,8 +288,15 @@ RUN git clone --depth 1 --branch ${NIXL_VERSION} \
 ENV LD_LIBRARY_PATH="/usr/local/lib:${EFA_PATH}/lib64:${EFA_PATH}/lib:${UCX_PREFIX}/lib:${LD_LIBRARY_PATH}"
 ENV NIXL_PREFIX=${NIXL_PREFIX}
 
+# Configure NIXL build with transport layer paths:
+# - UCX (Unified Communication X) path: Specifies the installation prefix for UCX library,
+#   enabling high-performance communication protocols for GPU-accelerated workloads
+# - libfabric path: Points to the EFA (Elastic Fabric Adapter) installation directory,
+#   enabling AWS EFA support for low-latency, high-throughput network communication
+#   optimized for HPC and ML workloads on EC2 instances
 # Build NIXL with both UCX and libfabric plugins
 # Install to /opt/nvidia/nvda_nixl (NVIDIA default)
+
 RUN meson setup build/ --prefix=${NIXL_PREFIX} \
         -Ducx_path=${UCX_PREFIX} \
         -Dlibfabric_path=${EFA_PATH} \
@@ -329,7 +356,6 @@ RUN if [ "${INSTALL_NCCL}" = "1" ]; then \
         echo "✅ NCCL ${NCCL_VERSION}"; \
     fi
 
-# FIX: Use v1.17.2 not v1.17.2-aws (that tag doesn't exist)
 RUN if [ "${INSTALL_NCCL}" = "1" ]; then \
         git clone --depth 1 --branch ${AWS_OFI_NCCL_VERSION} \
             https://github.com/aws/aws-ofi-nccl.git && \
