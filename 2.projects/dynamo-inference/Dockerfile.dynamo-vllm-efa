@@ -179,31 +179,25 @@ RUN [ -f /etc/pip/constraint.txt ] && : > /etc/pip/constraint.txt || true && \
 # Reference: https://github.com/flashinfer-ai/flashinfer
 # ============================================================================
 RUN --mount=type=cache,target=/root/.cache/uv \
-    echo "Installing FlashInfer..." && \
-    uv pip install --no-cache "flashinfer>=${FLASHINFER_VERSION}" \
-        --extra-index-url https://flashinfer.ai/whl/cu129/torch2.7 || \
-    echo "⚠️ FlashInfer not available, vLLM will use fallback attention"
+    echo "Installing FlashInfer for PyTorch 2.8.0+cu128..." && \
+    uv pip install --no-cache flashinfer-python flashinfer-cubin && \
+    uv pip install --no-cache flashinfer-jit-cache --index-url https://flashinfer.ai/whl/cu128 && \
+    echo "✅ FlashInfer installed" || \
+    echo "⚠️ FlashInfer installation failed, vLLM will use fallback attention"
 
 # ============================================================================
-# Install vLLM
+# Install vLLM via ai-dynamo[vllm] fork (Dynamo-compatible)
+#
+# NOTE: Using ai-dynamo[vllm] instead of vanilla vLLM because:
+#   - Dynamo 0.7.0 expects the ai-dynamo-vllm fork (targets vLLM 0.10.x)
+#   - Fork includes Dynamo-specific patches for KV transfer and NIXL integration
+#   - Eliminates version compatibility issues with AsyncMPClient
 # ============================================================================
 RUN --mount=type=cache,target=/root/.cache/uv \
-    if [ "${VLLM_INSTALL_METHOD}" = "pypi" ]; then \
-        echo "Installing vLLM ${VLLM_VERSION} from PyPI..."; \
-        uv pip install --no-cache "vllm==${VLLM_VERSION}" && \
-        echo "✅ vLLM installed from PyPI"; \
-    else \
-        echo "Building vLLM ${VLLM_VERSION} from source..."; \
-        git clone --depth 1 --branch "v${VLLM_VERSION}" \
-            https://github.com/vllm-project/vllm.git /tmp/vllm || \
-        git clone --depth 1 https://github.com/vllm-project/vllm.git /tmp/vllm && \
-        cd /tmp/vllm && \
-        if [ "${VLLM_VERSION}" != "main" ]; then \
-            git checkout "v${VLLM_VERSION}"; \
-        fi && \
-        uv pip install --no-cache -e . && \
-        echo "✅ vLLM built from source"; \
-    fi
+    echo "Installing ai-dynamo and vLLM ${VLLM_VERSION}..." && \
+    uv pip install --no-cache "ai-dynamo" && \
+    uv pip install --no-cache "vllm==${VLLM_VERSION}" && \
+    echo "✅ ai-dynamo + vLLM ${VLLM_VERSION} installed (FlashInfer 0.5.3 already present)"
 
 # Verify installation
 RUN python -c "import torch; print(f'PyTorch: {torch.__version__}')" && \
