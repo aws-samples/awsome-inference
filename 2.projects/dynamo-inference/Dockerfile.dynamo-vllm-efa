@@ -58,7 +58,7 @@ ARG PYTHON_VERSION="3.12"
 # Supported versions (choose one):
 #
 #   Latest stable release (Default - Recommended):
-#     ARG VLLM_VERSION="0.8.0"
+#     ARG VLLM_VERSION="0.11.0"
 #
 #   Development version:
 #     ARG VLLM_VERSION="main"
@@ -70,7 +70,7 @@ ARG PYTHON_VERSION="3.12"
 #   - PyPI wheel (faster, recommended for releases)
 #   - Source build (for custom patches or development)
 # ============================================================================
-ARG VLLM_VERSION="0.8.0"
+ARG VLLM_VERSION="0.11.0"
 ARG VLLM_INSTALL_METHOD="pypi"  # "pypi" or "source"
 
 # FlashInfer version (for optimized attention)
