@@ -218,6 +218,7 @@ FROM ${RUNTIME_IMAGE}:${RUNTIME_IMAGE_TAG} AS runtime
 ARG ARCH_ALT
 ARG PYTHON_VERSION
 ARG ENABLE_KVBM
+ARG VLLM_VERSION
 
 # Environment setup
 ENV DYNAMO_HOME=/opt/dynamo
@@ -420,6 +421,8 @@ RUN --mount=type=cache,target=/home/dynamo/.cache/uv,uid=1000 \
     if [ "${ENABLE_KVBM}" = "true" ] && ls /opt/dynamo/wheelhouse/kvbm*.whl 1>/dev/null 2>&1; then \
         uv pip install --no-cache /opt/dynamo/wheelhouse/kvbm*.whl; \
     fi
+
+RUN uv pip install --no-cache vllm==${VLLM_VERSION}
 
 # Verify installation
 RUN python -c "import dynamo; print('✅ Dynamo orchestration')" && \
