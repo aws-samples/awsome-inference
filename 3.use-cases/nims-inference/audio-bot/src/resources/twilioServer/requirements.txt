@@ -27,7 +27,7 @@ PyJWT==2.9.0
 python-multipart==0.0.18
 requests==2.32.3
 sniffio==1.3.1
-starlette==0.40.0
+starlette==0.49.1
 twilio==9.3.2
 typing_extensions==4.12.2
 urllib3==2.2.3
