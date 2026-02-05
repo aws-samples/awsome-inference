@@ -19,7 +19,7 @@ h11==0.14.0
 idna==3.10
 multidict==6.1.0
 nvidia-riva-client==2.16.0
-protobuf==5.28.2
+protobuf==5.29.6
 PyAudio==0.2.14
 pydantic==2.9.2
 pydantic_core==2.23.4
