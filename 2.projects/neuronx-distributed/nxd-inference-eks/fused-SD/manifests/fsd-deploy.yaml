@@ -1,0 +1,170 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neuron-vllm-scripts
+  namespace: neuron-inference
+data:
+  start_vllm.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    : "${ENABLE_SPECULATIVE:=false}"
+    : "${SPECULATION_LENGTH:=7}"
+    : "${TP_DEGREE:=32}"
+    : "${BATCH_SIZE:=1}"
+    : "${MAX_CONTEXT_LEN:=8192}"
+    : "${SEQ_LEN:=8192}"
+    : "${MAX_NUM_SEQS:=1}"
+
+    : "${MODEL_DIRNAME:=Qwen3-32B}"
+    : "${DRAFT_DIRNAME:=Qwen3-0.6B}"
+    : "${MODEL_ROOT:=/shared/model_hub}"
+
+    MODEL_PATH="${MODEL_ROOT}/${MODEL_DIRNAME}"
+    DRAFT_MODEL_PATH="${MODEL_ROOT}/${DRAFT_DIRNAME}"
+
+    : "${COMPILED_MODEL_PATH_STD:=/shared/compiled_models/Qwen3-32B/nospec_tp32}"
+    : "${COMPILED_MODEL_PATH_SPEC:=/shared/compiled_models/Qwen3-32B/spec_slen7_tp32}"
+
+    # -------- Select compiled dir based on mode --------
+    if [[ "${ENABLE_SPECULATIVE}" == "true" ]]; then
+      export NEURON_COMPILED_ARTIFACTS="${COMPILED_MODEL_PATH_SPEC}"
+    else
+      export NEURON_COMPILED_ARTIFACTS="${COMPILED_MODEL_PATH_STD}"
+    fi
+
+    echo "Mode: ${ENABLE_SPECULATIVE} | TP=${TP_DEGREE} | MAX_NUM_SEQS=${MAX_NUM_SEQS} | MAX_LEN=${SEQ_LEN}"
+    echo "Using NEURON_COMPILED_ARTIFACTS=${NEURON_COMPILED_ARTIFACTS}"
+    export VLLM_NEURON_FRAMEWORK="neuronx-distributed-inference"
+
+    if [[ "${ENABLE_SPECULATIVE}" == "true" ]]; then
+      echo "Starting vLLM (speculative decoding)…"
+      VLLM_RPC_TIMEOUT=100000 python -m vllm.entrypoints.openai.api_server \
+        --model "${MODEL_PATH}" \
+        --speculative-model "${DRAFT_MODEL_PATH}" \
+        --num-speculative-tokens "${SPECULATION_LENGTH}" \
+        --max-model-len "${SEQ_LEN}" \
+        --use-v2-block-manager \
+        --max-num-seqs "${MAX_NUM_SEQS}" \
+        --tensor-parallel-size "${TP_DEGREE}" \
+        --device neuron \
+        --override-neuron-config "{\"enable_fused_speculation\": true}" \
+        --host 0.0.0.0 --port 8000
+    else
+      echo "Starting vLLM (standard)…"
+      VLLM_RPC_TIMEOUT=100000 python -m vllm.entrypoints.openai.api_server \
+        --model "${MODEL_PATH}" \
+        --max-model-len "${SEQ_LEN}" \
+        --max-num-seqs "${MAX_NUM_SEQS}" \
+        --tensor-parallel-size "${TP_DEGREE}" \
+        --device neuron \
+        --use-v2-block-manager \
+        --host 0.0.0.0 --port 8000
+    fi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neuron-qwen-inference
+  namespace: neuron-inference
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neuron-qwen-inference
+  template:
+    metadata:
+      labels:
+        app: neuron-qwen-inference
+    spec:
+      nodeSelector:
+        workload-type: "neuron-inference"
+        node.kubernetes.io/instance-type: "trn1.32xlarge"
+      tolerations:
+      - key: aws.amazon.com/neuron
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: vllm-server
+        image: public.ecr.aws/neuron/pytorch-inference-vllm-neuronx:0.9.1-neuronx-py310-sdk2.25.0-ubuntu22.04
+        command: ["/bin/bash","-lc"]
+        args:
+        - |
+          set -euo pipefail
+          exec /scripts/start_vllm.sh
+        ports:
+        - containerPort: 8000
+          name: http
+        resources:
+          limits:
+            aws.amazon.com/neuroncore: "32"
+            memory: "400Gi"
+            cpu: "120"
+          requests:
+            aws.amazon.com/neuroncore: "32"
+            memory: "400Gi"
+            cpu: "120"
+        env:
+        - name: ENABLE_SPECULATIVE
+          value: "false"
+        - name: SPECULATION_LENGTH
+          value: "7"
+        - name: TP_DEGREE
+          value: "32"
+        - name: BATCH_SIZE
+          value: "1"
+        - name: MAX_CONTEXT_LEN
+          value: "8192"
+        - name: SEQ_LEN
+          value: "8192"
+        - name: MAX_NUM_SEQS
+          value: "1"
+        - name: MODEL_DIRNAME
+          value: "Qwen3-32B"
+        - name: DRAFT_DIRNAME
+          value: "Qwen3-0.6B"
+        - name: MODEL_ROOT
+          value: "/shared/model_hub"
+        - name: COMPILED_MODEL_PATH_STD
+          value: "/shared/compiled_models/Qwen3-32B/nospec_tp32"
+        - name: COMPILED_MODEL_PATH_SPEC
+          value: "/shared/compiled_models/Qwen3-32B/spec_slen7_tp32"
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /shared
+        - name: vllm-scripts
+          mountPath: /scripts
+        readinessProbe:
+          httpGet:
+            path: /health      
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+      volumes:
+      - name: shared-storage
+        persistentVolumeClaim:
+          claimName: efs-models-pvc
+      - name: vllm-scripts
+        configMap:
+          name: neuron-vllm-scripts
+          defaultMode: 0755
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neuron-qwen-svc
+  namespace: neuron-inference
+spec:
+  type: ClusterIP
+  selector:
+    app: neuron-qwen-inference
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
