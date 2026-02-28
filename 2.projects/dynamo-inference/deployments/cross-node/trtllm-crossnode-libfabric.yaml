@@ -1,0 +1,504 @@
+# Patched NIXL 0.8.0 + Dynamo v0.9.0 -- Cross-Node TRT-LLM Disagg Test (LIBFABRIC/EFA Backend)
+#
+# Purpose: Test cross-node KV cache transfer using LIBFABRIC over EFA RDMA
+#          with TRT-LLM + NIXL 0.8.0 (ABI-compatible) stability patches + perf optimizations
+# Image:   public.ecr.aws/v9l4g5s4/dynamo-trtllm:patched-efa-2026-02-27
+# Layout:  Multi-DGD pattern (3 DGDs sharing dynamoNamespace)
+#   - Frontend: any node, no GPU
+#   - Prefill:  Node 1 (hyperpod-i-00934b14b675e7826) -- normal GPU via device plugin
+#   - Decode:   Node 2 (hyperpod-i-09beda7ec1dc96eda) -- driver injection (device plugin broken)
+#
+# Deploy:
+#   kubectl apply -f trtllm-patched-crossnode-libfabric.yaml
+#
+# Test:
+#   kubectl port-forward svc/trtllm-patched-lf-frontend-frontend 8000:8000
+#   curl http://localhost:8000/v1/completions \
+#     -H 'Content-Type: application/json' \
+#     -d '{"model":"Qwen/Qwen3-0.6B","prompt":"Hello","max_tokens":20}'
+#
+# Cleanup:
+#   kubectl delete dgd trtllm-patched-lf-frontend trtllm-patched-lf-prefill trtllm-patched-lf-decode
+
+# ===========================================================================
+# DGD 1/3: Frontend
+# ===========================================================================
+---
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  name: trtllm-patched-lf-frontend
+  namespace: default
+  labels:
+    app.kubernetes.io/part-of: patched-trtllm-libfabric-crossnode
+    test: patched-nixl-0.8-v2
+    backend: libfabric
+    framework: trtllm
+spec:
+  services:
+    Frontend:
+      dynamoNamespace: patched-trtllm-libfabric
+      componentType: frontend
+      replicas: 1
+      extraPodSpec:
+        mainContainer:
+          image: public.ecr.aws/v9l4g5s4/dynamo-trtllm:patched-efa-2026-02-27
+          imagePullPolicy: Always
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo "=========================================="
+              echo "= TRT-LLM Frontend -- NIXL 0.8.0 PATCHED "
+              echo "= Image: patched-efa-v2-2026-02-27         "
+              echo "= NIXL 0.8.0 + 11 patches + 3 perf opts   "
+              echo "= $(date -u '+%Y-%m-%dT%H:%M:%SZ')       "
+              echo "=========================================="
+
+              echo "=== Environment ==="
+              env | grep -E '(DYN_|ETCD|NATS)' | sort
+              echo "Hostname: $(hostname)"
+              echo "Node:     ${NODE_NAME:-unknown}"
+
+              echo "=== NIXL Version Check ==="
+              python3 -c "import nixl; print(f'NIXL version: {nixl.__version__}')" 2>&1 || echo "Cannot import nixl"
+
+              echo "=== TRT-LLM Check ==="
+              python3 -c "import tensorrt_llm; print(f'TRT-LLM version: {tensorrt_llm.__version__}')" 2>&1 || echo "Cannot import tensorrt_llm"
+
+              source /opt/dynamo/venv/bin/activate || true
+              exec python3 -m dynamo.frontend --http-port 8000 --http-host 0.0.0.0
+          resources:
+            limits:
+              cpu: "4"
+              memory: 8Gi
+            requests:
+              cpu: "2"
+              memory: 4Gi
+      envs:
+        - name: LC_ALL
+          value: "C.UTF-8"
+        - name: DYN_NAMESPACE
+          value: "patched-trtllm-libfabric"
+        - name: ETCD_ENDPOINTS
+          value: "http://dynamo-platform-etcd.default.svc.cluster.local:2379"
+        - name: NATS_SERVER
+          value: "nats://dynamo-platform-nats.default.svc.cluster.local:4222"
+        - name: DYN_SYSTEM_PORT
+          value: "9090"
+        - name: DYN_SYSTEM_ENABLED
+          value: "true"
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+
+# ===========================================================================
+# DGD 2/3: Prefill Worker -- Node 1 (device plugin works)
+# ===========================================================================
+---
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  name: trtllm-patched-lf-prefill
+  namespace: default
+  labels:
+    app.kubernetes.io/part-of: patched-trtllm-libfabric-crossnode
+    test: patched-nixl-0.8-v2
+    backend: libfabric
+    framework: trtllm
+spec:
+  services:
+    PrefillWorker:
+      dynamoNamespace: patched-trtllm-libfabric
+      envFromSecret: hf-token-secret
+      componentType: worker
+      subComponentType: prefill
+      replicas: 1
+      extraPodSpec:
+        nodeName: hyperpod-i-00934b14b675e7826
+        mainContainer:
+          image: public.ecr.aws/v9l4g5s4/dynamo-trtllm:patched-efa-2026-02-27
+          imagePullPolicy: Always
+          securityContext:
+            capabilities:
+              add: [IPC_LOCK, SYS_RESOURCE, NET_ADMIN, SYS_ADMIN]
+            privileged: true
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo "=========================================="
+              echo "= TRT-LLM PREFILL -- NIXL 0.8.0 PATCHED  "
+              echo "= Node 1: hyperpod-i-00934b14b675e7826   "
+              echo "= Image: patched-efa-v2-2026-02-27         "
+              echo "= NIXL 0.8.0 + 11 patches + 3 perf opts   "
+              echo "= $(date -u '+%Y-%m-%dT%H:%M:%SZ')       "
+              echo "=========================================="
+
+              # --- Diagnostics ---
+              echo "=== GPU Check ==="
+              nvidia-smi -L 2>&1 || echo "nvidia-smi FAILED"
+              python3 -c "import torch; print(f'torch.cuda.is_available()={torch.cuda.is_available()}, count={torch.cuda.device_count()}')" 2>&1 || true
+
+              echo "=== EFA Devices ==="
+              ibv_devices 2>&1 || echo "ibv_devices not found"
+              ls -la /dev/infiniband/ 2>&1 || echo "No /dev/infiniband"
+              echo "EFA device count: $(ls /dev/infiniband/uverbs* 2>/dev/null | wc -l)"
+
+              echo "=== EFA HW Counters (before) ==="
+              for dev in /sys/class/infiniband/rdmap*/ports/1/hw_counters; do
+                if [ -d "$dev" ]; then
+                  devname=$(echo "$dev" | sed 's|/sys/class/infiniband/\(rdmap[0-9]*\)/.*|\1|')
+                  tx=$(cat "$dev/tx_pkts" 2>/dev/null || echo "N/A")
+                  rx=$(cat "$dev/rx_pkts" 2>/dev/null || echo "N/A")
+                  echo "  $devname: tx=$tx rx=$rx"
+                fi
+              done 2>/dev/null | head -8
+
+              echo "=== NIXL/EFA Environment ==="
+              env | grep -E '(FI_|UCX_|NIXL|TRTLLM|ETCD|NATS|DYN_|HF_)' | sort
+
+              echo "=== NIXL Version Check ==="
+              python3 -c "import nixl; print(f'NIXL version: {nixl.__version__}')" 2>&1 || echo "Cannot import nixl"
+
+              echo "=== TRT-LLM Check ==="
+              python3 -c "import tensorrt_llm; print(f'TRT-LLM version: {tensorrt_llm.__version__}')" 2>&1 || echo "Cannot import tensorrt_llm"
+
+              echo "=== NIXL Plugin Libraries ==="
+              ls -la /opt/nvidia/nvda_nixl/lib/x86_64-linux-gnu/plugins/ 2>/dev/null || echo "No system NIXL plugins"
+              ls -la /opt/dynamo/venv/lib/python3.12/site-packages/tensorrt_llm/libs/nixl/plugins/ 2>/dev/null || echo "No trtllm bundled NIXL plugins"
+              echo "--- Patched plugin size ---"
+              ls -la /opt/nixl-patched/lib/x86_64-linux-gnu/plugins/libplugin_LIBFABRIC.so 2>/dev/null || echo "No patched NIXL at /opt/nixl-patched"
+
+              echo "=== GDR Device ==="
+              ls -la /dev/gdrdrv 2>&1 || echo "No /dev/gdrdrv"
+
+              echo "=== PATCHED TEST: NIXL 0.8.0 + 11 patches + 3 perf opts ==="
+
+              # Fix HPC-X OpenMPI conflict with EFA OpenMPI
+              unset HPCX_DIR HPCX_MPI_DIR HPCX_HOME HPCX_UCX_DIR HPCX_SHARP_DIR HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR
+              unset HPCX_HCOLL_DIR HPCX_MPI_TESTS_DIR HPCX_OSU_DIR HPCX_IPM_DIR HPCX_CLUSTERKIT_DIR
+              export OPAL_PREFIX=/opt/amazon/openmpi
+              export PATH=/opt/amazon/openmpi/bin:$(echo $PATH | tr ':' '\n' | grep -v hpcx | tr '\n' ':')
+              export LD_LIBRARY_PATH=/opt/amazon/openmpi/lib:$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep -v hpcx | tr '\n' ':')
+              echo "MPI fix applied: using Amazon OpenMPI"
+
+              echo "=== Starting Prefill Worker ==="
+              source /opt/dynamo/venv/bin/activate || true
+              cd /workspace/
+              exec python3 -m dynamo.trtllm \
+                --model-path Qwen/Qwen3-0.6B \
+                --served-model-name Qwen/Qwen3-0.6B \
+                --disaggregation-mode prefill \
+                --extra-engine-args /workspace/examples/backends/trtllm/engine_configs/qwen3/prefill.yaml
+          workingDir: /workspace/
+          resources:
+            limits:
+              cpu: "16"
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+              hugepages-2Mi: 5120Mi
+            requests:
+              cpu: "16"
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+              hugepages-2Mi: 5120Mi
+          volumeMounts:
+            - name: dev-infiniband
+              mountPath: /dev/infiniband
+            - name: hugepages
+              mountPath: /dev/hugepages
+            - name: shm
+              mountPath: /dev/shm
+            - name: gdrdrv
+              mountPath: /dev/gdrdrv
+        volumes:
+          - name: dev-infiniband
+            hostPath:
+              path: /dev/infiniband
+              type: DirectoryOrCreate
+          - name: hugepages
+            emptyDir:
+              medium: HugePages
+          - name: shm
+            emptyDir:
+              medium: Memory
+              sizeLimit: 16Gi
+          - name: gdrdrv
+            hostPath:
+              path: /dev/gdrdrv
+              type: CharDevice
+      envs:
+        - name: LC_ALL
+          value: "C.UTF-8"
+        - name: DYN_NAMESPACE
+          value: "patched-trtllm-libfabric"
+        - name: ETCD_ENDPOINTS
+          value: "http://dynamo-platform-etcd.default.svc.cluster.local:2379"
+        - name: NATS_SERVER
+          value: "nats://dynamo-platform-nats.default.svc.cluster.local:4222"
+        - name: DYN_SYSTEM_PORT
+          value: "9091"
+        - name: DYN_SYSTEM_ENABLED
+          value: "true"
+        # NIXL side channel
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NIXL_SIDE_CHANNEL_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NIXL_SIDE_CHANNEL_PORT
+          value: "5600"
+        # NIXL LIBFABRIC backend
+        - name: NIXL_BACKEND
+          value: "LIBFABRIC"
+        - name: TRTLLM_NIXL_KVCACHE_BACKEND
+          value: "LIBFABRIC"
+        - name: NIXL_SKIP_TOPOLOGY_CHECK
+          value: "1"
+        - name: NIXL_LIBFABRIC_MAX_RAILS
+          value: "1"
+        # Override system NIXL paths to use patched libraries
+        - name: NIXL_LIB_DIR
+          value: "/opt/dynamo/venv/lib/python3.12/site-packages/tensorrt_llm/libs/nixl"
+        - name: NIXL_PLUGIN_DIR
+          value: "/opt/dynamo/venv/lib/python3.12/site-packages/tensorrt_llm/libs/nixl/plugins"
+        # EFA / libfabric provider
+        - name: FI_PROVIDER
+          value: "efa"
+        - name: FI_EFA_USE_DEVICE_RDMA
+          value: "1"
+        - name: FI_EFA_ENABLE_SHM_TRANSFER
+          value: "0"
+        - name: FI_EFA_ENABLE_SHM
+          value: "0"
+        - name: FI_EFA_USE_HUGE_PAGE
+          value: "0"
+        - name: FI_EFA_FORK_SAFE
+          value: "1"
+        - name: FI_LOG_LEVEL
+          value: "info"
+        - name: FI_MR_CACHE_MAX_COUNT
+          value: "0"
+        - name: FI_MR_CACHE_MONITOR
+          value: "disabled"
+        # Library paths -- patched NIXL 0.8.0 first; NO system NIXL 0.10.0 path
+        - name: LD_LIBRARY_PATH
+          value: "/opt/dynamo/venv/lib/python3.12/site-packages/tensorrt_llm/libs/nixl:/opt/dynamo/venv/lib/python3.12/site-packages/tensorrt_llm/libs/nixl/plugins:/opt/amazon/openmpi/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64:/opt/amazon/efa/lib:/usr/local/ucx/lib:/usr/lib/x86_64-linux-gnu"
+
+# ===========================================================================
+# DGD 3/3: Decode Worker -- Node 2 (driver injection, device plugin broken)
+# ===========================================================================
+---
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  name: trtllm-patched-lf-decode
+  namespace: default
+  labels:
+    app.kubernetes.io/part-of: patched-trtllm-libfabric-crossnode
+    test: patched-nixl-0.8-v2
+    backend: libfabric
+    framework: trtllm
+spec:
+  services:
+    DecodeWorker:
+      dynamoNamespace: patched-trtllm-libfabric
+      envFromSecret: hf-token-secret
+      componentType: worker
+      subComponentType: decode
+      replicas: 1
+      extraPodSpec:
+        nodeName: hyperpod-i-09beda7ec1dc96eda
+        mainContainer:
+          image: public.ecr.aws/v9l4g5s4/dynamo-trtllm:patched-efa-2026-02-27
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo "=========================================="
+              echo "= TRT-LLM DECODE -- NIXL 0.8.0 PATCHED   "
+              echo "= Node 2: hyperpod-i-09beda7ec1dc96eda   "
+              echo "= Image: patched-efa-v2-2026-02-27         "
+              echo "= NIXL 0.8.0 + 11 patches + 3 perf opts   "
+              echo "= Driver injection mode (no device plugin)"
+              echo "= $(date -u '+%Y-%m-%dT%H:%M:%SZ')       "
+              echo "=========================================="
+
+              # --- Driver Injection (Node 2 device plugin broken) ---
+              echo "=== Injecting NVIDIA drivers from host ==="
+              mkdir -p /tmp/nvidia-libs
+              cp /host-usr-lib64/libnvidia-ml.so* /tmp/nvidia-libs/ 2>/dev/null
+              cp /host-usr-lib64/libcuda.so* /tmp/nvidia-libs/ 2>/dev/null
+              cp /host-usr-lib64/libnvidia-ptxjitcompiler.so* /tmp/nvidia-libs/ 2>/dev/null
+              cp /host-usr-lib64/libnvidia-nvvm.so* /tmp/nvidia-libs/ 2>/dev/null
+              cp /host-usr-lib64/libnvidia-fatbinaryloader.so* /tmp/nvidia-libs/ 2>/dev/null
+              export LD_LIBRARY_PATH=/tmp/nvidia-libs:${LD_LIBRARY_PATH}
+              echo "Injected libs:"
+              ls -la /tmp/nvidia-libs/
+
+              # --- Diagnostics ---
+              echo "=== GPU Check (post-injection) ==="
+              nvidia-smi -L 2>&1 || echo "nvidia-smi FAILED"
+              python3 -c "import torch; print(f'torch.cuda.is_available()={torch.cuda.is_available()}, count={torch.cuda.device_count()}')" 2>&1 || true
+
+              echo "=== EFA Devices ==="
+              ibv_devices 2>&1 || echo "ibv_devices not found"
+              ls -la /dev/infiniband/ 2>&1 || echo "No /dev/infiniband"
+              echo "EFA device count: $(ls /dev/infiniband/uverbs* 2>/dev/null | wc -l)"
+
+              echo "=== EFA HW Counters (before) ==="
+              for dev in /sys/class/infiniband/rdmap*/ports/1/hw_counters; do
+                if [ -d "$dev" ]; then
+                  devname=$(echo "$dev" | sed 's|/sys/class/infiniband/\(rdmap[0-9]*\)/.*|\1|')
+                  tx=$(cat "$dev/tx_pkts" 2>/dev/null || echo "N/A")
+                  rx=$(cat "$dev/rx_pkts" 2>/dev/null || echo "N/A")
+                  echo "  $devname: tx=$tx rx=$rx"
+                fi
+              done 2>/dev/null | head -8
+
+              echo "=== NIXL/EFA Environment ==="
+              env | grep -E '(FI_|UCX_|NIXL|TRTLLM|ETCD|NATS|DYN_|HF_|LD_LIBRARY)' | sort
+
+              echo "=== NIXL Version Check ==="
+              python3 -c "import nixl; print(f'NIXL version: {nixl.__version__}')" 2>&1 || echo "Cannot import nixl"
+
+              echo "=== TRT-LLM Check ==="
+              python3 -c "import tensorrt_llm; print(f'TRT-LLM version: {tensorrt_llm.__version__}')" 2>&1 || echo "Cannot import tensorrt_llm"
+
+              echo "=== NIXL Plugin Libraries ==="
+              ls -la /opt/nvidia/nvda_nixl/lib/x86_64-linux-gnu/plugins/ 2>/dev/null || echo "No system NIXL plugins"
+              ls -la /opt/dynamo/venv/lib/python3.12/site-packages/tensorrt_llm/libs/nixl/plugins/ 2>/dev/null || echo "No trtllm bundled NIXL plugins"
+              echo "--- Patched plugin size ---"
+              ls -la /opt/nixl-patched/lib/x86_64-linux-gnu/plugins/libplugin_LIBFABRIC.so 2>/dev/null || echo "No patched NIXL at /opt/nixl-patched"
+
+              echo "=== GDR Device ==="
+              ls -la /dev/gdrdrv 2>&1 || echo "No /dev/gdrdrv (via host /dev mount)"
+
+              echo "=== PATCHED TEST: NIXL 0.8.0 + 11 patches + 3 perf opts ==="
+
+              echo "=== Waiting 30s for prefill worker to register ==="
+              sleep 30
+
+              # Fix HPC-X OpenMPI conflict with EFA OpenMPI
+              unset HPCX_DIR HPCX_MPI_DIR HPCX_HOME HPCX_UCX_DIR HPCX_SHARP_DIR HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR
+              unset HPCX_HCOLL_DIR HPCX_MPI_TESTS_DIR HPCX_OSU_DIR HPCX_IPM_DIR HPCX_CLUSTERKIT_DIR
+              export OPAL_PREFIX=/opt/amazon/openmpi
+              export PATH=/opt/amazon/openmpi/bin:$(echo $PATH | tr ':' '\n' | grep -v hpcx | tr '\n' ':')
+              export LD_LIBRARY_PATH=/opt/amazon/openmpi/lib:$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep -v hpcx | tr '\n' ':')
+              echo "MPI fix applied: using Amazon OpenMPI"
+
+              echo "=== Starting Decode Worker ==="
+              source /opt/dynamo/venv/bin/activate || true
+              cd /workspace/
+              exec python3 -m dynamo.trtllm \
+                --model-path Qwen/Qwen3-0.6B \
+                --served-model-name Qwen/Qwen3-0.6B \
+                --disaggregation-mode decode \
+                --extra-engine-args /workspace/examples/backends/trtllm/engine_configs/qwen3/decode.yaml
+          workingDir: /workspace/
+          resources:
+            # NOTE: No nvidia.com/gpu -- device plugin broken on Node 2
+            # GPU access via privileged + host /dev mount
+            limits:
+              cpu: "16"
+              memory: 128Gi
+              vpc.amazonaws.com/efa: "1"
+              hugepages-2Mi: 5120Mi
+            requests:
+              cpu: "16"
+              memory: 128Gi
+              vpc.amazonaws.com/efa: "1"
+              hugepages-2Mi: 5120Mi
+          volumeMounts:
+            - name: host-dev
+              mountPath: /dev
+            - name: host-usr-lib64
+              mountPath: /host-usr-lib64
+              readOnly: true
+            - name: hugepages
+              mountPath: /dev/hugepages
+            - name: shm
+              mountPath: /dev/shm
+        volumes:
+          - name: host-dev
+            hostPath:
+              path: /dev
+              type: Directory
+          - name: host-usr-lib64
+            hostPath:
+              path: /usr/lib64
+              type: Directory
+          - name: hugepages
+            emptyDir:
+              medium: HugePages
+          - name: shm
+            emptyDir:
+              medium: Memory
+              sizeLimit: 16Gi
+      envs:
+        - name: LC_ALL
+          value: "C.UTF-8"
+        - name: DYN_NAMESPACE
+          value: "patched-trtllm-libfabric"
+        - name: ETCD_ENDPOINTS
+          value: "http://dynamo-platform-etcd.default.svc.cluster.local:2379"
+        - name: NATS_SERVER
+          value: "nats://dynamo-platform-nats.default.svc.cluster.local:4222"
+        - name: DYN_SYSTEM_PORT
+          value: "9190"
+        - name: DYN_SYSTEM_ENABLED
+          value: "true"
+        # NIXL side channel
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NIXL_SIDE_CHANNEL_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NIXL_SIDE_CHANNEL_PORT
+          value: "5600"
+        # NIXL LIBFABRIC backend
+        - name: NIXL_BACKEND
+          value: "LIBFABRIC"
+        - name: TRTLLM_NIXL_KVCACHE_BACKEND
+          value: "LIBFABRIC"
+        - name: NIXL_SKIP_TOPOLOGY_CHECK
+          value: "1"
+        - name: NIXL_LIBFABRIC_MAX_RAILS
+          value: "1"
+        # Override system NIXL paths to use patched libraries
+        - name: NIXL_LIB_DIR
+          value: "/opt/dynamo/venv/lib/python3.12/site-packages/tensorrt_llm/libs/nixl"
+        - name: NIXL_PLUGIN_DIR
+          value: "/opt/dynamo/venv/lib/python3.12/site-packages/tensorrt_llm/libs/nixl/plugins"
+        # EFA / libfabric provider
+        - name: FI_PROVIDER
+          value: "efa"
+        - name: FI_EFA_USE_DEVICE_RDMA
+          value: "1"
+        - name: FI_EFA_ENABLE_SHM_TRANSFER
+          value: "0"
+        - name: FI_EFA_ENABLE_SHM
+          value: "0"
+        - name: FI_EFA_USE_HUGE_PAGE
+          value: "0"
+        - name: FI_EFA_FORK_SAFE
+          value: "1"
+        - name: FI_LOG_LEVEL
+          value: "info"
+        - name: FI_MR_CACHE_MAX_COUNT
+          value: "0"
+        - name: FI_MR_CACHE_MONITOR
+          value: "disabled"
+        # Library paths -- patched NIXL 0.8.0 first; NO system NIXL 0.10.0 path (prepended with /tmp/nvidia-libs at runtime)
+        - name: LD_LIBRARY_PATH
+          value: "/opt/dynamo/venv/lib/python3.12/site-packages/tensorrt_llm/libs/nixl:/opt/dynamo/venv/lib/python3.12/site-packages/tensorrt_llm/libs/nixl/plugins:/opt/amazon/openmpi/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64:/opt/amazon/efa/lib:/usr/local/ucx/lib:/usr/lib/x86_64-linux-gnu"

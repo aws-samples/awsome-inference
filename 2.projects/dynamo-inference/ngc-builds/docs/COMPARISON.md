@@ -22,7 +22,7 @@ docker build -f Dockerfile.dynamo-vllm
 ### NGC-Based Build
 ```bash
 # Single stage from official NGC
-docker pull nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.6.1.post1
+docker pull nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.9.0
 docker build -f ngc-builds/vllm/Dockerfile.runtime
 # Time: ~5 minutes, Size: 17 GB
 

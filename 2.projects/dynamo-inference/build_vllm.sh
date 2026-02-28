@@ -4,17 +4,17 @@ set -e
 
 # Configuration
 NIXL_BASE_IMAGE="${NIXL_BASE_IMAGE:-nixl-h100-efa:optimized}"
-DYNAMO_BASE_IMAGE="${DYNAMO_BASE_IMAGE:-nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.4.0}"
+DYNAMO_BASE_IMAGE="${DYNAMO_BASE_IMAGE:-nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.9.0}"
 PYTORCH_IMAGE="${PYTORCH_IMAGE:-nvcr.io/nvidia/pytorch}"
-PYTORCH_IMAGE_TAG="${PYTORCH_IMAGE_TAG:-25.06-py3}"
-RUNTIME_IMAGE="${RUNTIME_IMAGE:-nvcr.io/nvidia/cuda}"
-RUNTIME_IMAGE_TAG="${RUNTIME_IMAGE_TAG:-12.8.1-runtime-ubuntu24.04}"
+PYTORCH_IMAGE_TAG="${PYTORCH_IMAGE_TAG:-25.12-py3}"
+RUNTIME_IMAGE="${RUNTIME_IMAGE:-nvcr.io/nvidia/cuda-dl-base}"
+RUNTIME_IMAGE_TAG="${RUNTIME_IMAGE_TAG:-25.12-cuda13.1-runtime-ubuntu24.04}"
 
 # vLLM configuration
 USE_SOURCE_BUILD="${USE_SOURCE_BUILD:-false}"  # Set to "true" to build from source
-VLLM_REF="${VLLM_REF:-v0.11.0}"
-TORCH_BACKEND="${TORCH_BACKEND:-cu128}"
-CUDA_VERSION="${CUDA_VERSION:-12.8}"
+VLLM_REF="${VLLM_REF:-v0.14.1}"
+TORCH_BACKEND="${TORCH_BACKEND:-cu131}"
+CUDA_VERSION="${CUDA_VERSION:-13.1}"
 # Note: MAX_JOBS only used if USE_SOURCE_BUILD=true
 MAX_JOBS="${MAX_JOBS:-8}"
 

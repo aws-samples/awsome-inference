@@ -20,7 +20,7 @@ print_info() {
 
 TARGET=${1:-runtime}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NGC_BASE="nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.6.1.post1"
+NGC_BASE="nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.9.0"
 
 if [[ ! "$TARGET" =~ ^(runtime|dev|benchmark)$ ]]; then
     echo "Usage: $0 [runtime|dev|benchmark]"

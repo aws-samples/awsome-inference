@@ -4,18 +4,18 @@
 # SPDX-License-Identifier: MIT-0
 
 ARG NIXL_BASE_IMAGE="nixl-h100-efa:optimized"
-ARG DYNAMO_BASE_IMAGE="nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.4.0"
+ARG DYNAMO_BASE_IMAGE="nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.9.0"
 ARG PYTORCH_IMAGE="nvcr.io/nvidia/pytorch"
-ARG PYTORCH_IMAGE_TAG="25.06-py3"
-ARG RUNTIME_IMAGE="nvcr.io/nvidia/cuda"
-ARG RUNTIME_IMAGE_TAG="12.8.1-runtime-ubuntu24.04"
+ARG PYTORCH_IMAGE_TAG="25.12-py3"
+ARG RUNTIME_IMAGE="nvcr.io/nvidia/cuda-dl-base"
+ARG RUNTIME_IMAGE_TAG="25.12-cuda13.1-runtime-ubuntu24.04"
 
-# vLLM configuration (aligned with official Dynamo pyproject.toml)
-ARG VLLM_REF="v0.10.2"
+# vLLM configuration (aligned with Dynamo v0.9.0)
+ARG VLLM_REF="v0.14.1"
 ARG DEEPGEMM_REF=""
 ARG FLASHINF_REF="v0.1.8"
-ARG TORCH_BACKEND="cu128"
-ARG CUDA_VERSION="12.8"
+ARG TORCH_BACKEND="cu131"
+ARG CUDA_VERSION="13.1"
 ARG MAX_JOBS=16
 
 # Build acceleration (optional)

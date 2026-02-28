@@ -72,7 +72,7 @@ cd ngc-builds/scripts
 ## NGC Base Images
 
 ### vLLM
-- **Image:** `nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.6.1.post1`
+- **Image:** `nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.9.0`
 - **Size:** 8.73 GB
 - **Includes:** vLLM 0.11.0, NIXL 0.7.0, UCX 1.19.0, PyTorch 2.8.0
 

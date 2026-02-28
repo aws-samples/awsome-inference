@@ -4,17 +4,17 @@ set -e
 
 # Configuration
 NIXL_BASE_IMAGE="${NIXL_BASE_IMAGE:-nixl-h100-efa:optimized}"
-DYNAMO_BASE_IMAGE="${DYNAMO_BASE_IMAGE:-nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.4.0}"
+DYNAMO_BASE_IMAGE="${DYNAMO_BASE_IMAGE:-nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.9.0}"
 PYTORCH_IMAGE="${PYTORCH_IMAGE:-nvcr.io/nvidia/pytorch}"
-PYTORCH_IMAGE_TAG="${PYTORCH_IMAGE_TAG:-25.06-py3}"
-RUNTIME_IMAGE="${RUNTIME_IMAGE:-nvcr.io/nvidia/cuda}"
-RUNTIME_IMAGE_TAG="${RUNTIME_IMAGE_TAG:-12.9.1-runtime-ubuntu24.04}"
+PYTORCH_IMAGE_TAG="${PYTORCH_IMAGE_TAG:-25.12-py3}"
+RUNTIME_IMAGE="${RUNTIME_IMAGE:-nvcr.io/nvidia/cuda-dl-base}"
+RUNTIME_IMAGE_TAG="${RUNTIME_IMAGE_TAG:-25.12-cuda13.1-runtime-ubuntu24.04}"
 
-# TensorRT-LLM configuration
-TENSORRTLLM_VERSION="${TENSORRTLLM_VERSION:-0.17.0}"
-TENSORRTLLM_PIP_WHEEL="tensorrt-llm"  # No version pin - uses latest
+# TensorRT-LLM configuration (aligned with Dynamo v0.9.0 / v0.9.1-rc1)
+TENSORRTLLM_VERSION="${TENSORRTLLM_VERSION:-1.3.0rc3}"
+TENSORRTLLM_PIP_WHEEL="tensorrt-llm==1.3.0rc3"
 TENSORRTLLM_INDEX_URL="https://pypi.nvidia.com"
-GITHUB_TRTLLM_COMMIT="main"  # Fallback to main branch
+GITHUB_TRTLLM_COMMIT="v1.3.0rc3"
 
 # Architecture options
 CUDA_ARCH="${CUDA_ARCH:-90}"

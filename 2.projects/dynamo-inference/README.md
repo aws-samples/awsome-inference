@@ -260,42 +260,49 @@ For EFA-enabled instances:
 
 ## Installed Components
 
-### Core Stack
+### Core Stack (aligned with Dynamo v0.9.0)
 
 | Component | Version | Purpose |
 |-----------|---------|---------|
-| **Base Image** | NVIDIA CUDA DL Base 25.01 | CUDA 12.8, Ubuntu 24.04 |
-| **CUDA** | 12.8 | GPU compute platform |
-| **NCCL** | v2.27.5-1 | Collective communications |
-| **UCX** | 1.19.0 | Unified communications with EFA |
+| **Base Image** | NVIDIA CUDA DL Base 25.12 | CUDA 13.1, Ubuntu 24.04 |
+| **CUDA** | 13.1 | GPU compute platform |
+| **NCCL** | v2.28.9-1 | Collective communications |
+| **UCX** | 1.20.0 | Unified communications with EFA |
 | **libfabric** | 2.3.0 | Fabric library with EFA provider |
-| **GDRCopy** | v2.4.4 | GPU-direct RDMA |
+| **GDRCopy** | v2.5.1 | GPU-direct RDMA |
 
 ### Networking
 
 | Component | Version | Purpose |
 |-----------|---------|---------|
-| **EFA Installer** | 1.42.0 | AWS EFA support |
-| **AWS OFI NCCL Plugin** | v1.16.0 | EFA integration for NCCL |
-| **NVSHMEM** | 3.2.5-1 | NVIDIA symmetric memory (optional) |
-| **PMIx** | 4.2.6 | Process management |
+| **EFA Installer** | 1.45.1 | AWS EFA support |
+| **AWS OFI NCCL Plugin** | v1.17.2 | EFA integration for NCCL |
+| **NVSHMEM** | 3.2.1 | NVIDIA symmetric memory (optional) |
 
 ### NIXL Framework
 
 | Component | Version | Purpose |
 |-----------|---------|---------|
-| **NIXL** | 0.4.1 | Network infrastructure library |
+| **NIXL** | 0.9.0 | KV cache transfer for disaggregated inference |
 | **nixlbench** | Latest | Benchmarking tools |
-| **ETCD** | v3.5.1 | Distributed coordination |
-| **AWS SDK C++** | 1.11.581 | AWS service integration |
 
 ### ML Frameworks
 
-| Component | Container | Installation |
-|-----------|-----------|--------------|
-| **vLLM** | dynamo-vllm | Pip install (default) or source build |
-| **TensorRT-LLM** | dynamo-trtllm | Pip install (v0.17.0) |
-| **PyTorch** | All | CUDA 12.8 variant |
+| Component | Container | Version |
+|-----------|-----------|---------|
+| **Dynamo** | All | v0.9.0 |
+| **vLLM** | dynamo-vllm | 0.14.1 |
+| **TensorRT-LLM** | dynamo-trtllm | 1.3.0rc3 |
+| **PyTorch** | All | CUDA 13.1 variant |
+
+### Cross-Node Disaggregated Inference (Validated)
+
+Cross-node KV cache transfer via NIXL LIBFABRIC over EFA RDMA has been validated on 2x P5.48xlarge with:
+- NIXL LIBFABRIC backend activation and EFA handshake between nodes
+- Qwen3-0.6B inference at 147ms latency
+- **Important:** Worker pods require **128Gi memory** (64Gi causes OOMKilled due to 32 EFA device enumeration)
+
+See `deployments/cross-node/` for production-ready Kubernetes manifests.
 
 ## Environment Variables
 
