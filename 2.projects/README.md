@@ -94,6 +94,7 @@ These days, the challenge with ML Inference workloads, is that not all workloads
 In 2020, NVIDIA released Multi-Instance GPU (MIG), alongside the Ampere Architecture that powers the NVIDIA A100 (EC2 P4) and NVIDIA A10G (EC2 G5) GPUs. With MIG, administrators can partition a single GPU into multiple smaller GPU units (called “MIG devices”). Each of these smaller GPU units are fully isolated, with their own high-bandwidth memory, cache, and compute cores.
 
 ### Files & Directories
-1. [README.md](https://github.com/aws-samples/awsome-inference/blob/main/2.projects/mig-gpu-partitioning/README.md): Yes, this process is simple enough to only have a README! Note: This project only shows you how to set MIG up, and assumes you already have the cluster(s) set up, and your deployment ready to go.
+1. [README.md](https://github.com/aws-samples/awsome-inference/blob/main/2.projects/mig-gpu-partitioning/README.md): Walkthrough for MIG on a `p5.48xlarge` (H100). Assumes the cluster(s) are already set up.
+2. [g7e-blackwell/](https://github.com/aws-samples/awsome-inference/tree/main/2.projects/mig-gpu-partitioning/g7e-blackwell): Companion bash scripts that exercise MIG on `g7e.2xlarge` (1 × NVIDIA RTX PRO 6000 Blackwell Server Edition, 96 GiB) on EKS — the smallest/cheapest single-GPU setup to validate MIG end-to-end. Creates a managed nodegroup, installs the NVIDIA GPU Operator (with mig-manager), partitions the GPU (default `all-1g.24gb` → 4 × 24 GiB slices), runs a smoke-test pod on a MIG slice, and tears everything down. Includes a workaround for the AL2023 NVIDIA AMI + containerd v3 + gpu-operator v26 cgroup mismatch.
 
 

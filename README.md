@@ -71,7 +71,7 @@ These examples shows how to deploy LLMs like T5, Mistral using NVIDIA Triton TRT
 
 ### MIG 
 
-This directory contains a README on how you can leverage Multi-Instance GPUs (MIGs) to partition your GPUs based on your workload. For more detailed documentation, check out the [MIG user guide](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/).
+This directory contains a README on how you can leverage Multi-Instance GPUs (MIGs) to partition your GPUs based on your workload. The [`g7e-blackwell/`](2.projects/mig-gpu-partitioning/g7e-blackwell) sub-directory provides end-to-end bash scripts that exercise MIG on the smallest G7e size (`g7e.2xlarge`, 1 × NVIDIA RTX PRO 6000 Blackwell Server Edition) on EKS. For more detailed documentation, check out the [MIG user guide](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/).
 
 ## USE-CASES
 These are real life use-case examples on using projects from `2.PROJECTS/` to demonstrate catering the projects to real-life scenarios.
