@@ -1,0 +1,4 @@
+d22f42017c789418291dc15c6bf019f6930abb17
+manifest: 2.projects/dynamo-inference/k8s/dgd-dynamo-combined-vllm.yaml
+branch: feature/dynamo-combined-vllm-trtllm-efa
+deploy_utc: 2026-05-21T15:16:32Z

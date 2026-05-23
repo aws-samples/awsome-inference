@@ -1,0 +1,145 @@
+apiVersion: v1
+items:
+- addressType: IPv4
+  apiVersion: discovery.k8s.io/v1
+  endpoints:
+  - addresses:
+    - 10.1.3.73
+    conditions:
+      ready: true
+      serving: true
+      terminating: false
+    nodeName: hyperpod-i-0a3eb6d3953cceaa7
+    targetRef:
+      kind: Pod
+      name: dynamo-combined-vllm-decodeworker-1aaa3f69-76fc75f9f-khlqc
+      namespace: default
+      uid: 3a41a8a2-50dd-4d01-9361-effab688bea7
+    zone: us-east-2c
+  kind: EndpointSlice
+  metadata:
+    annotations:
+      endpoints.kubernetes.io/last-change-trigger-time: "2026-05-06T07:09:55Z"
+    creationTimestamp: "2026-05-06T07:06:42Z"
+    generateName: dynamo-combined-vllm-decodeworker-1aaa3f69-
+    generation: 3
+    labels:
+      endpointslice.kubernetes.io/managed-by: endpointslice-controller.k8s.io
+      kubernetes.io/service-name: dynamo-combined-vllm-decodeworker-1aaa3f69
+      nvidia.com/dynamo-component: DecodeWorker
+      nvidia.com/dynamo-discovery-backend: kubernetes
+      nvidia.com/dynamo-discovery-enabled: "true"
+      nvidia.com/dynamo-graph-deployment-name: dynamo-combined-vllm
+      nvidia.com/dynamo-namespace: default-dynamo-combined-vllm
+      nvidia.com/dynamo-worker-hash: 1aaa3f69
+    name: dynamo-combined-vllm-decodeworker-1aaa3f69-pps69
+    namespace: default
+    ownerReferences:
+    - apiVersion: v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Service
+      name: dynamo-combined-vllm-decodeworker-1aaa3f69
+      uid: 1f2327b1-ff73-48db-be1c-959360cd1b56
+    resourceVersion: "249620653"
+    uid: 34235703-8ef1-44d1-b7bd-4ebb6ea0e393
+  ports:
+  - name: system
+    port: 9090
+    protocol: TCP
+- addressType: IPv4
+  apiVersion: discovery.k8s.io/v1
+  endpoints:
+  - addresses:
+    - 10.1.3.195
+    conditions:
+      ready: true
+      serving: true
+      terminating: false
+    nodeName: hyperpod-i-0a3eb6d3953cceaa7
+    targetRef:
+      kind: Pod
+      name: dynamo-combined-vllm-frontend-64f878c6b5-hmmz8
+      namespace: default
+      uid: b12e2a52-b384-4ab7-b96f-fee01ec1235b
+    zone: us-east-2c
+  kind: EndpointSlice
+  metadata:
+    annotations:
+      endpoints.kubernetes.io/last-change-trigger-time: "2026-05-06T07:06:56Z"
+    creationTimestamp: "2026-05-06T07:06:42Z"
+    generateName: dynamo-combined-vllm-frontend-
+    generation: 3
+    labels:
+      endpointslice.kubernetes.io/managed-by: endpointslice-controller.k8s.io
+      kubernetes.io/service-name: dynamo-combined-vllm-frontend
+      nvidia.com/dynamo-component: Frontend
+      nvidia.com/dynamo-discovery-backend: kubernetes
+      nvidia.com/dynamo-discovery-enabled: "true"
+      nvidia.com/dynamo-graph-deployment-name: dynamo-combined-vllm
+      nvidia.com/dynamo-namespace: default-dynamo-combined-vllm
+    name: dynamo-combined-vllm-frontend-g6qfv
+    namespace: default
+    ownerReferences:
+    - apiVersion: v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Service
+      name: dynamo-combined-vllm-frontend
+      uid: 124b3fd4-38e8-4e1e-a33f-848c1b9f462d
+    resourceVersion: "249618240"
+    uid: 90f1cd79-fa4b-45d8-a3e9-f2f970596fa3
+  ports:
+  - name: http
+    port: 8000
+    protocol: TCP
+- addressType: IPv4
+  apiVersion: discovery.k8s.io/v1
+  endpoints:
+  - addresses:
+    - 10.1.0.198
+    conditions:
+      ready: true
+      serving: true
+      terminating: false
+    nodeName: ip-10-1-0-198.us-east-2.compute.internal
+    targetRef:
+      kind: Pod
+      name: dynamo-combined-vllm-prefillworker-1aaa3f69-695fc5475b-9fpc5
+      namespace: default
+      uid: 4b6d63d0-d43c-4782-ad29-5fcb2b1967ab
+    zone: us-east-2a
+  kind: EndpointSlice
+  metadata:
+    annotations:
+      endpoints.kubernetes.io/last-change-trigger-time: "2026-05-06T07:08:53Z"
+    creationTimestamp: "2026-05-06T07:06:42Z"
+    generateName: dynamo-combined-vllm-prefillworker-1aaa3f69-
+    generation: 3
+    labels:
+      endpointslice.kubernetes.io/managed-by: endpointslice-controller.k8s.io
+      kubernetes.io/service-name: dynamo-combined-vllm-prefillworker-1aaa3f69
+      nvidia.com/dynamo-component: PrefillWorker
+      nvidia.com/dynamo-discovery-backend: kubernetes
+      nvidia.com/dynamo-discovery-enabled: "true"
+      nvidia.com/dynamo-graph-deployment-name: dynamo-combined-vllm
+      nvidia.com/dynamo-namespace: default-dynamo-combined-vllm
+      nvidia.com/dynamo-worker-hash: 1aaa3f69
+    name: dynamo-combined-vllm-prefillworker-1aaa3f69-94f7q
+    namespace: default
+    ownerReferences:
+    - apiVersion: v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Service
+      name: dynamo-combined-vllm-prefillworker-1aaa3f69
+      uid: ebcb595e-39ea-426c-9cf5-79e74e87b2ee
+    resourceVersion: "249619838"
+    uid: d979aec3-db82-48e3-ae4e-24b047d66371
+  ports:
+  - name: system
+    port: 9090
+    protocol: TCP
+kind: List
+metadata:
+  resourceVersion: ""

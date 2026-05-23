@@ -1,0 +1,131 @@
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: nccl-allreduce-g5
+  namespace: default
+spec:
+  slotsPerWorker: 1           # g5.8xlarge has 1 GPU per node
+  runPolicy:
+    cleanPodPolicy: Running
+    backoffLimit: 5
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        metadata:
+          labels:
+            app: nccl-allreduce-g5
+        spec:
+          restartPolicy: OnFailure
+          # Put the launcher on the non-GPU node so it doesn't steal GPU capacity
+          nodeSelector:
+            node.kubernetes.io/instance-type: "ml.m5.4xlarge"
+          containers:
+            - name: launcher
+              image: public.ecr.aws/hpc-cloud/efa:gpu
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: LD_LIBRARY_PATH
+                  value: /opt/amazon/openmpi/lib:/usr/local/nccl/lib:/opt/amazon/efa/lib:/opt/aws-ofi-nccl/lib:/usr/local/nvidia/lib:/usr/local/cuda/lib64
+                - name: PATH
+                  value: /opt/amazon/openmpi/bin:/opt/amazon/efa/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+              command: ["/bin/bash", "-lc"]
+              args:
+                - |
+                  # DO NOT set -e; the MPI operator mounts /root/.ssh RO via Secret,
+                  # so any write there fails. We pass all SSH opts as flags instead.
+                  SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+                  echo "[launcher] waiting for workers to become reachable…"
+                  for host in $(cat /etc/mpi/hostfile | awk '{print $1}'); do
+                    for i in $(seq 1 30); do
+                      if ssh $SSH_OPTS -o ConnectTimeout=2 "$host" true 2>/dev/null; then
+                        echo "  $host reachable"; break
+                      fi
+                      sleep 2
+                    done
+                  done
+                  echo "[launcher] starting NCCL all_reduce_perf across 2x g5.8xlarge (1 GPU, 1 EFA each)"
+                  /opt/amazon/openmpi/bin/mpirun \
+                    --allow-run-as-root \
+                    --tag-output \
+                    -np 2 -N 1 \
+                    --hostfile /etc/mpi/hostfile \
+                    --bind-to none \
+                    --mca plm_rsh_args "-p 2022 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+                    --mca pml ^cm,ucx \
+                    --mca btl tcp,self \
+                    --mca btl_tcp_if_exclude lo,docker0,veth \
+                    -x PATH -x LD_LIBRARY_PATH \
+                    -x FI_PROVIDER=efa \
+                    -x FI_EFA_FORK_SAFE=1 \
+                    -x NCCL_DEBUG=INFO \
+                    -x NCCL_SOCKET_IFNAME='^lo,docker,veth' \
+                    -x NCCL_NET_PLUGIN=ofi \
+                    -x NCCL_NVLS_ENABLE=0 \
+                    /opt/nccl-tests/bin/all_reduce_perf \
+                      -b 8 -e 8G -f 2 -g 1 -c 1 -n 50
+    Worker:
+      replicas: 2
+      template:
+        metadata:
+          labels:
+            app: nccl-allreduce-g5
+        spec:
+          restartPolicy: OnFailure
+          hostIPC: true
+          hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
+          nodeSelector:
+            node.kubernetes.io/instance-type: "ml.g5.8xlarge"
+          tolerations:
+            - operator: Exists
+          volumes:
+            - name: dshm
+              emptyDir: { medium: Memory, sizeLimit: 16Gi }
+            - name: ib
+              hostPath: { path: /dev/infiniband }
+            - name: ibsys
+              hostPath: { path: /sys/class/infiniband }
+          containers:
+            - name: worker
+              image: public.ecr.aws/hpc-cloud/efa:gpu
+              imagePullPolicy: IfNotPresent
+              env:
+                # The image bakes FI_EFA_USE_DEVICE_RDMA=1 into Docker ENV.
+                # g5.8xlarge EFA has no rdma-read capability — the flag
+                # causes aws-ofi-nccl to silently fall back (no wire traffic,
+                # counters stay 0). Unset explicitly for g5.
+                - name: FI_EFA_USE_DEVICE_RDMA
+                  value: "0"
+                - name: FI_EFA_ENABLE_SHM_TRANSFER
+                  value: "0"
+              # hostNetwork=true means port 22 is already taken by the host's sshd.
+              # Bypass the image's with-sshd entrypoint; start sshd on port 2022 instead.
+              command: ["/bin/bash", "-lc"]
+              args:
+                - |
+                  mkdir -p /run/sshd
+                  /usr/sbin/sshd -D -p 2022 -o PermitRootLogin=yes -o PasswordAuthentication=no -o StrictModes=no
+              securityContext:
+                privileged: true
+                capabilities:
+                  add: [IPC_LOCK, SYS_PTRACE, NET_ADMIN]
+              resources:
+                limits:
+                  nvidia.com/gpu: "1"
+                  vpc.amazonaws.com/efa: "1"
+                  memory: "24Gi"
+                  cpu: "16"
+                requests:
+                  nvidia.com/gpu: "1"
+                  vpc.amazonaws.com/efa: "1"
+                  memory: "16Gi"
+                  cpu: "8"
+              volumeMounts:
+                - mountPath: /dev/shm
+                  name: dshm
+                - mountPath: /dev/infiniband
+                  name: ib
+                - mountPath: /sys/class/infiniband
+                  name: ibsys
+                  readOnly: true

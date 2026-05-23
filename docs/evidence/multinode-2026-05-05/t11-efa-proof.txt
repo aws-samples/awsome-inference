@@ -1,0 +1,30 @@
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Plugin name set by env to libnccl-net-ofi.so
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Loaded net plugin Libfabric (v10)
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v10 symbol.
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v9 symbol.
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v8 symbol.
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v7 symbol.
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v6 symbol.
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Initializing aws-ofi-nccl 1.19.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Using Libfabric version 2.4
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Using CUDA driver version 13000 with runtime 12090
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Plugin selected platform: AWS
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Configuring AWS-specific options
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Internode latency set at 75.0 us
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Using transport protocol RDMA (platform set)
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Selected provider is efa, fabric is efa-direct (found 32 nics)
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 0 device #0 0000:52:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 0 device #1 0000:51:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 0 device #2 0000:50:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 0 device #3 0000:4f:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 1 device #0 0000:63:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 1 device #1 0000:62:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 1 device #2 0000:61:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 1 device #3 0000:60:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 2 device #0 0000:74:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 2 device #1 0000:73:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 2 device #2 0000:72:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 2 device #3 0000:71:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 3 device #0 0000:85:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 3 device #1 0000:84:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 3 device #2 0000:83:00.0

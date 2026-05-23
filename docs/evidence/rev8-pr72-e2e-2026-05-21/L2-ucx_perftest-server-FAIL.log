@@ -1,0 +1,17 @@
+[1779378706.807481] [ip-172-16-243-103:1107 :0]        perftest.c:825  UCX  WARN  CPU affinity is not set (bound to 96 cpus). Performance may be impacted.
+Waiting for connection...
+Accepted connection from 10.1.3.151:54640
++----------------------------------------------------------------------------------------------------------+
+| API:          protocol layer                                                                             |
+| Test:         tag match latency                                                                          |
+| Data layout:  (automatic)                                                                                |
+| Send memory:  host                                                                                       |
+| Recv memory:  host                                                                                       |
+| Message size: 4096                                                                                       |
+| Window size:  1                                                                                          |
++----------------------------------------------------------------------------------------------------------+
+[1779378711.484672] [ip-172-16-243-103:1107 :0]            sock.c:348  UCX  ERROR   connect(fd=108, dest_addr=169.254.0.1:59169) failed: Connection refused
+[1779378711.484713] [ip-172-16-243-103:1107 :0]         libperf.c:1200 UCX  ERROR ucp_ep_create() failed: Destination is unreachable
+[1779378711.528074] [ip-172-16-243-103:1107 :0]         libperf.c:2128 UCX  ERROR ucp_perf_test_setup_endpoints() failed: Destination is unreachable
+[1779378711.577150] [ip-172-16-243-103:1107 :0]    perftest_run.c:363  UCX  ERROR Failed to run test: Destination is unreachable
+command terminated with exit code 255

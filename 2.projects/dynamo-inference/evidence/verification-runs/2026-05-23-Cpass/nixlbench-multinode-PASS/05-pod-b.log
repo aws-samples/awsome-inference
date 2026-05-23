@@ -1,0 +1,9 @@
+/opt/nixlbench/bin/nixlbench
+nixlbench
+WARNING: Adjusting num_iter to 1008 to allow equal distribution to 1 threads
+WARNING: Adjusting warmup_iter to 112 to allow equal distribution to 1 threads
+Connecting to ETCD at http://dynamo-platform-etcd.default.svc.cluster.local:2379
+ETCD Runtime: Registered as rank 1 item 2 of 2
+Init nixl worker, dev all rank 1, type target, hostname ip-172-16-243-103.us-east-2.compute.internal, nc_count -1
+Waiting for all processes to start... (expecting 2 total: 1 initiators and 1 targets)
+All processes are ready to proceed

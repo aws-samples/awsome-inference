@@ -32,6 +32,30 @@ This project incorporates components from various open-source projects. We ackno
 - **License:** NVIDIA CUDA Toolkit EULA
 - **Description:** GPU computing platform and programming model.
 
+### GDRCopy
+- **Source:** https://github.com/NVIDIA/gdrcopy
+- **License:** MIT License
+- **Description:** Low-latency GPU memory copy library leveraging NVIDIA GPUDirect RDMA.
+
+---
+
+## Inference Backends (Combined Image)
+
+### FlashInfer
+- **Source:** https://github.com/flashinfer-ai/flashinfer
+- **License:** Apache License 2.0
+- **Description:** Optimized FlashAttention kernels for LLM inference.
+
+### LMCache
+- **Source:** https://github.com/LMCache/LMCache
+- **License:** Apache License 2.0
+- **Description:** KV-cache reuse library for LLM inference acceleration.
+
+### FFmpeg
+- **Source:** https://ffmpeg.org/
+- **License:** LGPL 2.1+ (Apache-only codecs used in build)
+- **Description:** Multimedia framework for audio/video processing in multimodal models.
+
 ---
 
 ## Communication Libraries
@@ -120,6 +144,10 @@ This project incorporates components from various open-source projects. We ackno
 | vLLM | Apache-2.0 |
 | PyTorch | BSD-3-Clause |
 | Transformers | Apache-2.0 |
+| GDRCopy | MIT |
+| FlashInfer | Apache-2.0 |
+| LMCache | Apache-2.0 |
+| FFmpeg | LGPL-2.1+ |
 
 ---
 
@@ -139,4 +167,4 @@ For questions about licensing or attribution, please open an issue in the reposi
 
 ---
 
-**Last Updated:** November 2025
+**Last Updated:** March 2026

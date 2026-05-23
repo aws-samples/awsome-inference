@@ -1,0 +1,327 @@
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"nvidia.com/v1alpha1","kind":"DynamoGraphDeployment","metadata":{"annotations":{},"labels":{"app.kubernetes.io/part-of":"dynamo-combined-vllm","backend":"vllm"},"name":"dynamo-combined-vllm","namespace":"default"},"spec":{"services":{"DecodeWorker":{"componentType":"worker","envFromSecret":"hf-token","envs":[{"name":"DYNAMO_BACKEND","value":"vllm"},{"name":"ETCD_ENDPOINTS","value":"http://dynamo-platform-etcd.default.svc.cluster.local:2379"},{"name":"NATS_SERVER","value":"nats://dynamo-platform-nats.default.svc.cluster.local:4222"},{"name":"DYN_SYSTEM_ENABLED","value":"true"},{"name":"NIXL_BACKEND","value":"LIBFABRIC"},{"name":"NIXL_SKIP_TOPOLOGY_CHECK","value":"1"},{"name":"NIXL_LIBFABRIC_MAX_RAILS","value":"1"},{"name":"VLLM_NIXL_KVCACHE_BACKEND","value":"LIBFABRIC"},{"name":"FI_PROVIDER","value":"efa"},{"name":"FI_EFA_USE_DEVICE_RDMA","value":"1"},{"name":"FI_EFA_ENABLE_SHM","value":"0"},{"name":"FI_EFA_ENABLE_SHM_TRANSFER","value":"0"},{"name":"HF_HOME","value":"/shared/hf_cache"},{"name":"VLLM_NIXL_SIDE_CHANNEL_HOST","valueFrom":{"fieldRef":{"fieldPath":"status.podIP"}}},{"name":"VLLM_NIXL_SIDE_CHANNEL_PORT","value":"5700"}],"extraPodSpec":{"affinity":{"podAntiAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":[{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/part-of","operator":"In","values":["dynamo-combined-vllm"]}]},"topologyKey":"kubernetes.io/hostname"}]}},"dnsPolicy":"ClusterFirstWithHostNet","hostNetwork":true,"mainContainer":{"args":["unset HPCX_DIR HPCX_MPI_DIR HPCX_HOME HPCX_UCX_DIR \\\n      HPCX_SHARP_DIR HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR \\\n      HPCX_HCOLL_DIR HPCX_MPI_TESTS_DIR\nsource /opt/dynamo/venv/bin/activate\nexec python3 -m dynamo.vllm \\\n  --model meta-llama/Llama-3.1-8B-Instruct \\\n  --served-model-name meta-llama/Llama-3.1-8B-Instruct \\\n  --disaggregation-mode decode \\\n  --kv-transfer-config '{\"kv_connector\":\"NixlConnector\",\"kv_role\":\"kv_both\",\"kv_connector_extra_config\":{\"backends\":[\"LIBFABRIC\"]}}' \\\n  --max-model-len 4096 \\\n  --gpu-memory-utilization 0.85\n"],"command":["/bin/bash","-c"],"image":"058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:9467d1460c71","imagePullPolicy":"IfNotPresent","readinessProbe":{"failureThreshold":60,"httpGet":{"path":"/health","port":9090},"initialDelaySeconds":120,"periodSeconds":10,"timeoutSeconds":5},"resources":{"limits":{"cpu":"16","hugepages-2Mi":"5120Mi","memory":"128Gi","nvidia.com/gpu":"1","vpc.amazonaws.com/efa":"1"},"requests":{"cpu":"16","hugepages-2Mi":"5120Mi","memory":"128Gi","nvidia.com/gpu":"1","vpc.amazonaws.com/efa":"1"}},"securityContext":{"privileged":true},"volumeMounts":[{"mountPath":"/dev/infiniband","name":"dev-infiniband"},{"mountPath":"/dev/hugepages","name":"hugepages"},{"mountPath":"/shared","name":"shared"},{"mountPath":"/dev/shm","name":"shm"}]},"tolerations":[{"effect":"NoSchedule","key":"nvidia.com/gpu","operator":"Exists"}],"volumes":[{"hostPath":{"path":"/dev/infiniband","type":"DirectoryOrCreate"},"name":"dev-infiniband"},{"emptyDir":{"medium":"HugePages"},"name":"hugepages"},{"name":"shared","persistentVolumeClaim":{"claimName":"dynamo-shared-storage"}},{"emptyDir":{"medium":"Memory","sizeLimit":"64Gi"},"name":"shm"}]},"replicas":1,"subComponentType":"decode"},"Frontend":{"componentType":"frontend","envFromSecret":"hf-token","envs":[{"name":"DYNAMO_BACKEND","value":"vllm"},{"name":"ETCD_ENDPOINTS","value":"http://dynamo-platform-etcd.default.svc.cluster.local:2379"},{"name":"NATS_SERVER","value":"nats://dynamo-platform-nats.default.svc.cluster.local:4222"},{"name":"DYN_SYSTEM_PORT","value":"9090"},{"name":"DYN_SYSTEM_ENABLED","value":"true"}],"extraPodSpec":{"mainContainer":{"args":["source /opt/dynamo/venv/bin/activate\nexec python3 -m dynamo.frontend --http-port 8000 --http-host 0.0.0.0\n"],"command":["/bin/bash","-c"],"image":"058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:9467d1460c71","imagePullPolicy":"IfNotPresent","resources":{"limits":{"cpu":"4","memory":"8Gi"},"requests":{"cpu":"2","memory":"4Gi"}}}},"replicas":1},"PrefillWorker":{"componentType":"worker","envFromSecret":"hf-token","envs":[{"name":"DYNAMO_BACKEND","value":"vllm"},{"name":"ETCD_ENDPOINTS","value":"http://dynamo-platform-etcd.default.svc.cluster.local:2379"},{"name":"NATS_SERVER","value":"nats://dynamo-platform-nats.default.svc.cluster.local:4222"},{"name":"DYN_SYSTEM_ENABLED","value":"true"},{"name":"NIXL_BACKEND","value":"LIBFABRIC"},{"name":"NIXL_SKIP_TOPOLOGY_CHECK","value":"1"},{"name":"NIXL_LIBFABRIC_MAX_RAILS","value":"1"},{"name":"VLLM_NIXL_KVCACHE_BACKEND","value":"LIBFABRIC"},{"name":"FI_PROVIDER","value":"efa"},{"name":"FI_EFA_USE_DEVICE_RDMA","value":"1"},{"name":"FI_EFA_ENABLE_SHM","value":"0"},{"name":"FI_EFA_ENABLE_SHM_TRANSFER","value":"0"},{"name":"HF_HOME","value":"/shared/hf_cache"},{"name":"VLLM_NIXL_SIDE_CHANNEL_HOST","valueFrom":{"fieldRef":{"fieldPath":"status.podIP"}}},{"name":"VLLM_NIXL_SIDE_CHANNEL_PORT","value":"5700"}],"extraPodSpec":{"dnsPolicy":"ClusterFirstWithHostNet","hostNetwork":true,"mainContainer":{"args":["unset HPCX_DIR HPCX_MPI_DIR HPCX_HOME HPCX_UCX_DIR \\\n      HPCX_SHARP_DIR HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR \\\n      HPCX_HCOLL_DIR HPCX_MPI_TESTS_DIR\nsource /opt/dynamo/venv/bin/activate\nexec python3 -m dynamo.vllm \\\n  --model meta-llama/Llama-3.1-8B-Instruct \\\n  --served-model-name meta-llama/Llama-3.1-8B-Instruct \\\n  --disaggregation-mode prefill \\\n  --kv-transfer-config '{\"kv_connector\":\"NixlConnector\",\"kv_role\":\"kv_both\",\"kv_connector_extra_config\":{\"backends\":[\"LIBFABRIC\"]}}' \\\n  --max-model-len 4096 \\\n  --gpu-memory-utilization 0.85\n"],"command":["/bin/bash","-c"],"image":"058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:9467d1460c71","imagePullPolicy":"IfNotPresent","readinessProbe":{"failureThreshold":60,"httpGet":{"path":"/health","port":9090},"initialDelaySeconds":120,"periodSeconds":10,"timeoutSeconds":5},"resources":{"limits":{"cpu":"16","hugepages-2Mi":"5120Mi","memory":"128Gi","nvidia.com/gpu":"1","vpc.amazonaws.com/efa":"1"},"requests":{"cpu":"16","hugepages-2Mi":"5120Mi","memory":"128Gi","nvidia.com/gpu":"1","vpc.amazonaws.com/efa":"1"}},"securityContext":{"privileged":true},"volumeMounts":[{"mountPath":"/dev/infiniband","name":"dev-infiniband"},{"mountPath":"/dev/hugepages","name":"hugepages"},{"mountPath":"/shared","name":"shared"},{"mountPath":"/dev/shm","name":"shm"}]},"tolerations":[{"effect":"NoSchedule","key":"nvidia.com/gpu","operator":"Exists"}],"volumes":[{"hostPath":{"path":"/dev/infiniband","type":"DirectoryOrCreate"},"name":"dev-infiniband"},{"emptyDir":{"medium":"HugePages"},"name":"hugepages"},{"name":"shared","persistentVolumeClaim":{"claimName":"dynamo-shared-storage"}},{"emptyDir":{"medium":"Memory","sizeLimit":"64Gi"},"name":"shm"}]},"replicas":1,"subComponentType":"prefill"}}}}
+    nvidia.com/current-worker-hash: 9dde9687
+    nvidia.com/dynamo-operator-origin-version: 1.0.1
+  creationTimestamp: "2026-05-06T11:25:00Z"
+  finalizers:
+  - nvidia.com/finalizer
+  generation: 1
+  labels:
+    app.kubernetes.io/part-of: dynamo-combined-vllm
+    backend: vllm
+  name: dynamo-combined-vllm
+  namespace: default
+  resourceVersion: "249825860"
+  uid: 820329e2-9d79-4a1f-b953-437122740660
+spec:
+  services:
+    DecodeWorker:
+      componentType: worker
+      envFromSecret: hf-token
+      envs:
+      - name: DYNAMO_BACKEND
+        value: vllm
+      - name: ETCD_ENDPOINTS
+        value: http://dynamo-platform-etcd.default.svc.cluster.local:2379
+      - name: NATS_SERVER
+        value: nats://dynamo-platform-nats.default.svc.cluster.local:4222
+      - name: DYN_SYSTEM_ENABLED
+        value: "true"
+      - name: NIXL_BACKEND
+        value: LIBFABRIC
+      - name: NIXL_SKIP_TOPOLOGY_CHECK
+        value: "1"
+      - name: NIXL_LIBFABRIC_MAX_RAILS
+        value: "1"
+      - name: VLLM_NIXL_KVCACHE_BACKEND
+        value: LIBFABRIC
+      - name: FI_PROVIDER
+        value: efa
+      - name: FI_EFA_USE_DEVICE_RDMA
+        value: "1"
+      - name: FI_EFA_ENABLE_SHM
+        value: "0"
+      - name: FI_EFA_ENABLE_SHM_TRANSFER
+        value: "0"
+      - name: HF_HOME
+        value: /shared/hf_cache
+      - name: VLLM_NIXL_SIDE_CHANNEL_HOST
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+      - name: VLLM_NIXL_SIDE_CHANNEL_PORT
+        value: "5700"
+      extraPodSpec:
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/part-of
+                  operator: In
+                  values:
+                  - dynamo-combined-vllm
+              topologyKey: kubernetes.io/hostname
+        dnsPolicy: ClusterFirstWithHostNet
+        hostNetwork: true
+        mainContainer:
+          args:
+          - |
+            unset HPCX_DIR HPCX_MPI_DIR HPCX_HOME HPCX_UCX_DIR \
+                  HPCX_SHARP_DIR HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR \
+                  HPCX_HCOLL_DIR HPCX_MPI_TESTS_DIR
+            source /opt/dynamo/venv/bin/activate
+            exec python3 -m dynamo.vllm \
+              --model meta-llama/Llama-3.1-8B-Instruct \
+              --served-model-name meta-llama/Llama-3.1-8B-Instruct \
+              --disaggregation-mode decode \
+              --kv-transfer-config '{"kv_connector":"NixlConnector","kv_role":"kv_both","kv_connector_extra_config":{"backends":["LIBFABRIC"]}}' \
+              --max-model-len 4096 \
+              --gpu-memory-utilization 0.85
+          command:
+          - /bin/bash
+          - -c
+          image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:9467d1460c71
+          imagePullPolicy: IfNotPresent
+          name: ""
+          readinessProbe:
+            failureThreshold: 60
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: "16"
+              hugepages-2Mi: 5Gi
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+            requests:
+              cpu: "16"
+              hugepages-2Mi: 5Gi
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+          securityContext:
+            privileged: true
+          volumeMounts:
+          - mountPath: /dev/infiniband
+            name: dev-infiniband
+          - mountPath: /dev/hugepages
+            name: hugepages
+          - mountPath: /shared
+            name: shared
+          - mountPath: /dev/shm
+            name: shm
+        tolerations:
+        - effect: NoSchedule
+          key: nvidia.com/gpu
+          operator: Exists
+        volumes:
+        - hostPath:
+            path: /dev/infiniband
+            type: DirectoryOrCreate
+          name: dev-infiniband
+        - emptyDir:
+            medium: HugePages
+          name: hugepages
+        - name: shared
+          persistentVolumeClaim:
+            claimName: dynamo-shared-storage
+        - emptyDir:
+            medium: Memory
+            sizeLimit: 64Gi
+          name: shm
+      replicas: 1
+      subComponentType: decode
+    Frontend:
+      componentType: frontend
+      envFromSecret: hf-token
+      envs:
+      - name: DYNAMO_BACKEND
+        value: vllm
+      - name: ETCD_ENDPOINTS
+        value: http://dynamo-platform-etcd.default.svc.cluster.local:2379
+      - name: NATS_SERVER
+        value: nats://dynamo-platform-nats.default.svc.cluster.local:4222
+      - name: DYN_SYSTEM_PORT
+        value: "9090"
+      - name: DYN_SYSTEM_ENABLED
+        value: "true"
+      extraPodSpec:
+        mainContainer:
+          args:
+          - |
+            source /opt/dynamo/venv/bin/activate
+            exec python3 -m dynamo.frontend --http-port 8000 --http-host 0.0.0.0
+          command:
+          - /bin/bash
+          - -c
+          image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:9467d1460c71
+          imagePullPolicy: IfNotPresent
+          name: ""
+          resources:
+            limits:
+              cpu: "4"
+              memory: 8Gi
+            requests:
+              cpu: "2"
+              memory: 4Gi
+      replicas: 1
+    PrefillWorker:
+      componentType: worker
+      envFromSecret: hf-token
+      envs:
+      - name: DYNAMO_BACKEND
+        value: vllm
+      - name: ETCD_ENDPOINTS
+        value: http://dynamo-platform-etcd.default.svc.cluster.local:2379
+      - name: NATS_SERVER
+        value: nats://dynamo-platform-nats.default.svc.cluster.local:4222
+      - name: DYN_SYSTEM_ENABLED
+        value: "true"
+      - name: NIXL_BACKEND
+        value: LIBFABRIC
+      - name: NIXL_SKIP_TOPOLOGY_CHECK
+        value: "1"
+      - name: NIXL_LIBFABRIC_MAX_RAILS
+        value: "1"
+      - name: VLLM_NIXL_KVCACHE_BACKEND
+        value: LIBFABRIC
+      - name: FI_PROVIDER
+        value: efa
+      - name: FI_EFA_USE_DEVICE_RDMA
+        value: "1"
+      - name: FI_EFA_ENABLE_SHM
+        value: "0"
+      - name: FI_EFA_ENABLE_SHM_TRANSFER
+        value: "0"
+      - name: HF_HOME
+        value: /shared/hf_cache
+      - name: VLLM_NIXL_SIDE_CHANNEL_HOST
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+      - name: VLLM_NIXL_SIDE_CHANNEL_PORT
+        value: "5700"
+      extraPodSpec:
+        dnsPolicy: ClusterFirstWithHostNet
+        hostNetwork: true
+        mainContainer:
+          args:
+          - |
+            unset HPCX_DIR HPCX_MPI_DIR HPCX_HOME HPCX_UCX_DIR \
+                  HPCX_SHARP_DIR HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR \
+                  HPCX_HCOLL_DIR HPCX_MPI_TESTS_DIR
+            source /opt/dynamo/venv/bin/activate
+            exec python3 -m dynamo.vllm \
+              --model meta-llama/Llama-3.1-8B-Instruct \
+              --served-model-name meta-llama/Llama-3.1-8B-Instruct \
+              --disaggregation-mode prefill \
+              --kv-transfer-config '{"kv_connector":"NixlConnector","kv_role":"kv_both","kv_connector_extra_config":{"backends":["LIBFABRIC"]}}' \
+              --max-model-len 4096 \
+              --gpu-memory-utilization 0.85
+          command:
+          - /bin/bash
+          - -c
+          image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:9467d1460c71
+          imagePullPolicy: IfNotPresent
+          name: ""
+          readinessProbe:
+            failureThreshold: 60
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: "16"
+              hugepages-2Mi: 5Gi
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+            requests:
+              cpu: "16"
+              hugepages-2Mi: 5Gi
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+          securityContext:
+            privileged: true
+          volumeMounts:
+          - mountPath: /dev/infiniband
+            name: dev-infiniband
+          - mountPath: /dev/hugepages
+            name: hugepages
+          - mountPath: /shared
+            name: shared
+          - mountPath: /dev/shm
+            name: shm
+        tolerations:
+        - effect: NoSchedule
+          key: nvidia.com/gpu
+          operator: Exists
+        volumes:
+        - hostPath:
+            path: /dev/infiniband
+            type: DirectoryOrCreate
+          name: dev-infiniband
+        - emptyDir:
+            medium: HugePages
+          name: hugepages
+        - name: shared
+          persistentVolumeClaim:
+            claimName: dynamo-shared-storage
+        - emptyDir:
+            medium: Memory
+            sizeLimit: 64Gi
+          name: shm
+      replicas: 1
+      subComponentType: prefill
+status:
+  conditions:
+  - lastTransitionTime: "2026-05-06T11:33:41Z"
+    message: 'Resources not ready: dynamo-combined-vllm-decodeworker-9dde9687: Component
+      deployment not ready - Available condition not true'
+    reason: some_resources_are_not_ready
+    status: "False"
+    type: Ready
+  observedGeneration: 1
+  services:
+    DecodeWorker:
+      availableReplicas: 0
+      componentKind: Deployment
+      componentName: dynamo-combined-vllm-decodeworker-9dde9687
+      componentNames:
+      - dynamo-combined-vllm-decodeworker-9dde9687
+      readyReplicas: 0
+      replicas: 1
+      updatedReplicas: 1
+    Frontend:
+      availableReplicas: 1
+      componentKind: Deployment
+      componentName: dynamo-combined-vllm-frontend
+      componentNames:
+      - dynamo-combined-vllm-frontend
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+    PrefillWorker:
+      availableReplicas: 1
+      componentKind: Deployment
+      componentName: dynamo-combined-vllm-prefillworker-9dde9687
+      componentNames:
+      - dynamo-combined-vllm-prefillworker-9dde9687
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+  state: pending

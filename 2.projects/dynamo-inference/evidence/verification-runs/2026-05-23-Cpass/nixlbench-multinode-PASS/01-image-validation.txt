@@ -1,0 +1,2 @@
+OK: /opt/nixlbench/bin/nixlbench
+OK: NIXL libfabric plugin

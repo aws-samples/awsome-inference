@@ -1,0 +1,77 @@
+schema_version: "1.1"
+
+parameters:
+  ECR_REGISTRY: "${ECR_REGISTRY}"
+  IMAGE_TAG: "520cfc584abb"
+  AWS_REGION: "us-east-2"
+experiment_id: disagg-T11-T12-baseline
+campaign: pr72-rev8
+date: 2026-05-22T09:00:00Z
+status: PASS
+
+image:
+  registry: "${ECR_REGISTRY}"
+  repository: dynamo-efa
+  tag: 520cfc584abb
+  digest: sha256:48e6e3104b523bc1828deda9966c48260de06bb8649348930f5440cad7f83d9c
+  built_from_commit: 520cfc5
+
+git:
+  repo: dmvevents/awsome-inference-1
+  commit: 520cfc5
+  branch: feature/dynamo-combined-vllm-trtllm-efa
+
+hardware:
+  region: us-east-2
+  instance_type: p5.48xlarge
+  node_count: 2
+  gpu: H100
+  efa_version: 1.48.0
+
+stack:
+  dynamo: 1.1.0
+  vllm: bundled-with-dynamo-1.1.0
+  nixl: v1.0.1
+  libfabric: 2.4.0amzn3.0
+  nccl: 2.30.3
+
+config:
+  test_type: serving
+  workload: dynamo-disaggregated
+  model: meta-llama/Llama-3.1-8B-Instruct
+  features: [disaggregation, nixl-libfabric, kv-transfer-config-LIBFABRIC]
+  topology: cross-node
+  prefill_node: hyperpod-i-0be4f4fecf22a73b3
+  decode_node: hyperpod-i-0a3eb6d3953cceaa7
+  frontend_node: hyperpod-i-0be4f4fecf22a73b3
+
+results:
+  t11_models_endpoint: PASS
+  t12_completions_endpoint: PASS
+  t12_total_time_ms: 1882.46
+  t12_total_time_curl_s: 1.886
+  t12_http_status: 200
+  prompt: "The capital of France is"
+  output: "Paris. The capital of France is Paris..."
+  prompt_tokens: 5
+  completion_tokens: 20
+
+documents:
+  verdict: VERDICT.md
+  reproduce: REPRODUCE.md
+
+artifacts:
+  - artifacts/01-dgd-as-deployed.yaml
+  - artifacts/02-apply.log
+  - artifacts/03-pods.txt
+  - artifacts/04-models.json
+  - artifacts/05-completion.json
+
+notes: |
+  This is the BASELINE disagg test (no KV router). The follow-on experiment
+  2026-05-22T1024Z-kv-router-validation/ adds the router on top.
+
+  Critical config: --kv-transfer-config '{"kv_connector":"NixlConnector",
+    "kv_role":"kv_both","kv_connector_extra_config":{"backends":["LIBFABRIC"]}}'
+  Without the kv_connector_extra_config.backends override, vLLM's NixlConnector
+  defaults to UCX and crashes on EFA RDM endpoints with NIXL_ERR_BACKEND.

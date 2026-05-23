@@ -1,0 +1,2 @@
+# Per-run smoke evidence is captured in docs/evidence/<date>-<tag>/ when meaningful.
+2.projects/dynamo-inference/tests/out/

@@ -1,0 +1,294 @@
+# ============================================================
+# Dynamo TRT-LLM: Nemotron-Mini-4B — 8 GPU Data Parallel
+# ============================================================
+# 8 independent model instances per node (1 GPU each).
+# Dynamo routes requests across all workers automatically.
+#
+# Architecture:
+#   Node 1: 8x Prefill Workers (GPUs 0-7, 1 instance each)
+#   Node 2: 8x Decode Workers  (GPUs 0-7, 1 instance each)
+#   Frontend: dynamo-frontend-qwen25 (port 8001)
+#   KV cache transfer: NIXL LIBFABRIC over EFA RDMA (8 rails)
+#
+# Prerequisites:
+#   - etcd + NATS running
+#   - /shared/nvrx-demo/nemotron_disagg_args.json on FSx
+#   - Model cached at /shared/nvrx-demo/hf_cache
+#
+# Deploy:
+#   kubectl apply -f dynamo-nemotron-8gpu.yaml -n antonai
+# ============================================================
+
+# -- Prefill Node: 8 DP workers on GPUs 0-7 --
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dynamo-nemotron-prefill-8gpu
+  namespace: antonai
+  labels:
+    app: dynamo-nemotron-8gpu
+    component: prefill
+spec:
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  nodeSelector:
+    # node.kubernetes.io/instance-type: p5en.48xlarge  # Uncomment for specific instance
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+  containers:
+    - name: workers
+      image: public.ecr.aws/v9l4g5s4/dynamo-trtllm:patched-efa-2026-02-27
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        privileged: true
+      command: ["/bin/bash", "-c"]
+      args:
+        - |
+          set -e
+          unset HPCX_DIR HPCX_MPI_DIR HPCX_HOME HPCX_UCX_DIR HPCX_SHARP_DIR HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR HPCX_HCOLL_DIR HPCX_MPI_TESTS_DIR
+          export OPAL_PREFIX=/opt/amazon/openmpi
+          export PATH=/opt/amazon/efa/bin:/opt/amazon/openmpi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          export LD_LIBRARY_PATH=/opt/amazon/openmpi/lib:/opt/amazon/efa/lib:/usr/local/cuda/lib64
+          source /opt/dynamo/venv/bin/activate || true
+          export HF_HOME=/shared/nvrx-demo/hf_cache
+          ENGINE_ARGS=$(cat /shared/nvrx-demo/nemotron_disagg_args.json)
+
+          echo "=============================================="
+          echo "Dynamo Nemotron: 8x Prefill Workers (GPUs 0-7)"
+          echo "=============================================="
+          nvidia-smi -L
+
+          # Launch 8 prefill workers, each pinned to one GPU
+          PIDS=""
+          for i in 0 1 2 3 4 5 6 7; do
+            SIDE_PORT=$((5700 + i))
+            echo "Starting prefill worker $i on GPU $i (NIXL port $SIDE_PORT)..."
+            CUDA_VISIBLE_DEVICES=$i \
+            NIXL_SIDE_CHANNEL_PORT=$SIDE_PORT \
+            python3 -m dynamo.trtllm \
+              --model-path dmvevents/Nemotron-Mini-4B-Instruct \
+              --served-model-name dmvevents/Nemotron-Mini-4B-Instruct \
+              --disaggregation-mode prefill \
+              --max-batch-size 32 \
+              --max-num-tokens 2048 \
+              --override-engine-args "$ENGINE_ARGS" 2>&1 &
+            PIDS="$PIDS $!"
+            sleep 3
+          done
+
+          echo "All 8 prefill workers launched. PIDs: $PIDS"
+          wait
+      env:
+        - name: ETCD_ENDPOINTS
+          value: "http://dynamo-platform-etcd.antonai.svc.cluster.local:2379"
+        - name: NATS_SERVER
+          value: "nats://dynamo-platform-nats.antonai.svc.cluster.local:4222"
+        - name: DYN_SYSTEM_PORT
+          value: "9191"
+        - name: DYN_SYSTEM_ENABLED
+          value: "true"
+        - name: NIXL_BACKEND
+          value: "LIBFABRIC"
+        - name: TRTLLM_NIXL_KVCACHE_BACKEND
+          value: "LIBFABRIC"
+        - name: NIXL_SKIP_TOPOLOGY_CHECK
+          value: "1"
+        - name: NIXL_LIBFABRIC_MAX_RAILS
+          value: "1"
+        - name: FI_PROVIDER
+          value: "efa"
+        - name: FI_EFA_USE_DEVICE_RDMA
+          value: "1"
+        - name: FI_EFA_ENABLE_SHM_TRANSFER
+          value: "0"
+        - name: FI_EFA_ENABLE_SHM
+          value: "0"
+        - name: HF_HOME
+          value: "/shared/nvrx-demo/hf_cache"
+        - name: NIXL_SIDE_CHANNEL_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NIXL_SIDE_CHANNEL_PORT
+          value: "5700"
+      resources:
+        limits:
+          cpu: "96"
+          memory: 900Gi
+          nvidia.com/gpu: "8"
+          vpc.amazonaws.com/efa: "16"
+          hugepages-2Mi: 5120Mi
+        requests:
+          cpu: "48"
+          memory: 512Gi
+          nvidia.com/gpu: "8"
+          vpc.amazonaws.com/efa: "16"
+          hugepages-2Mi: 5120Mi
+      volumeMounts:
+        - name: dev-infiniband
+          mountPath: /dev/infiniband
+        - name: hugepages
+          mountPath: /dev/hugepages
+        - name: shared
+          mountPath: /shared
+        - name: shm
+          mountPath: /dev/shm
+  volumes:
+    - name: dev-infiniband
+      hostPath:
+        path: /dev/infiniband
+        type: DirectoryOrCreate
+    - name: hugepages
+      emptyDir:
+        medium: HugePages
+    - name: shared
+      persistentVolumeClaim:
+        claimName: fsx-pvc
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 64Gi
+
+# -- Decode Node: 8 DP workers on GPUs 0-7 --
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dynamo-nemotron-decode-8gpu
+  namespace: antonai
+  labels:
+    app: dynamo-nemotron-8gpu
+    component: decode
+spec:
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  nodeSelector:
+    # node.kubernetes.io/instance-type: p5en.48xlarge  # Uncomment for specific instance
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app: dynamo-nemotron-8gpu
+              component: prefill
+          topologyKey: kubernetes.io/hostname
+  containers:
+    - name: workers
+      image: public.ecr.aws/v9l4g5s4/dynamo-trtllm:patched-efa-2026-02-27
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        privileged: true
+      command: ["/bin/bash", "-c"]
+      args:
+        - |
+          set -e
+          unset HPCX_DIR HPCX_MPI_DIR HPCX_HOME HPCX_UCX_DIR HPCX_SHARP_DIR HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR HPCX_HCOLL_DIR HPCX_MPI_TESTS_DIR
+          export OPAL_PREFIX=/opt/amazon/openmpi
+          export PATH=/opt/amazon/efa/bin:/opt/amazon/openmpi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          export LD_LIBRARY_PATH=/opt/amazon/openmpi/lib:/opt/amazon/efa/lib:/usr/local/cuda/lib64
+          source /opt/dynamo/venv/bin/activate || true
+          export HF_HOME=/shared/nvrx-demo/hf_cache
+          ENGINE_ARGS=$(cat /shared/nvrx-demo/nemotron_disagg_args.json)
+
+          echo "=============================================="
+          echo "Dynamo Nemotron: 8x Decode Workers (GPUs 0-7)"
+          echo "=============================================="
+          nvidia-smi -L
+
+          # Launch 8 decode workers, each pinned to one GPU
+          PIDS=""
+          for i in 0 1 2 3 4 5 6 7; do
+            SIDE_PORT=$((5700 + i))
+            echo "Starting decode worker $i on GPU $i (NIXL port $SIDE_PORT)..."
+            CUDA_VISIBLE_DEVICES=$i \
+            NIXL_SIDE_CHANNEL_PORT=$SIDE_PORT \
+            python3 -m dynamo.trtllm \
+              --model-path dmvevents/Nemotron-Mini-4B-Instruct \
+              --served-model-name dmvevents/Nemotron-Mini-4B-Instruct \
+              --disaggregation-mode decode \
+              --max-batch-size 32 \
+              --max-num-tokens 2048 \
+              --override-engine-args "$ENGINE_ARGS" 2>&1 &
+            PIDS="$PIDS $!"
+            sleep 3
+          done
+
+          echo "All 8 decode workers launched. PIDs: $PIDS"
+          wait
+      env:
+        - name: ETCD_ENDPOINTS
+          value: "http://dynamo-platform-etcd.antonai.svc.cluster.local:2379"
+        - name: NATS_SERVER
+          value: "nats://dynamo-platform-nats.antonai.svc.cluster.local:4222"
+        - name: DYN_SYSTEM_PORT
+          value: "9191"
+        - name: DYN_SYSTEM_ENABLED
+          value: "true"
+        - name: NIXL_BACKEND
+          value: "LIBFABRIC"
+        - name: TRTLLM_NIXL_KVCACHE_BACKEND
+          value: "LIBFABRIC"
+        - name: NIXL_SKIP_TOPOLOGY_CHECK
+          value: "1"
+        - name: NIXL_LIBFABRIC_MAX_RAILS
+          value: "1"
+        - name: FI_PROVIDER
+          value: "efa"
+        - name: FI_EFA_USE_DEVICE_RDMA
+          value: "1"
+        - name: FI_EFA_ENABLE_SHM_TRANSFER
+          value: "0"
+        - name: FI_EFA_ENABLE_SHM
+          value: "0"
+        - name: HF_HOME
+          value: "/shared/nvrx-demo/hf_cache"
+        - name: NIXL_SIDE_CHANNEL_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NIXL_SIDE_CHANNEL_PORT
+          value: "5700"
+      resources:
+        limits:
+          cpu: "96"
+          memory: 900Gi
+          nvidia.com/gpu: "8"
+          vpc.amazonaws.com/efa: "16"
+          hugepages-2Mi: 5120Mi
+        requests:
+          cpu: "48"
+          memory: 512Gi
+          nvidia.com/gpu: "8"
+          vpc.amazonaws.com/efa: "16"
+          hugepages-2Mi: 5120Mi
+      volumeMounts:
+        - name: dev-infiniband
+          mountPath: /dev/infiniband
+        - name: hugepages
+          mountPath: /dev/hugepages
+        - name: shared
+          mountPath: /shared
+        - name: shm
+          mountPath: /dev/shm
+  volumes:
+    - name: dev-infiniband
+      hostPath:
+        path: /dev/infiniband
+        type: DirectoryOrCreate
+    - name: hugepages
+      emptyDir:
+        medium: HugePages
+    - name: shared
+      persistentVolumeClaim:
+        claimName: fsx-pvc
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 64Gi

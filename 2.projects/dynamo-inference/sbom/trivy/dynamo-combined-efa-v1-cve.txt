@@ -1,0 +1,13 @@
+# CVE Report — dynamo-combined-efa:v1 (synthesized)
+
+This image is dynamo-trtllm:v4 + dynamo-vllm:v4 multi-stage overlay with the same
+libfabric/NIXL networking stack. Its CVE surface is the union of its components.
+Refer to the per-component reports:
+
+- dynamo-trtllm-v4-cve.txt
+- dynamo-vllm-v4-cve.txt
+- networking-base-v5-cve.txt
+
+Regenerate with:
+
+  trivy image --severity CRITICAL,HIGH dynamo-combined-efa:v1 > dynamo-combined-efa-v1-cve.txt

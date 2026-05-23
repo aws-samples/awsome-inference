@@ -1,0 +1,81 @@
+schema_version: "1.1"
+
+parameters:
+  ECR_REGISTRY: "${ECR_REGISTRY}"
+  IMAGE_TAG: "9467d1460c71"      # rev7 image (predecessor to rev8)
+  AWS_REGION: "us-east-2"
+
+experiment_id: rev7-baseline-nixl-ucx-rootcause
+campaign: pr72-rev8
+date: 2026-05-21T15:00:00Z
+status: FAIL
+
+image:
+  registry: "${ECR_REGISTRY}"
+  repository: dynamo-efa
+  tag: 9467d1460c71
+  digest: sha256:a5480b03efce4f92f18821480c222c5b108d1e805c315e6574d5e2dadb9066bc                     # rev7 digest not captured at the time
+  built_from_commit: rev7-pre
+
+git:
+  repo: dmvevents/awsome-inference-1
+  commit: rev7-baseline
+  branch: feature/dynamo-combined-vllm-trtllm-efa
+
+hardware:
+  region: us-east-2
+  instance_type: p5.48xlarge
+  node_count: 2
+  gpu: H100
+  efa_version: 1.48.0
+
+stack:
+  dynamo: 1.1.0
+  vllm: bundled-with-dynamo-1.1.0
+  nixl: v1.0.1
+  libfabric: 2.4.0amzn3.0
+
+config:
+  test_type: serving
+  workload: dynamo-disaggregated
+  model: meta-llama/Llama-3.1-8B-Instruct
+  features: [disaggregation, nixl-default-ucx]    # the bug being investigated
+  topology: cross-node
+
+results:
+  outcome: NIXL_ERR_BACKEND on decode worker first request
+  root_cause: "vLLM NixlConnector hardcodes UCX backend (nixl_connector.py:1022); UCX cannot bind EFA RDM endpoints; must override via kv_connector_extra_config:{backends:[\"LIBFABRIC\"]}"
+  fix_validated_in: 2026-05-21T1539Z-rev7-libfabric-forced-PASS
+  prefill_pod_status: ran successfully
+  decode_pod_status: crashed with NIXL_ERR_BACKEND
+  http_response_observed: HTTP 500 (real cause masked by Dynamo 1.1.0 handlers.py bare finish_reason:"error" bug)
+
+documents:
+  verdict: VERDICT.md
+  reproduce: REPRODUCE.md
+
+artifacts:
+  - artifacts/01-apply.log
+  - artifacts/02-wait-ready.log
+  - artifacts/03-models.json
+  - artifacts/04-completion.json
+  - artifacts/04-curl-meta.txt
+  - artifacts/05-decode-crash.log
+  - artifacts/06-prefill.log
+  - artifacts/07-frontend.log
+  - artifacts/08-pods.txt
+  - artifacts/09-dgd-as-deployed.yaml
+  - artifacts/counters-pre.txt
+  - artifacts/counters-post.txt
+  - artifacts/counters-test.txt
+  - artifacts/source-commit.txt
+
+notes: |
+  This is the diagnostic experiment that motivated the rev7 LIBFABRIC fix
+  and the rev8 image rebuilds. Most-cited from downstream PASS verdicts.
+
+  Reading order:
+    1. derived/SUMMARY.md      — high-level analysis at the time
+    2. derived/TEAM-FINDINGS.md — diagnostic narrative
+    3. derived/COVERAGE-MATRIX.md — what was tested vs what passed
+    4. artifacts/05-decode-crash.log — the actual crash

@@ -1,0 +1,576 @@
+provider: efa
+    fabric: efa-direct
+    domain: rdmap79s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap80s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap81s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap82s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap96s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap97s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap98s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap99s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap113s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap114s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap115s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap116s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap130s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap131s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap132s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap133s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap147s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap148s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap149s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap150s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap164s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap165s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap166s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap167s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap181s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap182s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap183s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap184s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap198s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap199s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap200s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap201s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap79s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap80s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap81s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap82s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap96s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap97s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap98s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap99s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap113s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap114s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap115s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap116s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap130s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap131s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap132s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap133s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap147s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap148s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap149s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap150s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap164s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap165s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap166s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap167s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap181s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap182s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap183s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap184s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap198s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap199s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap200s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap201s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap79s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap80s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap81s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap82s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap96s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap97s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap98s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap99s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap113s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap114s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap115s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap116s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap130s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap131s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap132s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap133s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap147s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap148s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap149s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap150s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap164s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap165s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap166s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap167s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap181s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap182s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap183s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap184s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap198s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap199s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap200s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa
+    domain: rdmap201s0-dgrm
+    version: 204.0
+    type: FI_EP_DGRAM
+    protocol: FI_PROTO_EFA

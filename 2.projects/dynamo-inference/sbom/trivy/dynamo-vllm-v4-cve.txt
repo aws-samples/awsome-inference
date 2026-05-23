@@ -1,0 +1,1392 @@
+
+Report Summary
+
+┌──────────────────────────────────────────────────────────────────────────────────┬────────────┬─────────────────┐
+│                                      Target                                      │    Type    │ Vulnerabilities │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-vllm:v4-no-cve (ubuntu       │   ubuntu   │        0        │
+│ 24.04)                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/jars/ray_dist.jar               │    jar     │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/dash/labextension/package.json      │  node-pkg  │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/accordion/pa- │  node-pkg  │        0        │
+│ ckage.json                                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/annotatedima- │  node-pkg  │        0        │
+│ ge/package.json                                                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/atoms/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/audio/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/box/package.- │  node-pkg  │        0        │
+│ json                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/browserstate- │  node-pkg  │        0        │
+│ /package.json                                                                    │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/build/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/button/packa- │  node-pkg  │        0        │
+│ ge.json                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/chatbot/pack- │  node-pkg  │        0        │
+│ age.json                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/checkbox/pac- │  node-pkg  │        0        │
+│ kage.json                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/checkboxgrou- │  node-pkg  │        0        │
+│ p/package.json                                                                   │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/client/packa- │  node-pkg  │        0        │
+│ ge.json                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/code/package- │  node-pkg  │        0        │
+│ .json                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/colorpicker/- │  node-pkg  │        0        │
+│ package.json                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/column/packa- │  node-pkg  │        0        │
+│ ge.json                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/dataframe/pa- │  node-pkg  │        0        │
+│ ckage.json                                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/dataset/pack- │  node-pkg  │        0        │
+│ age.json                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/datetime/pac- │  node-pkg  │        0        │
+│ kage.json                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/dialogue/pac- │  node-pkg  │        0        │
+│ kage.json                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/downloadbutt- │  node-pkg  │        0        │
+│ on/package.json                                                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/draggable/pa- │  node-pkg  │        0        │
+│ ckage.json                                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/dropdown/pac- │  node-pkg  │        0        │
+│ kage.json                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/fallback/pac- │  node-pkg  │        0        │
+│ kage.json                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/file/package- │  node-pkg  │        0        │
+│ .json                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/fileexplorer- │  node-pkg  │        0        │
+│ /package.json                                                                    │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/form/package- │  node-pkg  │        0        │
+│ .json                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/gallery/pack- │  node-pkg  │        0        │
+│ age.json                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/group/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/highlightedt- │  node-pkg  │        0        │
+│ ext/package.json                                                                 │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/html/package- │  node-pkg  │        0        │
+│ .json                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/icons/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/image/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/imageeditor/- │  node-pkg  │        0        │
+│ package.json                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/imageslider/- │  node-pkg  │        0        │
+│ package.json                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/json/package- │  node-pkg  │        0        │
+│ .json                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/label/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/markdown-cod- │  node-pkg  │        0        │
+│ e/package.json                                                                   │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/markdown/pac- │  node-pkg  │        0        │
+│ kage.json                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/model3D/pack- │  node-pkg  │        0        │
+│ age.json                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/multimodalte- │  node-pkg  │        0        │
+│ xtbox/package.json                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/nativeplot/p- │  node-pkg  │        0        │
+│ ackage.json                                                                      │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/navbar/packa- │  node-pkg  │        0        │
+│ ge.json                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/number/packa- │  node-pkg  │        0        │
+│ ge.json                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/paramviewer/- │  node-pkg  │        0        │
+│ package.json                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/plot/package- │  node-pkg  │        0        │
+│ .json                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/preview/pack- │  node-pkg  │        0        │
+│ age.json                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/preview/test- │  node-pkg  │        0        │
+│ /test/frontend/package.json                                                      │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/radio/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/row/package.- │  node-pkg  │        0        │
+│ json                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/sanitize/pac- │  node-pkg  │        0        │
+│ kage.json                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/sidebar/pack- │  node-pkg  │        0        │
+│ age.json                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/simpledropdo- │  node-pkg  │        0        │
+│ wn/package.json                                                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/simpleimage/- │  node-pkg  │        0        │
+│ package.json                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/simpletextbo- │  node-pkg  │        0        │
+│ x/package.json                                                                   │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/sketchbox/pa- │  node-pkg  │        0        │
+│ ckage.json                                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/slider/packa- │  node-pkg  │        0        │
+│ ge.json                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/state/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/statustracke- │  node-pkg  │        0        │
+│ r/package.json                                                                   │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/tabitem/pack- │  node-pkg  │        0        │
+│ age.json                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/tabs/package- │  node-pkg  │        0        │
+│ .json                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/textbox/pack- │  node-pkg  │        0        │
+│ age.json                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/theme/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/timer/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/tooltip/pack- │  node-pkg  │        0        │
+│ age.json                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/tootils/pack- │  node-pkg  │        0        │
+│ age.json                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/upload/packa- │  node-pkg  │        0        │
+│ ge.json                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/uploadbutton- │  node-pkg  │        0        │
+│ /package.json                                                                    │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/utils/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/vibeeditor/p- │  node-pkg  │        0        │
+│ ackage.json                                                                      │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/_frontend_code/video/packag- │  node-pkg  │        0        │
+│ e.json                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio/package.json                 │  node-pkg  │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio_client/package.json          │  node-pkg  │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/plotly/labextension/package.json    │  node-pkg  │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pyright/dist/package.json           │  node-pkg  │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/share/jupyter/labextensions/jupyterlab-plotly/package.json       │  node-pkg  │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/-B4vGL80uT8nOcEkMD6YK/ai_dynamo-0.9.0.dist-inf- │ python-pkg │        0        │
+│ o/METADATA                                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/BL1InWNSRJX3TSBMoVKFv/click-8.1.8.dist-info/ME- │ python-pkg │        0        │
+│ TADATA                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/D0z3BLzjrG--UCMg4q_zY/durationpy-0.10.dist-inf- │ python-pkg │        0        │
+│ o/METADATA                                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/Dl5SOWGVrM4ywDa-VfZ2z/requests_oauthlib-2.0.0.- │ python-pkg │        0        │
+│ dist-info/METADATA                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/Eo3fh-uXIjnWpML3H6Q74/iniconfig-2.3.0.dist-inf- │ python-pkg │        0        │
+│ o/METADATA                                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/Mik1RMd4w7QknOlvEQ94R/ai_dynamo_runtime-0.9.0.- │ python-pkg │        0        │
+│ dist-info/METADATA                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/U8V_M1P3EalXXm5igKO3q/kvbm-0.9.0.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/YWfG0PkoSQDXyF3TCxRIl/types_psutil-7.2.2.20260- │ python-pkg │        0        │
+│ 130.dist-info/METADATA                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/_SmaPFI0aLA-a-a5368vO/oauthlib-3.3.1.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/fEzUSNnZcVUVSMoMEALkh/gpu_memory_service-0.9.0- │ python-pkg │        0        │
+│ .dist-info/METADATA                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/lX_HljA_RrsKZ2m3NRID0/pytest-9.0.2.dist-info/M- │ python-pkg │        0        │
+│ ETADATA                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/ltgJcNYQULVila7Ms8TCO/nixl-0.9.0.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/ncTwWWlgLO-XjrMUU0Kt_/kubernetes-32.0.1.dist-i- │ python-pkg │        0        │
+│ nfo/METADATA                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/sE6MaIAQRWP0w382A5J6K/pluggy-1.6.0.dist-info/M- │ python-pkg │        0        │
+│ ETADATA                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/wF6u0-TcskIiDU6dMQp6-/websocket_client-1.9.0.d- │ python-pkg │        0        │
+│ ist-info/METADATA                                                                │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ home/dynamo/.cache/uv/archive-v0/wYTirwXtwg7GYBKMV8n7J/nixl_cu12-0.9.0.dist-inf- │ python-pkg │        0        │
+│ o/METADATA                                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/DataProperty-1.1.0.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/StrEnum-0.4.15.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/absl_py-2.4.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/accelerate-1.12.0.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/aiconfigurator-0.6.0.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/aiofile-3.9.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/aiofiles-24.1.0.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/aiohappyeyeballs-2.6.1.dist-info/M- │ python-pkg │        0        │
+│ ETADATA                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/aiohttp-3.13.3.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/aiosignal-1.4.0.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/aiperf-0.4.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/alembic-1.18.4.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/annotated_doc-0.0.4.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/annotated_types-0.7.0.dist-info/ME- │ python-pkg │        0        │
+│ TADATA                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/anthropic-0.71.0.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/anyio-4.12.1.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/apache_tvm_ffi-0.1.8.post2.dist-in- │ python-pkg │        0        │
+│ fo/METADATA                                                                      │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/argcomplete-3.6.3.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/astor-0.8.1.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/attrs-25.4.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/av-15.0.0.dist-info/METADATA        │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/awscrt-0.31.1.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/blake3-1.0.8.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/blinker-1.9.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/bokeh-3.8.2.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/boto3-1.42.4.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/boto3_stubs-1.42.9.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/botocore-1.42.47.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/botocore_stubs-1.42.41.dist-info/M- │ python-pkg │        0        │
+│ ETADATA                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/brotli-1.2.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cachetools-7.0.1.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/caio-0.9.25.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cbor2-5.8.0.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/certifi-2026.1.4.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cffi-2.0.0.dist-info/METADATA       │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cfgv-3.5.0.dist-info/METADATA       │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/chardet-5.2.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/charset_normalizer-3.4.4.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/choreographer-1.2.1.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cloudpickle-3.1.2.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cmake-4.2.1.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cmdstanpy-1.3.0.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/colorlog-6.10.1.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/compressed_tensors-0.13.0.dist-inf- │ python-pkg │        0        │
+│ o/METADATA                                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/contourpy-1.3.3.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/coverage-7.13.4.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cramjam-2.11.0.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cryptography-46.0.5.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cuda_bindings-13.1.1.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cuda_pathfinder-1.3.4.dist-info/ME- │ python-pkg │        0        │
+│ TADATA                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cuda_python-13.1.1.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cufile_python-0.2.0.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cupy_cuda12x-13.6.0.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cycler-0.12.1.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cyclopts-4.5.2.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/cython-3.2.4.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/dash-2.18.2.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/dash_bootstrap_components-1.6.0.di- │ python-pkg │        0        │
+│ st-info/METADATA                                                                 │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/dash_core_components-2.0.0.dist-in- │ python-pkg │        0        │
+│ fo/METADATA                                                                      │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/dash_html_components-2.0.0.dist-in- │ python-pkg │        0        │
+│ fo/METADATA                                                                      │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/dash_table-5.0.0.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/data_generator-0.1.0.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/datasets-4.4.1.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/dateparser-1.3.0.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/deep_ep-1.2.1+73b6ea4.dist-info/ME- │ python-pkg │        0        │
+│ TADATA                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/deep_gemm-2.1.0+594953a.dist-info/- │ python-pkg │        0        │
+│ METADATA                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/defusedxml-0.7.1.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/depyf-0.20.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/dill-0.4.0.dist-info/METADATA       │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/diskcache-5.6.3.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/distlib-0.4.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/distro-1.9.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/dnspython-2.8.0.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/docstring_parser-0.17.0.dist-info/- │ python-pkg │        0        │
+│ METADATA                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/docutils-0.22.4.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/einops-0.8.2.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/email_validator-2.3.0.dist-info/ME- │ python-pkg │        0        │
+│ TADATA                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/execnet-2.1.2.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/fastapi-0.120.1.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/fastapi_cli-0.0.21.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/fastapi_cloud_cli-0.11.0.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/fastar-0.8.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/fastparquet-2025.12.0.dist-info/ME- │ python-pkg │        0        │
+│ TADATA                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/fastrlock-0.8.3.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ffmpeg_python-0.2.0.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ffmpy-1.0.0.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/filelock-3.20.3.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/filterpy-1.4.5.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/flashinfer_cubin-0.5.3.dist-info/M- │ python-pkg │        0        │
+│ ETADATA                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/flashinfer_jit_cache-0.5.3+cu129.d- │ python-pkg │        0        │
+│ ist-info/METADATA                                                                │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/flashinfer_python-0.5.3.dist-info/- │ python-pkg │        0        │
+│ METADATA                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/flask-3.0.3.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/fonttools-4.61.1.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/frozenlist-1.8.0.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/fsspec-2025.10.0.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ftfy-6.3.1.dist-info/METADATA       │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/future-1.0.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/genai_perf-0.0.16.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gguf-0.17.1.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/google_api_core-2.29.0.dist-info/M- │ python-pkg │        0        │
+│ ETADATA                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/google_auth-2.48.0.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/google_cloud_core-2.5.0.dist-info/- │ python-pkg │        0        │
+│ METADATA                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/google_cloud_storage-3.9.0.dist-in- │ python-pkg │        0        │
+│ fo/METADATA                                                                      │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/google_crc32c-1.8.0.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/google_resumable_media-2.8.0.dist-- │ python-pkg │        0        │
+│ info/METADATA                                                                    │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/googleapis_common_protos-1.72.0.di- │ python-pkg │        0        │
+│ st-info/METADATA                                                                 │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio-5.47.1.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/gradio_client-1.13.2.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/greenlet-3.3.1.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/groovy-0.1.2.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/grpcio-1.67.1.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/grpcio_reflection-1.78.0.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/grpcio_tools-1.67.1.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/h11-0.16.0.dist-info/METADATA       │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/hf_xet-1.2.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/holidays-0.90.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/httmock-1.4.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/httpcore-1.0.9.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/httptools-0.7.1.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/httpx-0.28.1.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/httpx_sse-0.4.3.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/httpx_ws-0.8.2.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/huggingface_hub-0.36.2.dist-info/M- │ python-pkg │        0        │
+│ ETADATA                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/humanize-4.15.0.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/identify-2.6.16.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/idna-3.11.dist-info/METADATA        │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ijson-3.4.0.post0.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/importlib_metadata-8.7.1.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/importlib_resources-6.5.2.dist-inf- │ python-pkg │        0        │
+│ o/METADATA                                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/interegular-0.3.3.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/itsdangerous-2.2.0.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/jinja2-3.1.6.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/jiter-0.13.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/jmespath-1.0.1.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/joblib-1.5.3.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/jsonschema-4.26.0.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/jsonschema_specifications-2025.9.1- │ python-pkg │        0        │
+│ .dist-info/METADATA                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/kaleido-1.2.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/kiwisolver-1.4.9.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/kr8s-0.20.13.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/kubernetes_asyncio-32.0.0.dist-inf- │ python-pkg │        0        │
+│ o/METADATA                                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/lark-1.2.2.dist-info/METADATA       │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/librt-0.7.8.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/linkify_it_py-2.0.3.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/llguidance-1.3.0.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/llvmlite-0.44.0.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/lm_format_enforcer-0.11.3.dist-inf- │ python-pkg │        0        │
+│ o/METADATA                                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/lmcache-0.3.12.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/logistro-2.0.1.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/loguru-0.7.3.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/mako-1.3.10.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/markdown-3.10.2.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/markdown_it_py-4.0.0.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/markupsafe-3.0.3.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/matplotlib-3.10.7.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/mbstrdecoder-1.1.4.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/mcp-1.26.0.dist-info/METADATA       │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/mdit_py_plugins-0.5.0.dist-info/ME- │ python-pkg │        0        │
+│ TADATA                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/mdurl-0.1.2.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/mistral_common-1.9.0.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/model_hosting_container_standards-- │ python-pkg │        0        │
+│ 0.1.13.dist-info/METADATA                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/mpmath-1.3.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/msgpack-1.1.2.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/msgspec-0.19.0.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/multidict-6.7.1.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/multiprocess-0.70.18.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/munch-4.0.0.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/mypy-1.18.2.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/mypy_boto3_s3-1.42.37.dist-info/ME- │ python-pkg │        0        │
+│ TADATA                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/mypy_extensions-1.1.0.dist-info/ME- │ python-pkg │        0        │
+│ TADATA                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/narwhals-2.16.0.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nats_py-2.12.0.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nemo_evaluator-0.2.6.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nest_asyncio-1.6.0.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/networkx-3.6.1.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ninja-1.13.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nixl-1.0.1.dist-info/METADATA       │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nixl_cu12-1.0.1.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nodeenv-1.10.0.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/numba-0.61.2.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/numpy-1.26.4.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nv_one_logger_core-2.3.1.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nv_one_logger_training_telemetry-2- │ python-pkg │        0        │
+│ .3.1.dist-info/METADATA                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_cublas_cu12-12.9.1.4.dist-i- │ python-pkg │        0        │
+│ nfo/METADATA                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_cuda_cupti_cu12-12.9.79.dis- │ python-pkg │        0        │
+│ t-info/METADATA                                                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_cuda_nvrtc_cu12-12.9.86.dis- │ python-pkg │        0        │
+│ t-info/METADATA                                                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_cuda_runtime_cu12-12.9.79.d- │ python-pkg │        0        │
+│ ist-info/METADATA                                                                │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_cudnn_cu12-9.10.2.21.dist-i- │ python-pkg │        0        │
+│ nfo/METADATA                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_cudnn_frontend-1.18.0.dist-- │ python-pkg │        0        │
+│ info/METADATA                                                                    │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_cufft_cu12-11.4.1.4.dist-in- │ python-pkg │        0        │
+│ fo/METADATA                                                                      │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_cufile_cu12-1.14.1.1.dist-i- │ python-pkg │        0        │
+│ nfo/METADATA                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_curand_cu12-10.3.10.19.dist- │ python-pkg │        0        │
+│ -info/METADATA                                                                   │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_cusolver_cu12-11.7.5.82.dis- │ python-pkg │        0        │
+│ t-info/METADATA                                                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_cusparse_cu12-12.5.10.65.di- │ python-pkg │        0        │
+│ st-info/METADATA                                                                 │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_cusparselt_cu12-0.7.1.dist-- │ python-pkg │        0        │
+│ info/METADATA                                                                    │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_cutlass_dsl-4.3.5.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_ml_py-13.580.65.dist-info/M- │ python-pkg │        0        │
+│ ETADATA                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_nccl_cu12-2.27.5.dist-info/- │ python-pkg │        0        │
+│ METADATA                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_nvjitlink_cu12-12.9.86.dist- │ python-pkg │        0        │
+│ -info/METADATA                                                                   │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_nvshmem_cu12-3.3.20.dist-in- │ python-pkg │        0        │
+│ fo/METADATA                                                                      │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_nvtx_cu12-12.9.79.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvidia_resiliency_ext-0.5.0.dist-i- │ python-pkg │        0        │
+│ nfo/METADATA                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/nvtx-0.2.14.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/openai-2.20.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/openai_harmony-0.0.8.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/opencv_python_headless-4.13.0.92.d- │ python-pkg │        0        │
+│ ist-info/METADATA                                                                │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/opentelemetry_api-1.38.0.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/opentelemetry_exporter_otlp-1.38.0- │ python-pkg │        0        │
+│ .dist-info/METADATA                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/opentelemetry_exporter_otlp_proto_- │ python-pkg │        0        │
+│ common-1.38.0.dist-info/METADATA                                                 │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/opentelemetry_exporter_otlp_proto_- │ python-pkg │        0        │
+│ grpc-1.38.0.dist-info/METADATA                                                   │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/opentelemetry_exporter_otlp_proto_- │ python-pkg │        0        │
+│ http-1.38.0.dist-info/METADATA                                                   │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/opentelemetry_proto-1.38.0.dist-in- │ python-pkg │        0        │
+│ fo/METADATA                                                                      │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/opentelemetry_sdk-1.38.0.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/opentelemetry_semantic_conventions- │ python-pkg │        0        │
+│ -0.59b0.dist-info/METADATA                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/optuna-3.6.1.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/orjson-3.10.18.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/outlines_core-0.2.11.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/overrides-7.7.0.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/packaging-26.0.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pandas-2.3.3.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/partial_json_parser-0.2.1.1.post7.- │ python-pkg │        0        │
+│ dist-info/METADATA                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pathspec-1.0.4.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pathvalidate-3.3.1.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/patsy-1.0.2.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/perf_analyzer-2.59.1.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pillow-11.1.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pip-25.0.1.dist-info/METADATA       │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-p- │ python-pkg │        0        │
+│ ackage_unpacked-egg/my_test_package-1.0-py3.7.egg/EGG-INFO/PKG-INFO              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-p- │ python-pkg │        0        │
+│ ackage_zipped-egg/my_test_package-1.0-py3.7.egg                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/platformdirs-4.5.1.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/plotext-5.3.2.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/plotly-6.4.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pmdarima-2.1.1.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pplx_kernels-0.0.1.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pre_commit-4.5.0.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/prettytable-3.17.0.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/prometheus_api_client-0.6.0.dist-i- │ python-pkg │        0        │
+│ nfo/METADATA                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/prometheus_client-0.23.1.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/prometheus_fastapi_instrumentator-- │ python-pkg │        0        │
+│ 7.1.0.dist-info/METADATA                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/propcache-0.4.1.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/prophet-1.2.1.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/proto_plus-1.27.1.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/protobuf-5.29.6.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/psutil-7.0.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/py-1.11.0.dist-info/METADATA        │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/py/_vendored_packages/apipkg-2.0.0- │ python-pkg │        0        │
+│ .dist-info/METADATA                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/py/_vendored_packages/iniconfig-1.- │ python-pkg │        0        │
+│ 1.1.dist-info/METADATA                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/py_cpuinfo-9.0.0.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pyarrow-23.0.0.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pyasn1-0.6.2.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pyasn1_modules-0.4.2.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pybase64-1.4.3.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pycountry-24.6.1.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pycparser-3.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pydantic-2.11.10.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pydantic_core-2.33.2.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pydantic_extra_types-2.11.0.dist-i- │ python-pkg │        0        │
+│ nfo/METADATA                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pydantic_settings-2.12.0.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pydub-0.25.1.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pygments-2.19.2.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pyjwt-2.11.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pyparsing-3.3.2.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pyright-1.1.407.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytablewriter-1.2.1.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest-8.4.2.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest_asyncio-1.3.0.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest_benchmark-5.2.3.dist-info/M- │ python-pkg │        0        │
+│ ETADATA                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest_codeblocks-0.17.0.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest_cov-7.0.0.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest_forked-1.6.0.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest_httpserver-1.1.3.dist-info/- │ python-pkg │        0        │
+│ METADATA                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest_md_report-0.7.0.dist-info/M- │ python-pkg │        0        │
+│ ETADATA                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest_mock-3.15.1.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest_mypy-1.0.1.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest_order-1.3.0.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest_timeout-2.4.0.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytest_xdist-3.8.0.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/python_box-7.3.2.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/python_dateutil-2.9.0.post0.dist-i- │ python-pkg │        0        │
+│ nfo/METADATA                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/python_dotenv-1.2.1.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/python_json_logger-4.0.0.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/python_jsonpath-2.0.2.dist-info/ME- │ python-pkg │        0        │
+│ TADATA                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/python_multipart-0.0.22.dist-info/- │ python-pkg │        0        │
+│ METADATA                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/python_rapidjson-1.23.dist-info/ME- │ python-pkg │        0        │
+│ TADATA                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pytz-2025.2.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pyyaml-6.0.3.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/pyzmq-26.4.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray-2.53.0.dist-info/METADATA       │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/_private/runtime_env/agent/thi- │ python-pkg │        0        │
+│ rdparty_files/aiohappyeyeballs-2.6.1.dist-info/METADATA                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/_private/runtime_env/agent/thi- │ python-pkg │        0        │
+│ rdparty_files/aiohttp-3.13.2.dist-info/METADATA                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/_private/runtime_env/agent/thi- │ python-pkg │        0        │
+│ rdparty_files/aiosignal-1.4.0.dist-info/METADATA                                 │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/_private/runtime_env/agent/thi- │ python-pkg │        0        │
+│ rdparty_files/attrs-25.4.0.dist-info/METADATA                                    │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/_private/runtime_env/agent/thi- │ python-pkg │        0        │
+│ rdparty_files/frozenlist-1.8.0.dist-info/METADATA                                │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/_private/runtime_env/agent/thi- │ python-pkg │        0        │
+│ rdparty_files/idna-3.11.dist-info/METADATA                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/_private/runtime_env/agent/thi- │ python-pkg │        0        │
+│ rdparty_files/multidict-6.7.0.dist-info/METADATA                                 │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/_private/runtime_env/agent/thi- │ python-pkg │        0        │
+│ rdparty_files/propcache-0.4.1.dist-info/METADATA                                 │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/_private/runtime_env/agent/thi- │ python-pkg │        0        │
+│ rdparty_files/typing_extensions-4.15.0.dist-info/METADATA                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/_private/runtime_env/agent/thi- │ python-pkg │        0        │
+│ rdparty_files/yarl-1.22.0.dist-info/METADATA                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/thirdparty_files/colorama-0.4.- │ python-pkg │        0        │
+│ 6.dist-info/METADATA                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ray/thirdparty_files/psutil-7.1.3.- │ python-pkg │        0        │
+│ dist-info/METADATA                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/redis-7.1.1.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/referencing-0.37.0.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/regex-2026.1.15.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/requests-2.32.5.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/responses-0.25.8.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/retrying-1.4.2.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/rich-14.1.0.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/rich_rst-1.3.2.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/rich_toolkit-0.19.3.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/rignore-0.7.6.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/rpds_py-0.30.0.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/rsa-4.9.1.dist-info/METADATA        │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ruamel_yaml-0.18.17.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ruamel_yaml_clib-0.2.15.dist-info/- │ python-pkg │        0        │
+│ METADATA                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/ruff-0.15.0.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/runai_model_streamer-0.15.5.dist-i- │ python-pkg │        0        │
+│ nfo/METADATA                                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/runai_model_streamer_gcs-0.15.5.di- │ python-pkg │        0        │
+│ st-info/METADATA                                                                 │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/runai_model_streamer_s3-0.15.5.dis- │ python-pkg │        0        │
+│ t-info/METADATA                                                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/s3transfer-0.16.0.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/safehttpx-0.1.7.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/safetensors-0.7.0.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/scikit_learn-1.7.2.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/scipy-1.13.1.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/seaborn-0.13.2.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/semantic_version-2.10.0.dist-info/- │ python-pkg │        0        │
+│ METADATA                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/sentencepiece-0.2.1.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/sentry_sdk-2.52.0.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setproctitle-1.3.7.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools-80.10.2.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools/_vendor/autocommand-2.2- │ python-pkg │        0        │
+│ .2.dist-info/METADATA                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools/_vendor/backports.tarfi- │ python-pkg │        0        │
+│ le-1.2.0.dist-info/METADATA                                                      │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools/_vendor/importlib_metad- │ python-pkg │        0        │
+│ ata-8.7.1.dist-info/METADATA                                                     │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools/_vendor/jaraco.text-4.0- │ python-pkg │        0        │
+│ .0.dist-info/METADATA                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools/_vendor/jaraco_context-- │ python-pkg │        0        │
+│ 6.1.0.dist-info/METADATA                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools/_vendor/jaraco_functool- │ python-pkg │        0        │
+│ s-4.4.0.dist-info/METADATA                                                       │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools/_vendor/more_itertools-- │ python-pkg │        0        │
+│ 10.8.0.dist-info/METADATA                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools/_vendor/packaging-26.0.- │ python-pkg │        0        │
+│ dist-info/METADATA                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools/_vendor/platformdirs-4.- │ python-pkg │        0        │
+│ 4.0.dist-info/METADATA                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools/_vendor/tomli-2.4.0.dis- │ python-pkg │        0        │
+│ t-info/METADATA                                                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools/_vendor/wheel-0.46.3.di- │ python-pkg │        0        │
+│ st-info/METADATA                                                                 │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools/_vendor/zipp-3.23.0.dis- │ python-pkg │        0        │
+│ t-info/METADATA                                                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/setuptools_scm-9.2.2.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/shellingham-1.5.4.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/simplejson-3.20.2.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/six-1.17.0.dist-info/METADATA       │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/sniffio-1.3.1.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/sortedcontainers-2.4.0.dist-info/M- │ python-pkg │        0        │
+│ ETADATA                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/soundfile-0.13.1.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/sqlalchemy-2.0.46.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/sse_starlette-3.2.0.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/stanio-0.5.1.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/starlette-0.49.3.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/statsmodels-0.14.6.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/structlog-25.5.0.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/supervisor-4.3.0.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/sympy-1.14.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tabledata-1.3.4.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tabulate-0.9.0.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tcolorpy-0.1.7.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tensorboard-2.20.0.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tensorboardX-2.6.2.2.dist-info/MET- │ python-pkg │        0        │
+│ ADATA                                                                            │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tensorboard_data_server-0.7.2.dist- │ python-pkg │        0        │
+│ -info/METADATA                                                                   │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/textual-5.3.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/threadpoolctl-3.6.0.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tiktoken-0.12.0.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tokenizers-0.22.2.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/toml-0.10.2.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tomlkit-0.13.3.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/torch-2.9.1+cu129.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/torchaudio-2.9.1+cu129.dist-info/M- │ python-pkg │        0        │
+│ ETADATA                                                                          │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/torchvision-0.24.1+cu129.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tornado-6.5.4.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tqdm-4.67.3.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/transformers-4.57.6.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/triton-3.5.1.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tritonclient-2.62.0.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/typepy-1.3.4.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/typer-0.23.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/typer_slim-0.23.0.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/types_aiofiles-25.1.0.20251011.dis- │ python-pkg │        0        │
+│ t-info/METADATA                                                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/types_awscrt-0.31.1.dist-info/META- │ python-pkg │        0        │
+│ DATA                                                                             │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/types_pyyaml-6.0.12.20250915.dist-- │ python-pkg │        0        │
+│ info/METADATA                                                                    │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/types_requests-2.32.4.20250913.dis- │ python-pkg │        0        │
+│ t-info/METADATA                                                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/types_s3transfer-0.16.0.dist-info/- │ python-pkg │        0        │
+│ METADATA                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/types_tabulate-0.9.0.20241207.dist- │ python-pkg │        0        │
+│ -info/METADATA                                                                   │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/typing_extensions-4.15.0.dist-info- │ python-pkg │        0        │
+│ /METADATA                                                                        │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/typing_inspection-0.4.2.dist-info/- │ python-pkg │        0        │
+│ METADATA                                                                         │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tzdata-2025.3.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/tzlocal-5.3.1.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/uc_micro_py-1.0.3.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/urllib3-2.6.3.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/uvicorn-0.38.0.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/uvloop-0.21.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/virtualenv-20.36.1.dist-info/METAD- │ python-pkg │        0        │
+│ ATA                                                                              │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/vllm-0.14.1.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/waitress-3.0.2.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/watchfiles-1.1.1.dist-info/METADATA │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/wcwidth-0.6.0.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/websockets-15.0.1.dist-info/METADA- │ python-pkg │        0        │
+│ TA                                                                               │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/werkzeug-3.0.6.dist-info/METADATA   │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/wsproto-1.3.2.dist-info/METADATA    │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/xgrammar-0.1.29.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/xmltodict-1.0.4.dist-info/METADATA  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/xxhash-3.6.0.dist-info/METADATA     │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/xyzservices-2025.11.0.dist-info/ME- │ python-pkg │        0        │
+│ TADATA                                                                           │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/yarl-1.22.0.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/yq-3.4.3.dist-info/METADATA         │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/dynamo/venv/lib/python3.12/site-packages/zipp-3.23.0.dist-info/METADATA      │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/vllm/tools/ep_kernels/ep_kernels_workspace/DeepEP/deep_ep.egg-info/PKG-INFO  │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ opt/vllm/tools/ep_kernels/ep_kernels_workspace/pplx-kernels/src/pplx_kernels.eg- │ python-pkg │        0        │
+│ g-info/PKG-INFO                                                                  │            │                 │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ workspace/benchmarks/data_generator.egg-info/PKG-INFO                            │ python-pkg │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ usr/bin/nats-server                                                              │  gobinary  │        1        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ usr/local/bin/etcd/etcd                                                          │  gobinary  │        2        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ usr/local/bin/etcd/etcdctl                                                       │  gobinary  │        2        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ usr/local/bin/etcd/etcdutl                                                       │  gobinary  │        2        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ usr/local/bin/kubectl                                                            │  gobinary  │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ workspace/lib/bindings/kvbm/Cargo.lock                                           │   cargo    │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ workspace/lib/bindings/python/Cargo.lock                                         │   cargo    │        0        │
+├──────────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┤
+│ workspace/lib/runtime/examples/Cargo.lock                                        │   cargo    │        0        │
+└──────────────────────────────────────────────────────────────────────────────────┴────────────┴─────────────────┘
+Legend:
+- '-': Not scanned
+- '0': Clean (no security findings detected)
+
+
+usr/bin/nats-server (gobinary)
+==============================
+Total: 1 (CRITICAL: 1)
+
+┌─────────┬────────────────┬──────────┬────────┬───────────────────┬──────────────────────────────┬──────────────────────────────────────────────────────────┐
+│ Library │ Vulnerability  │ Severity │ Status │ Installed Version │        Fixed Version         │                          Title                           │
+├─────────┼────────────────┼──────────┼────────┼───────────────────┼──────────────────────────────┼──────────────────────────────────────────────────────────┤
+│ stdlib  │ CVE-2025-68121 │ CRITICAL │ fixed  │ v1.24.2           │ 1.24.13, 1.25.7, 1.26.0-rc.3 │ crypto/tls: crypto/tls: Incorrect certificate validation │
+│         │                │          │        │                   │                              │ during TLS session resumption                            │
+│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2025-68121               │
+└─────────┴────────────────┴──────────┴────────┴───────────────────┴──────────────────────────────┴──────────────────────────────────────────────────────────┘
+
+usr/local/bin/etcd/etcd (gobinary)
+==================================
+Total: 2 (CRITICAL: 2)
+
+┌────────────────────────┬────────────────┬──────────┬────────┬───────────────────┬──────────────────────────────┬─────────────────────────────────────────────────────────────┐
+│        Library         │ Vulnerability  │ Severity │ Status │ Installed Version │        Fixed Version         │                            Title                            │
+├────────────────────────┼────────────────┼──────────┼────────┼───────────────────┼──────────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ google.golang.org/grpc │ CVE-2026-33186 │ CRITICAL │ fixed  │ v1.59.0           │ 1.79.3                       │ google.golang.org/grpc/grpc-go:                             │
+│                        │                │          │        │                   │                              │ google.golang.org/grpc/authz: gRPC-Go: Authorization bypass │
+│                        │                │          │        │                   │                              │ due to improper HTTP/2 path validation                      │
+│                        │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2026-33186                  │
+├────────────────────────┼────────────────┤          │        ├───────────────────┼──────────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ stdlib                 │ CVE-2025-68121 │          │        │ v1.23.7           │ 1.24.13, 1.25.7, 1.26.0-rc.3 │ crypto/tls: crypto/tls: Incorrect certificate validation    │
+│                        │                │          │        │                   │                              │ during TLS session resumption                               │
+│                        │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2025-68121                  │
+└────────────────────────┴────────────────┴──────────┴────────┴───────────────────┴──────────────────────────────┴─────────────────────────────────────────────────────────────┘
+
+usr/local/bin/etcd/etcdctl (gobinary)
+=====================================
+Total: 2 (CRITICAL: 2)
+
+┌────────────────────────┬────────────────┬──────────┬────────┬───────────────────┬──────────────────────────────┬─────────────────────────────────────────────────────────────┐
+│        Library         │ Vulnerability  │ Severity │ Status │ Installed Version │        Fixed Version         │                            Title                            │
+├────────────────────────┼────────────────┼──────────┼────────┼───────────────────┼──────────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ google.golang.org/grpc │ CVE-2026-33186 │ CRITICAL │ fixed  │ v1.59.0           │ 1.79.3                       │ google.golang.org/grpc/grpc-go:                             │
+│                        │                │          │        │                   │                              │ google.golang.org/grpc/authz: gRPC-Go: Authorization bypass │
+│                        │                │          │        │                   │                              │ due to improper HTTP/2 path validation                      │
+│                        │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2026-33186                  │
+├────────────────────────┼────────────────┤          │        ├───────────────────┼──────────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ stdlib                 │ CVE-2025-68121 │          │        │ v1.23.7           │ 1.24.13, 1.25.7, 1.26.0-rc.3 │ crypto/tls: crypto/tls: Incorrect certificate validation    │
+│                        │                │          │        │                   │                              │ during TLS session resumption                               │
+│                        │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2025-68121                  │
+└────────────────────────┴────────────────┴──────────┴────────┴───────────────────┴──────────────────────────────┴─────────────────────────────────────────────────────────────┘
+
+usr/local/bin/etcd/etcdutl (gobinary)
+=====================================
+Total: 2 (CRITICAL: 2)
+
+┌────────────────────────┬────────────────┬──────────┬────────┬───────────────────┬──────────────────────────────┬─────────────────────────────────────────────────────────────┐
+│        Library         │ Vulnerability  │ Severity │ Status │ Installed Version │        Fixed Version         │                            Title                            │
+├────────────────────────┼────────────────┼──────────┼────────┼───────────────────┼──────────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ google.golang.org/grpc │ CVE-2026-33186 │ CRITICAL │ fixed  │ v1.59.0           │ 1.79.3                       │ google.golang.org/grpc/grpc-go:                             │
+│                        │                │          │        │                   │                              │ google.golang.org/grpc/authz: gRPC-Go: Authorization bypass │
+│                        │                │          │        │                   │                              │ due to improper HTTP/2 path validation                      │
+│                        │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2026-33186                  │
+├────────────────────────┼────────────────┤          │        ├───────────────────┼──────────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ stdlib                 │ CVE-2025-68121 │          │        │ v1.23.7           │ 1.24.13, 1.25.7, 1.26.0-rc.3 │ crypto/tls: crypto/tls: Incorrect certificate validation    │
+│                        │                │          │        │                   │                              │ during TLS session resumption                               │
+│                        │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2025-68121                  │
+└────────────────────────┴────────────────┴──────────┴────────┴───────────────────┴──────────────────────────────┴─────────────────────────────────────────────────────────────┘

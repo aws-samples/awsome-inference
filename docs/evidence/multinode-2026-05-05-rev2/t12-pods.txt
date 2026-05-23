@@ -1,0 +1,3 @@
+default                 dynamo-combined-vllm-decode-decodeworker-548bcbcd-89f64cfd8vr9h   0/1     Running                  0                   7m18s
+default                 dynamo-combined-vllm-frontend-frontend-7ccdf69c6b-78ngs           1/1     Running                  0                   7m18s
+default                 dynamo-combined-vllm-prefill-prefillworker-e575ba3c-566994tngqd   0/1     Running                  0                   7m18s

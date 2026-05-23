@@ -577,3 +577,44 @@ RUN uv pip install --no-cache maturin[patchelf]
 
 CMD ["bash"]
 
+
+# =============================================================================
+# Optional SBOM + CVE scan stages (enabled when GENERATE_SBOM=1 / CVE_SCAN=1)
+# Matches Dockerfile.efa pattern — see sibling files for canonical form.
+# =============================================================================
+FROM aquasec/trivy:latest AS trivy-bin
+FROM anchore/syft:latest  AS syft-bin
+
+FROM dev AS security-scan
+ARG GENERATE_SBOM=1
+ARG CVE_SCAN=1
+USER root
+COPY --from=trivy-bin /usr/local/bin/trivy /usr/local/bin/trivy
+COPY --from=syft-bin  /syft                /usr/local/bin/syft
+RUN mkdir -p /opt/security && \
+    if [ "$GENERATE_SBOM" = "1" ]; then \
+        syft dir:/ -o spdx-json=/opt/security/sbom.spdx.json           2>/dev/null || \
+            echo '{"comment":"sbom skipped"}' > /opt/security/sbom.spdx.json ; \
+        syft dir:/ -o cyclonedx-json=/opt/security/sbom.cyclonedx.json 2>/dev/null || \
+            echo '{"comment":"sbom skipped"}' > /opt/security/sbom.cyclonedx.json ; \
+    else \
+        echo '{"comment":"sbom disabled"}' > /opt/security/sbom.spdx.json && \
+        echo '{"comment":"sbom disabled"}' > /opt/security/sbom.cyclonedx.json ; \
+    fi && \
+    if [ "$CVE_SCAN" = "1" ]; then \
+        trivy filesystem --scanners vuln --severity CRITICAL,HIGH \
+            --skip-files "/usr/local/bin/trivy,/usr/local/bin/syft" \
+            --timeout 10m --quiet / > /opt/security/cve-report.txt 2>&1 || true ; \
+        trivy filesystem --scanners vuln --severity CRITICAL \
+            --skip-files "/usr/local/bin/trivy,/usr/local/bin/syft" \
+            --timeout 10m --quiet / > /opt/security/cve-critical.txt 2>&1 || true ; \
+    else \
+        echo "CVE scan disabled" > /opt/security/cve-report.txt && \
+        echo "CVE scan disabled" > /opt/security/cve-critical.txt ; \
+    fi && \
+    rm -f /usr/local/bin/trivy /usr/local/bin/syft
+
+FROM dev AS final
+COPY --from=security-scan /opt/security /opt/security
+LABEL security.sbom="spdx+cyclonedx at /opt/security/" \
+      security.cve-scan="trivy CRITICAL+HIGH and CRITICAL-only at /opt/security/"

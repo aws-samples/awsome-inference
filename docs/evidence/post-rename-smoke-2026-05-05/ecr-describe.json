@@ -1,0 +1,18 @@
+{
+    "imageDetails": [
+        {
+            "registryId": "058264135704",
+            "repositoryName": "dynamo-efa",
+            "imageDigest": "sha256:a530efb304c11ead7cf05e6bf40feeb1ed59fc41d8431ff77de789a5f59df1b8",
+            "imageTags": [
+                "latest",
+                "d35812db45d6"
+            ],
+            "imageSizeInBytes": 25311810639,
+            "imagePushedAt": "2026-05-05T16:31:05.042000+00:00",
+            "imageManifestMediaType": "application/vnd.docker.distribution.manifest.v2+json",
+            "artifactMediaType": "application/vnd.docker.container.image.v1+json",
+            "lastRecordedPullTime": "2026-05-05T17:09:35.322000+00:00"
+        }
+    ]
+}

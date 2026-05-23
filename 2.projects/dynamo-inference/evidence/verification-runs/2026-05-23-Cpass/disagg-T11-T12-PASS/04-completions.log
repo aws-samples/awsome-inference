@@ -1,0 +1,5 @@
+=== T11 /v1/models ===
+{"object":"list","data":[{"id":"meta-llama/Llama-3.1-8B-Instruct","object":"model","created":1779556488,"owned_by":"nvidia","context_window":4096}]}
+=== T12 cross-node /v1/completions ===
+{"id":"cmpl-cc2038db-e615-4f2b-ae15-6ad19937c22a","choices":[{"text":" Paris. The capital of France is Paris. The capital of France is Paris. The capital of France","index":0,"finish_reason":"length"}],"created":1779556492,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":{"prompt_tokens":5,"completion_tokens":20,"total_tokens":25},"nvext":{"timing":{"request_received_ms":1779556492541,"total_time_ms":1882.673832}}}
+HTTP=200 TIME=1.885817s

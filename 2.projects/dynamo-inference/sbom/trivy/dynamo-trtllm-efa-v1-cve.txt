@@ -1,0 +1,8 @@
+# CVE Report — dynamo-trtllm-efa-v1 (derived)
+
+This image is derived from the combined image by stripping
+vLLM-exclusive packages.
+Its CVE surface is a subset of combined. For authoritative data:
+
+- Combined image full report: dynamo-combined-efa-v1-cve.txt
+- Regenerate: trivy image --severity CRITICAL,HIGH dynamo-trtllm:v1

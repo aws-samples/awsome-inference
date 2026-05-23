@@ -110,6 +110,44 @@ Deployment targets include:
 
 ---
 
+
+## Supported Instance Types
+
+Dynamo inference works across multiple AWS GPU instance types. The networking layer automatically adapts:
+
+| Instance | GPU | GPUs/Node | EFA | KV Transfer | Verified |
+|----------|-----|-----------|-----|-------------|----------|
+| **p5en.48xlarge** | NVIDIA H200 141GB | 8 | 16x 200Gbps | NIXL LIBFABRIC RDMA | Yes — 8-GPU disagg, 600ms latency |
+| **p5.48xlarge** | NVIDIA H100 80GB | 8 | 32x 100Gbps | NIXL LIBFABRIC RDMA | Yes |
+| **p4d.24xlarge** | NVIDIA A100 40GB | 8 | 4x 100Gbps | NIXL LIBFABRIC RDMA | Compatible |
+| **g6e.xlarge+** | NVIDIA L40S 48GB | 1-8 | None | TCP / vLLM connector | Yes — vLLM backend |
+| **g5.xlarge+** | NVIDIA A10G 24GB | 1-8 | None | TCP / vLLM connector | Compatible |
+
+### Instance-Specific Environment Variables
+
+**P5/P5en (EFA RDMA):**
+```bash
+NIXL_BACKEND=LIBFABRIC
+FI_PROVIDER=efa
+FI_EFA_USE_DEVICE_RDMA=1
+FI_EFA_ENABLE_SHM_TRANSFER=0
+NIXL_SKIP_TOPOLOGY_CHECK=1
+```
+
+**G5/G6E (no EFA):**
+```bash
+# No EFA variables needed — Dynamo falls back to TCP/vLLM connector
+# Use vLLM backend (python3 -m dynamo.vllm) for best performance
+```
+
+### Choosing a Backend
+
+| Backend | Best For | Command |
+|---------|----------|---------|
+| **TRT-LLM** | Maximum throughput on P5/P5en | `python3 -m dynamo.trtllm` |
+| **vLLM** | Flexibility, any GPU, no TensorRT | `python3 -m dynamo.vllm` |
+| **Combined image** | Both backends available at runtime | Choose at deploy time |
+
 ## Prerequisites
 
 Before deploying these examples, ensure you have:
@@ -184,6 +222,46 @@ docker build -f Dockerfile.python-base -t dynamo-trtllm:latest .
 
 **Expected image size:** ~34 GB
 
+### Dynamo Combined Image (vLLM + TRT-LLM)
+
+A single image containing **both** vLLM and TRT-LLM backends, built from scratch with EFA/NIXL RDMA networking. This is a self-contained multi-stage build that does not depend on the base EFA image above.
+
+```bash
+docker build -f Dockerfile.dynamo-combined-efa -t dynamo-combined-efa:latest .
+```
+
+**Key components:**
+- Dynamo 1.0.0 runtime (Rust + Python)
+- vLLM 0.17.1 (PyTorch-native inference)
+- TRT-LLM 1.3.0rc7 (TensorRT-optimized inference)
+- NIXL 0.10.1 with UCX and libfabric plugins
+- UCX v1.20.x with EFA, GDRCopy, CUDA support
+- libfabric v2.3.0 with EFA provider
+- AWS EFA installer 1.45.1
+- CUDA 12.9 (devel), Python 3.12, Rust 1.93.1
+- NATS v2.10.28 + etcd v3.5.21 (Dynamo service mesh)
+- FFmpeg 7.1 (Apache-licensed codecs, for multimodal models)
+- Built-in SBOM at `/SBOM.txt` and `/THIRD-PARTY-LICENSES`
+
+**Architecture:** 7-stage multi-stage build
+
+| Stage | Name | Purpose |
+|-------|------|---------|
+| 1 | `dynamo_base` | Rust, NATS, etcd, uv, sccache |
+| 2 | `wheel_builder_base` | UCX, GDRCopy, libfabric, FFmpeg, AWS SDK |
+| 3 | `wheel_builder` | NIXL + Dynamo Python wheels |
+| 4 | `pytorch_base` | NGC PyTorch for TRT-LLM |
+| 5 | `trtllm_framework` | TRT-LLM + PyTorch in venv |
+| 6 | `vllm_framework` | vLLM + FlashInfer + LMCache |
+| 7 | `final` | Combined runtime with EFA |
+
+**Expected image size:** ~35-40 GB
+
+**Prebuilt image:**
+```bash
+docker pull public.ecr.aws/v9l4g5s4/dynamo-combined:latest
+```
+
 ### Build Options
 
 ```bash
@@ -193,8 +271,11 @@ docker build --build-arg CUDA_ARCH=86 -f Dockerfile.base -t aws-efa-base:sm86 .
 # Build without cache
 docker build --no-cache -f Dockerfile.base -t aws-efa-base:latest .
 
+# Build combined image
+./build.sh -b combined
+
 # Build and push to ECR
-./build-dynamo.sh --push
+./build.sh --push
 ```
 
 ---
@@ -220,9 +301,15 @@ docker pull public.ecr.aws/[your-registry]/dynamo-trtllm:latest
 #### 1. Prepare Environment
 
 ```bash
-# Set namespace and version
+# Set namespace and chart versions.
+# As of 2026-04-20, public NGC (helm.ngc.nvidia.com/nvidia/ai-dynamo) publishes:
+#   - dynamo-crds     latest public = 0.9.1
+#   - dynamo-platform latest public = 1.0.1  (skip 1.0.0 — Blackwell crash)
+# The two chart versions intentionally diverge: 1.0.x platform is compatible
+# with 0.9.1 CRDs. Both downloads are anonymous (no NGC login required).
 export NAMESPACE=default
-export RELEASE_VERSION=0.6.1
+export DYNAMO_CRDS_VERSION=0.9.1
+export DYNAMO_PLATFORM_VERSION=1.0.1
 
 # Label GPU nodes for CUDA 12.x
 kubectl get nodes -l node.kubernetes.io/instance-type -o name | \
@@ -232,12 +319,12 @@ kubectl get nodes -l node.kubernetes.io/instance-type -o name | \
 #### 2. Install Dynamo Platform
 
 ```bash
-# Install CRDs and platform
-helm fetch https://helm.ngc.nvidia.com/nvidia/ai-dynamo/charts/dynamo-crds-${RELEASE_VERSION}.tgz
-helm fetch https://helm.ngc.nvidia.com/nvidia/ai-dynamo/charts/dynamo-platform-${RELEASE_VERSION}.tgz
+# Install CRDs and platform — both are anonymous fetches, no NGC login needed.
+helm fetch https://helm.ngc.nvidia.com/nvidia/ai-dynamo/charts/dynamo-crds-${DYNAMO_CRDS_VERSION}.tgz
+helm fetch https://helm.ngc.nvidia.com/nvidia/ai-dynamo/charts/dynamo-platform-${DYNAMO_PLATFORM_VERSION}.tgz
 
-helm install dynamo-crds dynamo-crds-${RELEASE_VERSION}.tgz --namespace ${NAMESPACE}
-helm install dynamo-platform dynamo-platform-${RELEASE_VERSION}.tgz --namespace ${NAMESPACE}
+helm install dynamo-crds     dynamo-crds-${DYNAMO_CRDS_VERSION}.tgz     --namespace ${NAMESPACE} --create-namespace
+helm install dynamo-platform dynamo-platform-${DYNAMO_PLATFORM_VERSION}.tgz --namespace ${NAMESPACE}
 
 # Patch etcd for compatibility
 kubectl patch statefulset dynamo-platform-etcd -n ${NAMESPACE} -p \
@@ -294,6 +381,76 @@ For detailed deployment instructions, refer to **DEPLOYMENT_GUIDE.md**.
 
 ---
 
+## Kubernetes Deployment (Combined Image)
+
+The `k8s/` directory contains production-tested manifests for deploying the combined image on Amazon EKS with EFA networking.
+
+### Disaggregated Inference (1 GPU per worker)
+
+```bash
+kubectl apply -f k8s/dynamo-combined-disagg-1gpu.yaml -n <namespace>
+```
+
+Deploys one prefill worker pod and one decode worker pod, each using 1 GPU and 1 EFA device. KV-cache is transferred between nodes via NIXL over EFA RDMA.
+
+### Disaggregated Inference (8 GPUs per node)
+
+```bash
+kubectl apply -f k8s/dynamo-combined-disagg-8gpu.yaml -n <namespace>
+```
+
+Deploys 8 data-parallel prefill workers on one node and 8 data-parallel decode workers on another, using all 16 EFA devices per node.
+
+### EFA/NIXL Environment Variables
+
+The following environment variables control NIXL transport over EFA:
+
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `NIXL_BACKEND` | `LIBFABRIC` | Use libfabric transport (EFA provider) |
+| `FI_PROVIDER` | `efa` | Select EFA fabric provider |
+| `FI_EFA_USE_DEVICE_RDMA` | `1` | Enable GPU-direct RDMA over EFA |
+| `FI_EFA_ENABLE_SHM` | `0` | Disable shared memory (cross-node only) |
+| `FI_EFA_ENABLE_SHM_TRANSFER` | `0` | Disable SHM transfer (cross-node only) |
+| `NIXL_SKIP_TOPOLOGY_CHECK` | `1` | Skip NVSwitch topology validation (EFA) |
+| `NIXL_LIBFABRIC_MAX_RAILS` | `1` | Number of EFA rails per worker |
+| `NIXL_SIDE_CHANNEL_PORT` | `5700` | NIXL side channel port (increment per GPU) |
+
+### Required Kubernetes Resources
+
+For EFA-enabled pods on Amazon EKS:
+
+```yaml
+resources:
+  limits:
+    nvidia.com/gpu: "1"
+    vpc.amazonaws.com/efa: "1"
+    hugepages-2Mi: 5120Mi
+  requests:
+    nvidia.com/gpu: "1"
+    vpc.amazonaws.com/efa: "1"
+    hugepages-2Mi: 5120Mi
+```
+
+Volume mounts for EFA and shared memory:
+
+```yaml
+volumes:
+  - name: dev-infiniband
+    hostPath:
+      path: /dev/infiniband
+      type: DirectoryOrCreate
+  - name: hugepages
+    emptyDir:
+      medium: HugePages
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: 64Gi
+```
+
+---
+
 ## Configuration
 
 ### Backend Options for KV-Cache Transfer
@@ -328,6 +485,50 @@ kubectl rollout restart deployment/dynamo-disaggregated-backend-decode
 ```
 
 ---
+
+## Testing
+
+On-cluster smoke harness: `tests/smoke/smoke.sh`. Every CodeBuild push should
+be validated by running it against the resulting image tag.
+
+```
+cd 2.projects/dynamo-inference
+./tests/smoke/smoke.sh <SHA>
+```
+
+The harness runs **10 gates** (T1–T10) against a single-pod vLLM deployment
+on the H100 HyperPod cluster. Full criteria, env overrides, evidence
+artifacts, and troubleshooting are documented in
+[`tests/README.md`](tests/README.md).
+
+**Blocking gates (T1–T7):** image exists in ECR, size sanity, fat-binary
+NCCL with `sm_80 / sm_86 / sm_89 / sm_90 / sm_100 / sm_120`, EFA visible in
+the pod, `/v1/models` returns 200, `/v1/completions` succeeds, `hw_counters`
+show non-zero RDMA traffic (guards against TCP fallback).
+
+**Warning gates (T8–T10):** no NCCL/NVLS errors in logs, SBOM present at
+`/opt/security/`, pod teardown completes within 60 s.
+
+Runs target `ml.p5.48xlarge` only (H100); P5en H200 nodes are reserved.
+The harness claims `~/.claude/cluster-lock-h100.json` before deploy and
+releases it via `trap` on exit.
+
+Per-run evidence lands in `tests/out/<SHA>/` (logs, NCCL arches, hw_counters,
+completion JSON, and `summary.md`).
+
+---
+
+
+---
+
+## Reproducibility
+
+External readers, upstream maintainers, and customer reviewers: see
+[REPRODUCIBILITY.md](REPRODUCIBILITY.md) for how to build the same
+images the committed `docs/evidence/` logs were produced on. You do
+not need access to our private ECR or internal cluster — the
+Dockerfiles pull only public NGC images, and the git commit SHAs
+map 1:1 to image tags.
 
 ## Troubleshooting
 
@@ -382,4 +583,4 @@ This library is licensed under the MIT-0 License. See the [LICENSE](../../LICENS
 
 ---
 
-**Last Updated:** November 2025
+**Last Updated:** March 2026

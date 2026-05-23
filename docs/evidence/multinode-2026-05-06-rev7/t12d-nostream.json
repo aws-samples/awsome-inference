@@ -1,0 +1,2 @@
+{"id":"cmpl-0807a0be-7b8a-4558-aeab-7ba2a33d4d42","choices":[{"text":" Paris. The capital of France is Paris. The capital of France is Paris. The capital of France","index":0,"finish_reason":"length"}],"created":1778067614,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":{"prompt_tokens":5,"completion_tokens":20,"total_tokens":25},"nvext":{"timing":{"request_received_ms":1778067614305,"total_time_ms":739.1409140000001}}}
+HTTP 200 | latency 0.745704s

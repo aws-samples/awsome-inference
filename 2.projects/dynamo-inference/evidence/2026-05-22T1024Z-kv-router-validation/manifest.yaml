@@ -1,0 +1,97 @@
+schema_version: "1.1"
+
+parameters:
+  ECR_REGISTRY: "${ECR_REGISTRY}"
+  IMAGE_TAG: "520cfc584abb"
+  AWS_REGION: "us-east-2"
+experiment_id: kv-router-validation
+campaign: pr72-rev8
+date: 2026-05-22T10:24:00Z
+status: PARTIAL
+
+image:
+  registry: "${ECR_REGISTRY}"
+  repository: dynamo-efa
+  tag: 520cfc584abb
+  digest: sha256:48e6e3104b523bc1828deda9966c48260de06bb8649348930f5440cad7f83d9c
+  built_from_commit: 520cfc5
+
+git:
+  repo: dmvevents/awsome-inference-1
+  commit: 520cfc5
+  branch: feature/dynamo-combined-vllm-trtllm-efa
+
+hardware:
+  region: us-east-2
+  instance_type: p5.48xlarge
+  node_count: 2
+  gpu: H100
+  efa_version: 1.48.0
+
+stack:
+  dynamo: 1.1.0
+  vllm: bundled-with-dynamo-1.1.0
+  nixl: v1.0.1
+  libfabric: 2.4.0amzn3.0
+
+config:
+  test_type: serving
+  workload: dynamo-with-kv-router
+  model: meta-llama/Llama-3.1-8B-Instruct
+  features: [kv-router, kv-events, nats-transport, nixl-libfabric]
+  router_mode: RoundRobin
+  kv_events_publisher: zmq
+  kv_events_endpoint: "tcp://*:20080"
+
+results:
+  configs_tested: 2
+  configs_passed: 2
+  configs_deferred: 3
+  vllm_disagg_router:
+    status: PASS
+    topology: cross-node
+    q1_cold_ms: 1872
+    q2_prefix_match_ms: 120
+    q2_speedup_ratio: 15.6
+    q3_fresh_ms: 152
+    pods_ready: "3/3"
+  vllm_agg_router:
+    status: PASS
+    topology: single-pod
+    q1_cold_ms: 752
+    q2_prefix_match_ms: 108
+    q2_speedup_ratio: 7.0
+    q3_fresh_ms: 140
+    pods_ready: "2/2"
+  vllm_disagg_kvbm:
+    status: DEFERRED
+    reason: "Upstream config drops LIBFABRIC backend forcing — unsafe on EFA without LIBFABRIC; needs LIBFABRIC-preserving variant authored"
+  trtllm_configs:
+    status: DEFERRED
+    reason: "TRT-LLM combined Dockerfile creates 3 separate DGDs with different dynamoNamespace stamps; Frontend KubeDiscoveryClient cannot cross-discover; needs single-DGD restructure"
+  sglang_configs:
+    status: DEFERRED
+    reason: "Combined-efa Dockerfile has no SGLang stage; Dockerfile work needed (not just config test)"
+
+documents:
+  verdict: VERDICT.md
+  reproduce: REPRODUCE.md
+
+sub_experiments:
+  - vllm-disagg-router-PASS/manifest.yaml
+  - vllm-agg-router-PASS/manifest.yaml
+
+notes: |
+  Frontend log proofs of KV router activation (all 5 required lines present in 05-frontend-kv-router.log of each sub-experiment):
+    EventSubscriber created topic=kv_metrics transport=Nats
+    Prefill model detected, registering and activating prefill router
+    Activating prefill router router_mode=RoundRobin
+    Prefill router activated successfully router_mode=RoundRobin
+    KvWorkerMonitor: prefill endpoint watcher activated, tracking 1 workers
+
+  Lessons captured (see VERDICT.md):
+    - Operator label is `nvidia.com/dynamo-graph-deployment-name`, NOT `app.kubernetes.io/part-of`
+    - hostNetwork:true + replicas>1 collides on host ports (DYN_SYSTEM_PORT=9090, NIXL side channel 5700)
+    - Anti-affinity by hostname forces 1 pod/node — replicas>1 fails on 2-node cluster
+    - Stale ETCD coordination state must be cleared between runs: kubectl exec dynamo-platform-etcd-0 -- etcdctl del --prefix "xferbench"
+    - --disaggregation-mode regex strip artifact: leaves `\\ \\` that breaks vLLM arg parser

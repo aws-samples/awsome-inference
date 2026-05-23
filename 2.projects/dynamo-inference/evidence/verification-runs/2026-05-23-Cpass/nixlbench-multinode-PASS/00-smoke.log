@@ -1,0 +1,24 @@
+=== nixl-bench smoke test ===
+image: ${ECR_REGISTRY}/dynamo-efa:520cfc584abb
+pod:   nixlbench-smoke-339195
+
+pod/nixlbench-smoke-339195 created
+waiting for pod Ready...
+pod/nixlbench-smoke-339195 condition met
+
+=== Tests ===
+PASS: /opt/nixlbench/bin/nixlbench is executable
+PASS: /opt/nvidia/nvda_nixl/lib64/libnixl.so exists
+PASS: NIXL libfabric plugin exists
+PASS: NIXL UCX plugin exists
+PASS: EFA libfabric is present
+PASS: fi_pingpong is on PATH
+PASS: nccl-tests are present
+FAIL: nixlbench --help runs
+environment: line 5:    52 Segmentation fault      (core dumped) "$@" > /dev/null 2>&1
+FAIL: nixl_example LIBFABRIC self-test
+FAIL: fi_info -p efa lists devices
+
+summary: 7 passed, 3 failed
+command terminated with exit code 1
+pod "nixlbench-smoke-339195" deleted

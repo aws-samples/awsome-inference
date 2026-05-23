@@ -1,0 +1,9 @@
+# CVE Report — efa-base:v1 (synthesized)
+
+efa-base:v1 is networking-base:v5 + multi-stage scanner. The scanner binaries
+are dropped from the final image, so the CVE surface is equivalent to
+networking-base:v5. See networking-base-v5-cve.txt.
+
+Regenerate with:
+
+  trivy image --severity CRITICAL,HIGH efa-base:v1 > efa-base-v1-cve.txt

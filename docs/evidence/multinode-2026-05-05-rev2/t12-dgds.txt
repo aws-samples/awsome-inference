@@ -1,0 +1,4 @@
+NAME                            READY   BACKEND   AGE
+dynamo-combined-vllm-decode     False             7m21s
+dynamo-combined-vllm-frontend   True              7m21s
+dynamo-combined-vllm-prefill    False             7m21s

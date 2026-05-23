@@ -1,0 +1,2 @@
+bash: line 14:   146 Killed                  mpirun -np 16 -H 10.1.3.30:8,10.1.3.73:8 --allow-run-as-root -x FI_PROVIDER=efa -x FI_EFA_USE_DEVICE_RDMA=1 -x NCCL_NET_PLUGIN=ofi -x NCCL_NVLS_ENABLE=0 -x NCCL_SOCKET_IFNAME=^lo,docker,veth --mca plm_rsh_agent '/bin/true' --mca btl tcp,self /opt/nccl-tests/bin/all_reduce_perf -b 8 -e 1G -f 2 -g 1 2>&1
+command terminated with exit code 137

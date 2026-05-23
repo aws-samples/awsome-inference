@@ -1,0 +1,4 @@
+NAME                                                           READY   STATUS    RESTARTS   AGE     IP          NODE                           NOMINATED NODE   READINESS GATES
+dynamo-combined-vllm-decodeworker-ae74a2d2-555fdcddb8-hxn6w    0/1     Running   0          6m54s   10.1.3.30   hyperpod-i-01aee349f9991c414   <none>           <none>
+dynamo-combined-vllm-frontend-5fcccf47b5-nx9pw                 1/1     Running   0          6m54s   10.1.3.29   hyperpod-i-01aee349f9991c414   <none>           <none>
+dynamo-combined-vllm-prefillworker-ae74a2d2-5bc8f46859-rx8r7   0/1     Running   0          6m54s   10.1.3.73   hyperpod-i-0a3eb6d3953cceaa7   <none>           <none>

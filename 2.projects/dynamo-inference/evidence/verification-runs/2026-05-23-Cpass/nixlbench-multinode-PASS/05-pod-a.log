@@ -1,0 +1,57 @@
+/opt/nixlbench/bin/nixlbench
+nixlbench
+WARNING: Adjusting num_iter to 1008 to allow equal distribution to 1 threads
+WARNING: Adjusting warmup_iter to 112 to allow equal distribution to 1 threads
+Connecting to ETCD at http://dynamo-platform-etcd.default.svc.cluster.local:2379
+ETCD Runtime: Registered as rank 0 item 1 of 2
+Init nixl worker, dev all rank 0, type initiator, hostname ip-172-16-219-12.us-east-2.compute.internal, nc_count -1
+Waiting for all processes to start... (expecting 2 total: 1 initiators and 1 targets)
+All processes are ready to proceed
+****************************************************************************************************************************************************************
+NIXLBench Configuration
+****************************************************************************************************************************************************************
+Runtime (--runtime_type=[etcd])                             : ETCD
+ETCD Endpoint                                               : http://dynamo-platform-etcd.default.svc.cluster.local:2379
+Worker type (--worker_type=[nixl,nvshmem])                  : nixl
+Backend (--backend=[UCX,GDS,GDS_MT,POSIX,Mooncake,HF3FS,OBJ,AZURE_BLOB]): LIBFABRIC
+Enable pt (--enable_pt=[0,1])                               : 0
+Progress threads (--progress_threads=N)                     : 0
+Device list (--device_list=dev1,dev2,...)                   : all
+Enable VMM (--enable_vmm=[0,1])                             : 0
+Recreate xfer each iteration (--recreate_xfer=[0,1])        : 0
+Initiator seg type (--initiator_seg_type=[DRAM,VRAM])       : VRAM
+Target seg type (--target_seg_type=[DRAM,VRAM])             : VRAM
+Scheme (--scheme=[pairwise,manytoone,onetomany,tp])         : pairwise
+Mode (--mode=[SG,MG])                                       : SG
+Op type (--op_type=[READ,WRITE])                            : WRITE
+Check consistency (--check_consistency=[0,1])               : 0
+Total buffer size (--total_buffer_size=N)                   : 8589934592
+Num initiator dev (--num_initiator_dev=N)                   : 1
+Num target dev (--num_target_dev=N)                         : 1
+Start block size (--start_block_size=N)                     : 4096
+Max block size (--max_block_size=N)                         : 67108864
+Start batch size (--start_batch_size=N)                     : 1
+Max batch size (--max_batch_size=N)                         : 1
+Num iter (--num_iter=N)                                     : 1008
+Warmup iter (--warmup_iter=N)                               : 112
+Large block iter factor (--large_blk_iter_ftr=N)            : 16
+Num threads (--num_threads=N)                               : 1
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Block Size (B)      Batch Size     B/W (GB/Sec)   Avg Lat. (us)  Avg Prep (us)  P99 Prep (us)  Avg Post (us)  P99 Post (us)  Avg Tx (us)    P99 Tx (us)    
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+4096                1              0.112873       36.3           25.0           25.0           2.8            4.0            33.5           40.0           
+8192                1              0.224103       36.6           10.0           10.0           2.8            4.0            33.7           39.0           
+16384               1              0.433990       37.8           14.0           14.0           2.8            4.0            34.9           41.0           
+32768               1              0.804828       40.7           5.0            5.0            2.7            4.0            38.0           44.0           
+65536               1              1.408445       46.5           12.0           12.0           2.8            5.0            43.7           50.0           
+131072              1              2.853823       45.9           5.0            5.0            6.4            7.0            39.5           45.0           
+262144              1              5.094198       51.5           6.0            6.0            6.4            8.0            45.1           51.0           
+524288              1              9.187162       57.1           6.0            6.0            6.4            8.0            50.7           58.0           
+1048576             1              15.088717      69.5           6.0            6.0            6.3            8.0            63.1           70.0           
+2097152             1              22.208871      94.4           6.0            6.0            6.5            11.0           87.7           95.0           
+4194304             1              30.181742      139.0          6.0            6.0            6.4            11.0           132.4          140.0          
+8388608             1              36.774219      228.1          11.0           11.0           6.7            18.0           221.1          228.0          
+16777216            1              41.956359      399.9          11.0           11.0           6.4            16.0           393.2          400.0          
+33554432            1              45.127001      743.6          6.0            6.0            6.4            11.0           737.0          747.0          
+67108864            1              46.948036      1429.4         11.0           11.0           6.6            18.0           1422.5         1429.0         

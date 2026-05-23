@@ -1,0 +1,2 @@
+{"id":"chatcmpl-25a2658e-2686-4183-92fa-b642fd2bef78","choices":[{"index":0,"message":{"content":"It's nice to meet you. Is there something","role":"assistant","reasoning_content":null},"finish_reason":"length","logprobs":null}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","service_tier":null,"system_fingerprint":null,"object":"chat.completion","usage":{"prompt_tokens":36,"completion_tokens":10,"total_tokens":46},"nvext":{"timing":{"request_received_ms":1778067615199,"total_time_ms":67.551352}}}
+HTTP 200 | latency 0.071309s

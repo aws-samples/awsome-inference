@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nccl-headless
+  namespace: default
+spec:
+  clusterIP: None
+  selector:
+    app: nccl-allreduce
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nccl-allreduce
+  namespace: default
+spec:
+  serviceName: nccl-headless
+  replicas: 2
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: nccl-allreduce
+  template:
+    metadata:
+      labels:
+        app: nccl-allreduce
+      annotations:
+        k8s.v1.cni.cncf.io/networks: efa1,efa2,efa3,efa4,efa5,efa6,efa7,efa8,efa9,efa10,efa11,efa12,efa13,efa14,efa15,efa16,efa17,efa18,efa19,efa20,efa21,efa22,efa23,efa24,efa25,efa26,efa27,efa28,efa29,efa30,efa31,efa32
+    spec:
+      restartPolicy: Always
+      hostNetwork: true
+      hostIPC: true
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: nccl-allreduce
+              topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        node.kubernetes.io/instance-type: ml.p5.48xlarge
+      tolerations:
+        - operator: Exists
+      volumes:
+        - name: dshm
+          emptyDir: { medium: Memory, sizeLimit: 64Gi }
+        - name: hugepages
+          emptyDir: { medium: HugePages }
+      containers:
+        - name: nccl
+          image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:9467d1460c71
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            capabilities:
+              add: [IPC_LOCK, SYS_PTRACE]
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -eo pipefail
+              echo "[nccl] $(hostname) $(date -Is) boot"
+              nvidia-smi -L
+              # Sleep forever; harness runs mpirun externally via kubectl exec
+              sleep infinity
+          env:
+            - { name: FI_PROVIDER, value: efa }
+            - { name: FI_EFA_USE_DEVICE_RDMA, value: "1" }
+            - { name: NCCL_NET_PLUGIN, value: ofi }
+            - { name: NCCL_NVLS_ENABLE, value: "0" }
+            - { name: NCCL_DEBUG, value: INFO }
+            - { name: NCCL_SOCKET_IFNAME, value: "^lo,docker,veth" }
+            - { name: OMPI_ALLOW_RUN_AS_ROOT, value: "1" }
+            - { name: OMPI_ALLOW_RUN_AS_ROOT_CONFIRM, value: "1" }
+          resources:
+            limits:
+              nvidia.com/gpu: "8"
+              hugepages-2Mi: "2Gi"
+              vpc.amazonaws.com/efa: "32"
+              memory: "64Gi"
+              cpu: "16"
+            requests:
+              nvidia.com/gpu: "8"
+              hugepages-2Mi: "2Gi"
+              vpc.amazonaws.com/efa: "32"
+              memory: "32Gi"
+              cpu: "8"
+          volumeMounts:
+            - { mountPath: /dev/shm, name: dshm }
+            - { mountPath: /dev/hugepages, name: hugepages }

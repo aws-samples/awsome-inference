@@ -1,0 +1,50 @@
+evidence_dir=/home/ubuntu/awesome-inferencing/docs/evidence/pr72-rev8/verification-runs/2026-05-23-Cpass/nixlbench-multinode-PASS
+image_tag=520cfc584abb
+=== [1/7] validate /opt/nixlbench in image ===
+pod/nixlbench-debug created
+pod/nixlbench-debug condition met
+OK: /opt/nixlbench/bin/nixlbench
+OK: NIXL libfabric plugin
+W: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/InRelease: Key is stored in legacy trusted.gpg keyring (/etc/apt/trusted.gpg), see the DEPRECATION section in apt-key(8) for details.
+pod "nixlbench-debug" deleted
+=== [2/7] pre-snapshot EFA hw_counters ===
+rdmap98s0 tx_bytes=91212637907048 tx_pkts=12872943635 rdma_write_bytes=91178668058508 rdma_read_bytes=7117472 recv_wrs=566113711
+rdmap99s0 tx_bytes=91097868724814 tx_pkts=13628909682 rdma_write_bytes=91063295199972 rdma_read_bytes=9739117 recv_wrs=638462182
+wrote: /home/ubuntu/awesome-inferencing/docs/evidence/rev8-pr72-e2e-2026-05-21/counters-pre.txt
+=== [3/7] deploy nixlbench pods ===
+pod/nixlbench-a created
+pod/nixlbench-b created
+pod/nixlbench-a condition met
+pod/nixlbench-b condition met
+=== [4/7] capture pod output (poll until Completed/Error) ===
+17:06:25Z a=Running b=Running
+17:06:37Z a=Running b=Running
+17:06:48Z a=Running b=Running
+17:06:59Z a=Running b=Running
+17:07:11Z a=Running b=Running
+17:07:22Z a=Running b=Running
+17:07:33Z a=Running b=Running
+17:07:44Z a=Running b=Running
+17:07:56Z a=Running b=Running
+17:08:07Z a=Running b=Running
+17:08:18Z a=Running b=Running
+17:08:30Z a=Running b=Running
+17:08:41Z a=Running b=Running
+17:08:52Z a=Running b=Running
+17:09:04Z a=Running b=Running
+17:09:15Z a=Running b=Running
+17:09:26Z a=Running b=Running
+17:09:37Z a=Running b=Running
+17:09:49Z a=Running b=Running
+17:10:00Z a=Running b=Running
+17:10:11Z a=Running b=Running
+17:10:23Z a=Succeeded b=Succeeded
+=== [5/7] post-snapshot EFA hw_counters ===
+rdmap98s0 tx_bytes=91212637907048 tx_pkts=12872943635 rdma_write_bytes=91178668058508 rdma_read_bytes=7117472 recv_wrs=566113711
+rdmap99s0 tx_bytes=91097868724814 tx_pkts=13628909682 rdma_write_bytes=91063295199972 rdma_read_bytes=9739117 recv_wrs=638462182
+wrote: /home/ubuntu/awesome-inferencing/docs/evidence/rev8-pr72-e2e-2026-05-21/counters-post.txt
+=== [6/7] compute counter deltas ===
+Traceback (most recent call last):
+  File "<stdin>", line 12, in <module>
+  File "<stdin>", line 5, in parse
+FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/awesome-inferencing/docs/evidence/pr72-rev8/verification-runs/2026-05-23-Cpass/nixlbench-multinode-PASS/counters-pre.txt'

@@ -1,0 +1,69 @@
+schema_version: "1.1"
+
+parameters:
+  ECR_REGISTRY: "${ECR_REGISTRY}"
+  IMAGE_TAG: "9467d1460c71"
+  AWS_REGION: "us-east-2"
+
+experiment_id: rev7-libfabric-forced
+campaign: pr72-rev8
+date: 2026-05-21T15:39:00Z
+status: PASS
+
+image:
+  registry: "${ECR_REGISTRY}"
+  repository: dynamo-efa
+  tag: 9467d1460c71
+  digest: sha256:a5480b03efce4f92f18821480c222c5b108d1e805c315e6574d5e2dadb9066bc
+  built_from_commit: rev7
+
+git:
+  repo: dmvevents/awsome-inference-1
+  commit: rev7
+  branch: feature/dynamo-combined-vllm-trtllm-efa
+
+hardware:
+  region: us-east-2
+  instance_type: p5.48xlarge
+  node_count: 2
+  gpu: H100
+  efa_version: 1.48.0
+
+stack:
+  dynamo: 1.1.0
+  nixl: v1.0.1
+  libfabric: 2.4.0amzn3.0
+
+config:
+  test_type: serving
+  workload: dynamo-disaggregated
+  model: meta-llama/Llama-3.1-8B-Instruct
+  features: [disaggregation, nixl-libfabric, kv-transfer-config-LIBFABRIC]
+  topology: cross-node
+  fix_applied: 'kv_connector_extra_config:{backends:["LIBFABRIC"]}'
+
+results:
+  outcome: PASS
+  parent_experiment_id: rev7-baseline-nixl-ucx-rootcause
+  fix_validated: kv_connector_extra_config.backends LIBFABRIC override
+
+documents:
+  verdict: VERDICT.md
+  reproduce: REPRODUCE.md
+
+artifacts:
+  - artifacts/01-delete.log
+  - artifacts/02-apply.log
+  - artifacts/03-wait.log
+  - artifacts/04-models.json
+  - artifacts/05-completion.json
+  - artifacts/05-curl-meta.txt
+  - artifacts/counters-r2-pre.txt
+  - artifacts/counters-r2-post.txt
+
+notes: |
+  This is the FIRST experiment that proved the LIBFABRIC override unblocks
+  cross-node KV transfer. The fix was applied via `kubectl edit dgd` (not
+  yet committed to a manifest at this point). A follow-on commit (47c2f2c)
+  formalized the fix in the YAML; another (4c43f0f) added evidence docs but
+  no code change — see project-rev7-doc-only-commit memory.

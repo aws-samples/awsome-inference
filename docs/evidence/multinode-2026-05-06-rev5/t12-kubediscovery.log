@@ -1,0 +1,100 @@
+[2m2026-05-06T05:10:30.215111Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:10:37.212158Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:10:40.214530Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:10:40.214585Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:10:47.213132Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:10:50.214936Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:10:50.214990Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:10:57.212945Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:11:00.214479Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:11:00.214534Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:11:07.213147Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:11:10.215047Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:11:10.215095Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:11:17.212384Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:11:20.214520Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:11:20.214574Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:11:27.212671Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:11:30.214736Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:11:30.214792Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:11:37.212963Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:11:40.214663Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:11:40.214708Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:11:47.212885Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:11:50.214477Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:11:50.214517Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:11:57.212866Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:12:00.214881Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:12:00.214943Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:12:07.212974Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:12:10.214537Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:12:10.214580Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:12:17.212454Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:12:20.215076Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:12:20.215122Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:12:27.212124Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:12:30.215068Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:12:30.215128Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:12:37.212421Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:12:40.214852Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:12:40.214908Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:12:47.212681Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:12:50.214924Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:12:50.214967Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:12:57.212725Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:13:00.214407Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:13:00.214461Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:13:07.212551Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:13:10.214510Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:13:10.214579Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:13:17.212643Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:13:20.214791Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:13:20.214846Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:13:27.212863Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:13:30.214201Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:13:30.214247Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:13:37.212496Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:13:40.214326Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:13:40.214369Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:13:47.212804Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:13:50.215067Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:13:50.215129Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:13:57.212176Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:14:00.215045Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:14:00.215101Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:14:07.212809Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:14:10.214148Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:14:10.214200Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:14:17.213110Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:14:20.215041Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:14:20.215088Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:14:27.212704Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:14:30.215034Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:14:30.215091Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:14:37.212630Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:14:40.214820Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:14:40.214874Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:14:47.212834Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:14:50.214046Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:14:50.214087Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:14:57.213034Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:00.214753Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:15:00.214794Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:07.212286Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:10.214620Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:15:10.214678Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:17.213055Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:20.214171Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:15:20.214216Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:27.212783Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:30.214692Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:15:30.214738Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:33.523714Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:33.538254Z[0m [31mERROR[0m [1mhttp-request[0m: [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m404 [3mlatency_ms[0m[2m=[0m0 [2m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mrequest_id[0m[2m=[0mfa6f2774-8333-432e-8102-16d48fe46f12[0m
+[2m2026-05-06T05:15:37.212912Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:40.214896Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:15:40.214955Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:47.212495Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:50.214774Z[0m [32m INFO[0m [2mdynamo_runtime::discovery::kube[0m[2m:[0m KubeDiscoveryClient::list returning 0 instances for query=AllEndpoints
+[2m2026-05-06T05:15:50.214830Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0
+[2m2026-05-06T05:15:57.212780Z[0m [32m INFO[0m [2mdynamo_llm::http::service::service_v2[0m[2m:[0m http response sent [3mstatus[0m[2m=[0m200 [3mlatency_ms[0m[2m=[0m0

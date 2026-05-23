@@ -1,0 +1,117 @@
+Name:             dynamo-smoke-d35812db45d6
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             hyperpod-i-01aee349f9991c414/10.1.3.30
+Start Time:       Tue, 05 May 2026 17:16:33 +0000
+Labels:           app=dynamo-smoke
+                  sha=d35812db45d6
+Annotations:      k8s.v1.cni.cncf.io/networks:
+                    efa1,efa2,efa3,efa4,efa5,efa6,efa7,efa8,efa9,efa10,efa11,efa12,efa13,efa14,efa15,efa16,efa17,efa18,efa19,efa20,efa21,efa22,efa23,efa24,efa...
+Status:           Running
+IP:               10.1.3.30
+IPs:
+  IP:  10.1.3.30
+Containers:
+  dynamo:
+    Container ID:  containerd://3155be7841536b25af818a8439ee0f01e7bb9d30e3ea30e16141d1f9b5f534ef
+    Image:         058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:d35812db45d6
+    Image ID:      058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa@sha256:a530efb304c11ead7cf05e6bf40feeb1ed59fc41d8431ff77de789a5f59df1b8
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      /bin/bash
+      -lc
+    Args:
+      set -eo pipefail
+      echo "[smoke] $(date -Is) boot with image=058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:d35812db45d6 sha=d35812db45d6"
+      nvidia-smi -L
+      fi_info -p efa | head -20 || echo "[smoke][WARN] fi_info failed"
+      # Single-instance vLLM server on localhost:8000 (no DGD CRD).
+      export DYNAMO_BACKEND=vllm
+      export HF_HOME=/tmp/hf-cache
+      export FI_PROVIDER=efa
+      export FI_EFA_USE_DEVICE_RDMA=1
+      export NCCL_NET_PLUGIN=ofi
+      export NCCL_NVLS_ENABLE=0
+      mkdir -p /tmp/smoke
+      ( python3 -m vllm.entrypoints.openai.api_server \
+          --model facebook/opt-125m \
+          --max-model-len 2048 \
+          --gpu-memory-utilization 0.40 \
+          --port 8000 \
+          > /tmp/smoke/server.log 2>&1 ) &
+      SERVER_PID=$!
+      # Readiness wait — up to 5 min for tiny model.
+      for i in $(seq 1 60); do
+          sleep 5
+          if curl -sf http://127.0.0.1:8000/v1/models >/dev/null 2>&1; then
+              echo "[smoke] READY after ${i}*5s" > /tmp/smoke/ready
+              break
+          fi
+          kill -0 "$SERVER_PID" 2>/dev/null || { echo "[smoke][FAIL] server died"; cat /tmp/smoke/server.log; exit 1; }
+      done
+      [ -f /tmp/smoke/ready ] || { echo "[smoke][FAIL] readiness timeout"; tail -80 /tmp/smoke/server.log; exit 1; }
+      # Keep alive so the test harness can run checks.
+      echo "[smoke] sleeping for test harness"
+      sleep 3600
+      
+    State:          Running
+      Started:      Tue, 05 May 2026 17:16:35 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:                    8
+      hugepages-2Mi:          2Gi
+      memory:                 32Gi
+      nvidia.com/gpu:         1
+      vpc.amazonaws.com/efa:  32
+    Requests:
+      cpu:                    4
+      hugepages-2Mi:          2Gi
+      memory:                 16Gi
+      nvidia.com/gpu:         1
+      vpc.amazonaws.com/efa:  32
+    Environment:              <none>
+    Mounts:
+      /dev/hugepages from hugepages (rw)
+      /dev/shm from dshm (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-lnsgm (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  sagemaker-workload-storage:
+    Type:          HostPath (bare host directory volume)
+    Path:          /opt/sagemaker/workloads
+    HostPathType:  DirectoryOrCreate
+  dshm:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     Memory
+    SizeLimit:  64Gi
+  hugepages:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     HugePages
+    SizeLimit:  <unset>
+  kube-api-access-lnsgm:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              node.kubernetes.io/instance-type=ml.p5.48xlarge
+Tolerations:                 op=Exists
+                             nvidia.com/gpu:NoSchedule op=Exists
+                             vpc.amazonaws.com/efa:NoSchedule op=Exists
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  4s    default-scheduler  Successfully assigned default/dynamo-smoke-d35812db45d6 to hyperpod-i-01aee349f9991c414
+  Normal  Pulled     3s    kubelet            Container image "058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:d35812db45d6" already present on machine
+  Normal  Created    3s    kubelet            Created container: dynamo
+  Normal  Started    2s    kubelet            Started container dynamo

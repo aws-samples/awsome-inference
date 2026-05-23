@@ -1,0 +1,263 @@
+# syntax=docker/dockerfile:1.10
+# =============================================================================
+# Dynamo Combined EFA — TRT-LLM + vLLM in one image, clean overlay pattern
+# =============================================================================
+# A single deployable container that serves EITHER the TRT-LLM or vLLM backend
+# from NVIDIA's official Dynamo runtime images, with our EFA/NCCL/NIXL stack
+# layered on top via a clean multi-stage overlay.
+#
+# Selection at runtime:
+#   docker run ... -e DYNAMO_BACKEND=trtllm dynamo-combined-efa:v1
+#   docker run ... -e DYNAMO_BACKEND=vllm   dynamo-combined-efa:v1
+#
+# Design goals (contrast with the discarded docs/reference/Dockerfile.dynamo-combined-efa):
+#   - No libc10_compat.so ABI shim, no LD_PRELOAD hack
+#   - No sed-patched Python source
+#   - No 90+ line .so copy list — uses directory copies from networking-base:v5
+#   - Inherits CVE remediation + pinned versions from networking-base:v5
+#   - Inherits official Dynamo runtime images (no from-source rebuild)
+#   - Consistent EFA 1.48.0 / libfabric 2.4.0amzn3.0 / aws-ofi-nccl 1.19.0-1 NGC v1
+#
+# Build (self-contained — no pre-built private image required; CodeBuild works):
+#   docker build -f Dockerfile.dynamo-combined-efa \
+#       -t dynamo-combined-efa:v1 .
+#
+# The default NETWORKING_BASE is public.ecr.aws/v9l4g5s4/networking-base:v5
+# (anonymous pull, ~17 GB). Override if you mirror the base yourself:
+#   docker build --build-arg NETWORKING_BASE=your-registry/networking-base:v5 \
+#       -f Dockerfile.dynamo-combined-efa -t dynamo-combined-efa:v1 .
+#
+# Test distribution (per ticket P416074947):
+#   - g5.8xlarge     ( 1 EFA, A10G)  — basic EFA + single-backend smoke
+#   - p5.48xlarge    (32 EFA, H100)  — multi-rail EFA + both backends
+#   - p5en.48xlarge  (16 EFA, H200)  — multi-rail EFA + both backends
+# =============================================================================
+
+# networking-base:v5 is published to public.ecr.aws (anonymous pull, no AWS
+# auth needed). If you are building inside an AWS account, CodeBuild etc.
+# already has pull access to public.ecr.aws. If you want to override with
+# your own mirror, pass --build-arg NETWORKING_BASE=your-registry/your-base.
+#
+# NOTE — NO SBOM by design
+# This overlay Dockerfile is a *reference* showing the minimal pattern
+# for overlaying networking-base onto an upstream NGC runtime. The
+# shipping image with integrated SBOM + CVE scanning is
+# Dockerfile.dynamo-combined-efa (see sibling file).
+#
+ARG TRTLLM_IMAGE=nvcr.io/nvidia/ai-dynamo/tensorrtllm-runtime:1.0.1
+ARG VLLM_IMAGE=nvcr.io/nvidia/ai-dynamo/vllm-runtime:1.0.1
+
+# Public-only FROM chain. See Dockerfile.dynamo-combined-efa for the detailed
+# build of the networking stack; this overlay reference file mirrors the same
+# structure without the SBOM/CVE scanner stages.
+ARG CUDA_DL_BASE=nvcr.io/nvidia/cuda-dl-base:25.06-cuda12.9-devel-ubuntu24.04
+ARG GDRCOPY_REF=v2.5.2
+ARG EFA_VERSION=1.48.0
+ARG UCX_REF=v1.20.0
+ARG NIXL_REF=v1.0.1
+ARG NCCL_VERSION=v2.30.3-1
+
+# ---------------------
+# Networking source (shared)
+# ---------------------
+# efa-rdma + networking stages build from public cuda-dl-base, no private ARG
+FROM ${CUDA_DL_BASE} AS efa-rdma-stage
+ARG GDRCOPY_REF
+ARG EFA_VERSION
+USER root
+WORKDIR /workspace
+ENV CUDA_HOME=/usr/local/cuda \
+    PATH=/usr/local/cuda/bin:$PATH
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        autoconf automake build-essential cmake curl git libnuma-dev libtool \
+        librdmacm-dev libibverbs-dev ninja-build numactl pkg-config \
+        python3-dev python3-pip wget pciutils net-tools iproute2 nvtop \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && mkdir -p /tmp/efa && cd /tmp/efa && \
+    curl --retry 3 -fsSL -o aws-efa-installer-${EFA_VERSION}.tar.gz \
+        https://efa-installer.amazonaws.com/aws-efa-installer-${EFA_VERSION}.tar.gz && \
+    tar -xf aws-efa-installer-${EFA_VERSION}.tar.gz && cd aws-efa-installer && \
+    ./efa_installer.sh -y --skip-kmod --skip-limit-conf --no-verify && \
+    ./efa_installer.sh --build-ngc -y && \
+    dpkg --force-depends -i DEBS/UBUNTU*/$(uname -m)/libfabric-aws-dev_*.deb && \
+    rm -f /opt/amazon/efa/lib/libfabric.a && rm -rf /tmp/efa && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && ldconfig
+RUN find /usr/local/cuda*/NsightSystems-cli-*/target-linux-x64/plugins/efa_metrics/nic_sampler -delete 2>/dev/null; \
+    find / -type f -name "nic_sampler" -delete 2>/dev/null; true
+RUN git clone --depth 1 --branch ${GDRCOPY_REF} https://github.com/NVIDIA/gdrcopy.git && \
+    cd gdrcopy && make -j$(nproc) prefix=/opt/gdrcopy CUDA=${CUDA_HOME} lib && \
+    make prefix=/opt/gdrcopy CUDA=${CUDA_HOME} install && \
+    echo "/opt/gdrcopy/lib" > /etc/ld.so.conf.d/gdrcopy.conf && ldconfig && \
+    cd /workspace && rm -rf gdrcopy
+ENV LD_LIBRARY_PATH="/opt/amazon/efa/lib:/opt/gdrcopy/lib:${LD_LIBRARY_PATH:-}" \
+    PATH="/opt/amazon/efa/bin:${PATH}"
+
+FROM efa-rdma-stage AS networking
+ARG UCX_REF
+ARG NIXL_REF
+ARG NCCL_VERSION
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    libhwloc-dev libgflags-dev libtomlplusplus-dev && rm -rf /var/lib/apt/lists/*
+RUN pip3 install --no-cache-dir --break-system-packages meson pybind11
+RUN git clone --depth 1 --branch ${UCX_REF} https://github.com/openucx/ucx.git && \
+    cd ucx && ./autogen.sh && ./contrib/configure-release \
+        --prefix=/usr/local/ucx --enable-shared --disable-static --disable-doxygen-doc \
+        --enable-optimizations --enable-cma --enable-devel-headers \
+        --with-cuda=${CUDA_HOME} --with-verbs --with-dm \
+        --with-gdrcopy=/opt/gdrcopy --with-efa=/opt/amazon/efa --enable-mt && \
+    make -j$(nproc) && make -j install-strip && cd /workspace && rm -rf ucx
+ENV NIXL_PREFIX=/opt/nvidia/nvda_nixl
+RUN git clone --depth 1 --branch ${NIXL_REF} https://github.com/ai-dynamo/nixl.git && \
+    cd nixl && mkdir build && \
+    meson setup build/ --prefix=${NIXL_PREFIX} --libdir=lib64 --buildtype=release \
+        -Dcudapath_lib="${CUDA_HOME}/lib64" -Dcudapath_inc="${CUDA_HOME}/include" \
+        -Ducx_path="/usr/local/ucx" -Dlibfabric_path="/opt/amazon/efa" \
+        -Dbuild_tests=true -Dbuild_examples=true && \
+    cd build && ninja && ninja install && cd /workspace && rm -rf nixl
+RUN git clone --branch ${NCCL_VERSION} --depth 1 https://github.com/NVIDIA/nccl.git && \
+    cd nccl && make -j$(nproc) src.build \
+        NVCC_GENCODE="-gencode=arch=compute_80,code=sm_80 -gencode=arch=compute_90,code=sm_90 -gencode=arch=compute_100,code=sm_100" \
+        CUDA_HOME=${CUDA_HOME} BUILDDIR=/workspace/nccl-build && \
+    make install PREFIX=/usr/local/nccl BUILDDIR=/workspace/nccl-build && \
+    cd /workspace && rm -rf nccl nccl-build
+RUN curl -sL "https://dl.k8s.io/release/v1.35.4/bin/linux/amd64/kubectl" -o /usr/local/bin/kubectl && \
+    chmod +x /usr/local/bin/kubectl
+
+# ---------------------
+# TRT-LLM stage (intermediate — we harvest it into the combined stage)
+# ---------------------
+FROM ${TRTLLM_IMAGE} AS trtllm-stage
+
+USER root
+
+# EFA + RDMA core + UCX + NIXL + GDRCopy
+COPY --from=networking /opt/gdrcopy            /opt/gdrcopy
+COPY --from=networking /usr/local/ucx          /usr/local/ucx
+COPY --from=networking /opt/amazon/efa         /opt/amazon/efa
+COPY --from=networking /opt/nvidia/nvda_nixl   /opt/nvidia/nvda_nixl
+
+# rdma-core libs w/ EFA_1.4 symbols (overlay on top of whatever is in the runtime image)
+COPY --from=networking /lib/x86_64-linux-gnu/libefa.so*      /lib/x86_64-linux-gnu/
+COPY --from=networking /lib/x86_64-linux-gnu/libibverbs.so*  /lib/x86_64-linux-gnu/
+COPY --from=networking /lib/x86_64-linux-gnu/librdmacm.so*   /lib/x86_64-linux-gnu/
+
+RUN cd /lib/x86_64-linux-gnu \
+ && LIBEFA=$(ls libefa.so.1.*.0 2>/dev/null | sort -V | tail -1) \
+ && [ -n "$LIBEFA" ] && ln -sf "$LIBEFA" libefa.so.1 && ln -sf "$LIBEFA" libefa.so || true \
+ && ldconfig
+
+# Python tooling
+COPY --from=networking /usr/local/bin/kubectl /usr/local/bin/kubectl
+RUN pip install --no-cache-dir \
+      "nemo-evaluator>=0.2.5" \
+      "nvidia-resiliency-ext>=0.5.0" \
+      "genai-perf>=0.0.16" \
+      "nixl>=1.0.0" \
+      boto3 2>/dev/null || true
+
+# The Dynamo runtime images install everything into /opt/dynamo/venv.
+# We skip invoking python3 here (the runtime image's ENTRYPOINT runs
+# nvidia-smi diagnostics which can stall during `docker build` without a
+# GPU); record the paths statically and fs-check the layout instead.
+RUN echo "/opt/dynamo/venv"                                 > /opt/.trtllm_prefix \
+ && echo "/opt/dynamo/venv/lib/python3.12/site-packages"    > /opt/.trtllm_sitepkg \
+ && test -d /opt/dynamo/venv/lib/python3.12/site-packages/tensorrt_llm \
+ && test -x /opt/dynamo/venv/bin/trtllm-serve \
+ && test -x /opt/dynamo/venv/bin/trtllm-build
+
+# ---------------------
+# vLLM stage (intermediate)
+# ---------------------
+FROM ${VLLM_IMAGE} AS vllm-stage
+
+USER root
+
+COPY --from=networking /opt/gdrcopy            /opt/gdrcopy
+COPY --from=networking /usr/local/ucx          /usr/local/ucx
+COPY --from=networking /opt/amazon/efa         /opt/amazon/efa
+COPY --from=networking /opt/nvidia/nvda_nixl   /opt/nvidia/nvda_nixl
+
+COPY --from=networking /lib/x86_64-linux-gnu/libefa.so*      /lib/x86_64-linux-gnu/
+COPY --from=networking /lib/x86_64-linux-gnu/libibverbs.so*  /lib/x86_64-linux-gnu/
+COPY --from=networking /lib/x86_64-linux-gnu/librdmacm.so*   /lib/x86_64-linux-gnu/
+
+RUN cd /lib/x86_64-linux-gnu \
+ && LIBEFA=$(ls libefa.so.1.*.0 2>/dev/null | sort -V | tail -1) \
+ && [ -n "$LIBEFA" ] && ln -sf "$LIBEFA" libefa.so.1 && ln -sf "$LIBEFA" libefa.so || true \
+ && ldconfig
+
+COPY --from=networking /usr/local/bin/kubectl /usr/local/bin/kubectl
+RUN pip install --no-cache-dir \
+      "nemo-evaluator>=0.2.5" \
+      "nvidia-resiliency-ext>=0.5.0" \
+      "genai-perf>=0.0.16" \
+      "nixl>=1.0.0" \
+      boto3 2>/dev/null || true
+
+# ---------------------
+# Combined final stage — built on vLLM runtime as the base, with TRT-LLM stack
+# overlaid into an isolated prefix so the two Python environments don't clash.
+# ---------------------
+FROM vllm-stage AS combined
+
+USER root
+
+# Isolate TRT-LLM into /opt/trtllm so we don't stomp vLLM's site-packages.
+# The Dynamo TRT-LLM runtime ships everything under /opt/dynamo/venv. We keep
+# its self-contained venv intact at /opt/trtllm-venv and expose a /opt/trtllm
+# directory with just the symlinks that the entrypoint needs.
+COPY --from=trtllm-stage /opt/dynamo/venv                    /opt/trtllm-venv
+COPY --from=trtllm-stage /opt/.trtllm_prefix                 /opt/trtllm/.prefix
+COPY --from=trtllm-stage /opt/.trtllm_sitepkg                /opt/trtllm/.sitepkg
+
+# Quick sanity — the TRT-LLM venv must be usable as-is (it is a self-contained
+# Python environment, so Python itself doesn't run yet, but the files exist).
+RUN test -d /opt/trtllm-venv/lib/python3.12/site-packages/tensorrt_llm \
+ && test -x /opt/trtllm-venv/bin/trtllm-serve \
+ && test -x /opt/trtllm-venv/bin/trtllm-build \
+ && mkdir -p /opt/trtllm/bin \
+ && ln -sf /opt/trtllm-venv/bin/trtllm-serve /opt/trtllm/bin/trtllm-serve \
+ && ln -sf /opt/trtllm-venv/bin/trtllm-build /opt/trtllm/bin/trtllm-build \
+ && ln -sf /opt/trtllm-venv/lib/python3.12/site-packages/tensorrt_llm /opt/trtllm/tensorrt_llm
+
+# The official Dynamo runtime images use /workspace as the CWD; keep that.
+WORKDIR /workspace
+
+# Backend selector entrypoint — picks PYTHONPATH/PATH based on DYNAMO_BACKEND
+COPY entrypoint.sh /usr/local/bin/dynamo-combined-entrypoint
+RUN chmod +x /usr/local/bin/dynamo-combined-entrypoint
+
+ENV LD_LIBRARY_PATH="/opt/nvidia/nvda_nixl/lib64:/opt/nvidia/nvda_nixl/lib64/plugins:/usr/local/ucx/lib:/opt/amazon/efa/lib:/opt/gdrcopy/lib:${LD_LIBRARY_PATH:-}" \
+    PATH="/usr/local/ucx/bin:/opt/amazon/efa/bin:${PATH}" \
+    FI_PROVIDER=efa \
+    FI_EFA_USE_DEVICE_RDMA=1 \
+    FI_EFA_ENABLE_SHM=0 \
+    FI_EFA_ENABLE_SHM_TRANSFER=0 \
+    NCCL_NET_PLUGIN=ofi \
+    NCCL_TUNER_PLUGIN=ofi \
+    NCCL_GIN_TYPE=2 \
+    NCCL_NVLS_ENABLE=0 \
+    NCCL_SOCKET_IFNAME="^lo,docker,veth,eni" \
+    HPCX_DIR="" HPCX_MPI_DIR="" HPCX_HOME="" HPCX_UCX_DIR="" \
+    DYNAMO_BACKEND=vllm
+
+# Validation — filesystem-only. Python imports are deferred to runtime
+# because the NVIDIA runtime image's build-time entrypoint can stall the
+# CodeBuild step when run without GPU access.
+RUN echo "=== dynamo-combined-efa build validation ===" \
+ && ls /opt/nvidia/nvda_nixl/lib64/plugins/libplugin_LIBFABRIC.so \
+ && echo "  NIXL LIBFABRIC plugin: present" \
+ && ls /opt/amazon/efa/lib/libfabric.so* >/dev/null \
+ && echo "  libfabric: present" \
+ && ls /opt/trtllm-venv/bin/trtllm-serve >/dev/null \
+ && ls /opt/trtllm-venv/lib/python3.12/site-packages/tensorrt_llm >/dev/null \
+ && echo "  TRT-LLM venv present at /opt/trtllm-venv" \
+ && (ls /opt/dynamo/venv/lib/python3.12/site-packages/vllm >/dev/null 2>&1 \
+      && echo "  vLLM site-packages present at /opt/dynamo/venv" \
+      || echo "  vLLM: deferred (runtime check)") \
+ && echo "=== OK ==="
+
+ENTRYPOINT ["/usr/local/bin/dynamo-combined-entrypoint"]
+CMD ["--help"]

@@ -1,0 +1,274 @@
+# ===========================================================================
+# DynamoGraphDeployment — dynamo-combined-efa (vLLM backend)
+# ===========================================================================
+# SINGLE DGD with three services: Frontend + PrefillWorker + DecodeWorker.
+# Matches upstream canonical pattern (github.com/ai-dynamo/dynamo
+#   examples/backends/vllm/deploy/disagg.yaml).
+#
+# Why a single DGD:
+#   The operator auto-stamps the namespace as
+#   `<k8s-ns>-<dgd-name>-<service>`. If three separate DGDs are deployed,
+#   each service lands under a DIFFERENT dynamoNamespace and Frontend
+#   cannot discover the workers. A single DGD lets the operator stamp
+#   one namespace on all three services so Frontend -> {Prefill, Decode}
+#   routing works out of the box.
+#
+# Single image: dynamo-combined-efa (switch backend via DYNAMO_BACKEND env).
+# KV cache transfer: NIXL LIBFABRIC over EFA RDMA (peer-to-peer, cross-node).
+#
+# Prerequisites:
+#   - Dynamo operator installed (installs the nvidia.com/v1alpha1 CRDs)
+#   - dynamo-platform-etcd + dynamo-platform-nats running in the `default` ns
+#   - At least 2 nodes with EFA (p5.48xlarge / p5en.48xlarge)
+#   - FSx PVC `fsx-pvc` for HuggingFace model cache (override to emptyDir
+#     if you don't have FSx — search for "fsx-pvc" and swap the volume)
+#   - Secret `hf-token-secret` with HF_TOKEN / HUGGING_FACE_HUB_TOKEN
+#
+# Deploy:
+#   kubectl apply -f dgd-dynamo-combined-vllm.yaml
+#
+# Watch:
+#   kubectl get dgd,pods -l app.kubernetes.io/part-of=dynamo-combined-vllm
+#
+# Test (via frontend service):
+#   kubectl port-forward svc/dynamo-combined-vllm-frontend 8000:8000
+#   curl http://localhost:8000/v1/completions \
+#     -H 'Content-Type: application/json' \
+#     -d '{"model":"meta-llama/Llama-3.1-8B-Instruct","prompt":"Hello","max_tokens":20}'
+#
+# Cleanup:
+#   kubectl delete dgd dynamo-combined-vllm
+# ===========================================================================
+
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  name: dynamo-combined-vllm
+  namespace: default
+  labels:
+    app.kubernetes.io/part-of: dynamo-combined-vllm
+    backend: vllm
+spec:
+  services:
+
+    # -----------------------------------------------------------------------
+    # Frontend — HTTP ingress, no GPU
+    # -----------------------------------------------------------------------
+    Frontend:
+      envFromSecret: hf-token
+      componentType: frontend
+      replicas: 1
+      extraPodSpec:
+        mainContainer:
+          image: ${ECR_REGISTRY}/dynamo-efa:520cfc584abb
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              source /opt/dynamo/venv/bin/activate
+              exec python3 -m dynamo.frontend --http-port 8000 --http-host 0.0.0.0
+          resources:
+            limits:   { cpu: "4", memory: 8Gi }
+            requests: { cpu: "2", memory: 4Gi }
+      envs:
+        - { name: DYNAMO_BACKEND,     value: "vllm" }
+        - { name: ETCD_ENDPOINTS,     value: "http://dynamo-platform-etcd.default.svc.cluster.local:2379" }
+        - { name: NATS_SERVER,        value: "nats://dynamo-platform-nats.default.svc.cluster.local:4222" }
+        - { name: DYN_SYSTEM_PORT,    value: "9090" }
+        - { name: DYN_SYSTEM_ENABLED, value: "true" }
+
+    # -----------------------------------------------------------------------
+    # PrefillWorker — 1 GPU, EFA-attached
+    # -----------------------------------------------------------------------
+    PrefillWorker:
+      envFromSecret: hf-token
+      componentType: worker
+      subComponentType: prefill
+      replicas: 1
+      extraPodSpec:
+        hostNetwork: true
+        dnsPolicy: ClusterFirstWithHostNet
+        nodeSelector:
+          node.kubernetes.io/instance-type: ml.p5.48xlarge
+        tolerations:
+          - { key: nvidia.com/gpu, operator: Exists, effect: NoSchedule }
+        volumes:
+          - name: dev-infiniband
+            hostPath: { path: /dev/infiniband, type: DirectoryOrCreate }
+          - name: hugepages
+            emptyDir: { medium: HugePages }
+          - name: shared
+            persistentVolumeClaim: { claimName: dynamo-shared-storage }
+          - name: shm
+            emptyDir: { medium: Memory, sizeLimit: 64Gi }
+        mainContainer:
+          image: ${ECR_REGISTRY}/dynamo-efa:520cfc584abb
+          imagePullPolicy: IfNotPresent
+          securityContext: { privileged: true }
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              unset HPCX_DIR HPCX_MPI_DIR HPCX_HOME HPCX_UCX_DIR \
+                    HPCX_SHARP_DIR HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR \
+                    HPCX_HCOLL_DIR HPCX_MPI_TESTS_DIR
+              source /opt/dynamo/venv/bin/activate
+              exec python3 -m dynamo.vllm \
+                --model meta-llama/Llama-3.1-8B-Instruct \
+                --served-model-name meta-llama/Llama-3.1-8B-Instruct \
+                --disaggregation-mode prefill \
+                --kv-transfer-config '{"kv_connector":"NixlConnector","kv_role":"kv_both","kv_connector_extra_config":{"backends":["LIBFABRIC"]}}' \
+                --max-model-len 4096 \
+                --kv-events-config '{"publisher":"zmq","topic":"kv-events","endpoint":"tcp://*:20080","enable_kv_cache_events":true}' \
+                --gpu-memory-utilization 0.85
+          # Readiness probe on DYN_SYSTEM_PORT — required for Frontend discovery.
+          # The Dynamo runtime's KubeDiscoveryClient (daemon.rs:246 in 1.1.0)
+          # filters EndpointSlices by endpoint.conditions.ready==true. Without
+          # a probe, k8s keeps Pod Ready=False during model load, which blocks
+          # Service endpoint readiness, which hides the worker from Frontend.
+          # Root-cause evidence: docs/evidence/multinode-2026-05-06-rev5/
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
+          resources:
+            limits:
+              cpu: "16"
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+              hugepages-2Mi: 5120Mi
+            requests:
+              cpu: "16"
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+              hugepages-2Mi: 5120Mi
+          volumeMounts:
+            - { name: dev-infiniband, mountPath: /dev/infiniband }
+            - { name: hugepages,      mountPath: /dev/hugepages  }
+            - { name: shared,         mountPath: /shared         }
+            - { name: shm,            mountPath: /dev/shm        }
+      envs:
+        - { name: DYNAMO_BACKEND,             value: "vllm" }
+        - { name: DYN_ROUTER_MODE,           value: "kv" }
+        - { name: ETCD_ENDPOINTS,             value: "http://dynamo-platform-etcd.default.svc.cluster.local:2379" }
+        - { name: NATS_SERVER,                value: "nats://dynamo-platform-nats.default.svc.cluster.local:4222" }
+        - { name: DYN_SYSTEM_ENABLED,         value: "true" }
+        # NIXL KV-cache transport over EFA
+        - { name: NIXL_BACKEND,               value: "LIBFABRIC" }
+        - { name: NIXL_SKIP_TOPOLOGY_CHECK,   value: "1" }
+        - { name: NIXL_LIBFABRIC_MAX_RAILS,   value: "1" }
+        - { name: VLLM_NIXL_KVCACHE_BACKEND,  value: "LIBFABRIC" }
+        # EFA runtime
+        - { name: FI_PROVIDER,                value: "efa" }
+        - { name: FI_EFA_USE_DEVICE_RDMA,     value: "1" }
+        - { name: FI_EFA_ENABLE_SHM,          value: "0" }
+        - { name: FI_EFA_ENABLE_SHM_TRANSFER, value: "0" }
+        - { name: HF_HOME,                    value: "/shared/hf_cache" }
+        - name: VLLM_NIXL_SIDE_CHANNEL_HOST
+          valueFrom: { fieldRef: { fieldPath: status.podIP } }
+        - { name: VLLM_NIXL_SIDE_CHANNEL_PORT, value: "5700" }
+
+    # -----------------------------------------------------------------------
+    # DecodeWorker — 1 GPU, EFA-attached, anti-affinity to prefill
+    # -----------------------------------------------------------------------
+    DecodeWorker:
+      envFromSecret: hf-token
+      componentType: worker
+      subComponentType: decode
+      replicas: 1
+      extraPodSpec:
+        hostNetwork: true
+        dnsPolicy: ClusterFirstWithHostNet
+        nodeSelector:
+          node.kubernetes.io/instance-type: ml.p5.48xlarge
+        tolerations:
+          - { key: nvidia.com/gpu, operator: Exists, effect: NoSchedule }
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/part-of
+                      operator: In
+                      values: [dynamo-combined-vllm]
+                topologyKey: kubernetes.io/hostname
+        volumes:
+          - name: dev-infiniband
+            hostPath: { path: /dev/infiniband, type: DirectoryOrCreate }
+          - name: hugepages
+            emptyDir: { medium: HugePages }
+          - name: shared
+            persistentVolumeClaim: { claimName: dynamo-shared-storage }
+          - name: shm
+            emptyDir: { medium: Memory, sizeLimit: 64Gi }
+        mainContainer:
+          image: ${ECR_REGISTRY}/dynamo-efa:520cfc584abb
+          imagePullPolicy: IfNotPresent
+          securityContext: { privileged: true }
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              unset HPCX_DIR HPCX_MPI_DIR HPCX_HOME HPCX_UCX_DIR \
+                    HPCX_SHARP_DIR HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR \
+                    HPCX_HCOLL_DIR HPCX_MPI_TESTS_DIR
+              source /opt/dynamo/venv/bin/activate
+              exec python3 -m dynamo.vllm \
+                --model meta-llama/Llama-3.1-8B-Instruct \
+                --served-model-name meta-llama/Llama-3.1-8B-Instruct \
+                --disaggregation-mode decode \
+                --kv-transfer-config '{"kv_connector":"NixlConnector","kv_role":"kv_both","kv_connector_extra_config":{"backends":["LIBFABRIC"]}}' \
+                --max-model-len 4096 \
+                --kv-events-config '{"publisher":"zmq","topic":"kv-events","endpoint":"tcp://*:20080","enable_kv_cache_events":true}' \
+                --gpu-memory-utilization 0.85
+          # Readiness probe — see PrefillWorker above for full rationale.
+          # Without this, EndpointSlice stays ready=False during model load
+          # and Frontend's KubeDiscoveryClient returns 0 instances.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
+          resources:
+            limits:
+              cpu: "16"
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+              hugepages-2Mi: 5120Mi
+            requests:
+              cpu: "16"
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+              hugepages-2Mi: 5120Mi
+          volumeMounts:
+            - { name: dev-infiniband, mountPath: /dev/infiniband }
+            - { name: hugepages,      mountPath: /dev/hugepages  }
+            - { name: shared,         mountPath: /shared         }
+            - { name: shm,            mountPath: /dev/shm        }
+      envs:
+        - { name: DYNAMO_BACKEND,             value: "vllm" }
+        - { name: DYN_ROUTER_MODE,           value: "kv" }
+        - { name: ETCD_ENDPOINTS,             value: "http://dynamo-platform-etcd.default.svc.cluster.local:2379" }
+        - { name: NATS_SERVER,                value: "nats://dynamo-platform-nats.default.svc.cluster.local:4222" }
+        - { name: DYN_SYSTEM_ENABLED,         value: "true" }
+        - { name: NIXL_BACKEND,               value: "LIBFABRIC" }
+        - { name: NIXL_SKIP_TOPOLOGY_CHECK,   value: "1" }
+        - { name: NIXL_LIBFABRIC_MAX_RAILS,   value: "1" }
+        - { name: VLLM_NIXL_KVCACHE_BACKEND,  value: "LIBFABRIC" }
+        - { name: FI_PROVIDER,                value: "efa" }
+        - { name: FI_EFA_USE_DEVICE_RDMA,     value: "1" }
+        - { name: FI_EFA_ENABLE_SHM,          value: "0" }
+        - { name: FI_EFA_ENABLE_SHM_TRANSFER, value: "0" }
+        - { name: HF_HOME,                    value: "/shared/hf_cache" }
+        - name: VLLM_NIXL_SIDE_CHANNEL_HOST
+          valueFrom: { fieldRef: { fieldPath: status.podIP } }
+        - { name: VLLM_NIXL_SIDE_CHANNEL_PORT, value: "5700" }

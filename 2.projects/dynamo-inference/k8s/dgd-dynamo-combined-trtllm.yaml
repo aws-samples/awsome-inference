@@ -1,0 +1,239 @@
+# ===========================================================================
+# DynamoGraphDeployment — dynamo-combined-efa (TRT-LLM backend)
+# ===========================================================================
+# Same three-DGD shape as dgd-dynamo-combined-vllm.yaml, but DYNAMO_BACKEND=trtllm
+# so the entrypoint activates /opt/trtllm-venv and the workers run
+# `python3 -m dynamo.trtllm` instead of dynamo.vllm.
+#
+# Requires an engine-args JSON with NIXL KV transfer enabled. A working example
+# lives on FSx at /shared/nvrx-demo/nemotron_disagg_args.json:
+#   {
+#     "cache_transceiver_config": {"backend": "DEFAULT"},
+#     "disable_overlap_scheduler": true,
+#     "enable_block_reuse": false
+#   }
+#
+# Deploy:
+#   kubectl apply -f dgd-dynamo-combined-trtllm.yaml
+#
+# Cleanup:
+#   kubectl delete dgd dynamo-combined-trtllm-frontend \
+#                       dynamo-combined-trtllm-prefill  \
+#                       dynamo-combined-trtllm-decode
+# ===========================================================================
+
+---
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  name: dynamo-combined-trtllm-frontend
+  namespace: default
+  labels:
+    app.kubernetes.io/part-of: dynamo-combined-trtllm
+    backend: trtllm
+spec:
+  services:
+    Frontend:
+      dynamoNamespace: dynamo-combined-trtllm
+      componentType: frontend
+      replicas: 1
+      extraPodSpec:
+        mainContainer:
+          image: 159553542841.dkr.ecr.us-west-2.amazonaws.com/dynamo-combined-efa:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              source /opt/trtllm-venv/bin/activate
+              exec python3 -m dynamo.frontend --http-port 8000 --http-host 0.0.0.0
+          resources:
+            limits:   { cpu: "4", memory: 8Gi }
+            requests: { cpu: "2", memory: 4Gi }
+      envs:
+        - { name: DYNAMO_BACKEND, value: "trtllm" }
+        - { name: DYN_NAMESPACE,  value: "dynamo-combined-trtllm" }
+        - { name: ETCD_ENDPOINTS, value: "http://dynamo-platform-etcd.default.svc.cluster.local:2379" }
+        - { name: NATS_SERVER,    value: "nats://dynamo-platform-nats.default.svc.cluster.local:4222" }
+        - { name: DYN_SYSTEM_PORT,    value: "9090" }
+        - { name: DYN_SYSTEM_ENABLED, value: "true" }
+
+---
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  name: dynamo-combined-trtllm-prefill
+  namespace: default
+  labels:
+    app.kubernetes.io/part-of: dynamo-combined-trtllm
+    backend: trtllm
+spec:
+  services:
+    PrefillWorker:
+      dynamoNamespace: dynamo-combined-trtllm
+      componentType: worker
+      replicas: 1
+      extraPodSpec:
+        mainContainer:
+          image: 159553542841.dkr.ecr.us-west-2.amazonaws.com/dynamo-combined-efa:latest
+          imagePullPolicy: IfNotPresent
+          securityContext: { privileged: true }
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              unset HPCX_DIR HPCX_MPI_DIR HPCX_HOME HPCX_UCX_DIR \
+                    HPCX_SHARP_DIR HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR \
+                    HPCX_HCOLL_DIR HPCX_MPI_TESTS_DIR
+              source /opt/trtllm-venv/bin/activate
+              ENGINE_ARGS=$(cat /shared/nvrx-demo/nemotron_disagg_args.json)
+              exec python3 -m dynamo.trtllm \
+                --model-path dmvevents/Nemotron-Mini-4B-Instruct \
+                --served-model-name dmvevents/Nemotron-Mini-4B-Instruct \
+                --disaggregation-mode prefill \
+                --max-batch-size 32 \
+                --max-num-tokens 2048 \
+                --override-engine-args "$ENGINE_ARGS"
+          resources:
+            limits:
+              cpu: "16"
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+              hugepages-2Mi: 5120Mi
+            requests:
+              cpu: "16"
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+              hugepages-2Mi: 5120Mi
+          volumeMounts:
+            - { name: dev-infiniband, mountPath: /dev/infiniband }
+            - { name: hugepages,      mountPath: /dev/hugepages  }
+            - { name: shared,         mountPath: /shared         }
+            - { name: shm,            mountPath: /dev/shm        }
+        hostNetwork: true
+        dnsPolicy: ClusterFirstWithHostNet
+        tolerations:
+          - { key: nvidia.com/gpu, operator: Exists, effect: NoSchedule }
+        volumes:
+          - name: dev-infiniband
+            hostPath: { path: /dev/infiniband, type: DirectoryOrCreate }
+          - name: hugepages
+            emptyDir: { medium: HugePages }
+          - name: shared
+            persistentVolumeClaim: { claimName: fsx-pvc }
+          - name: shm
+            emptyDir: { medium: Memory, sizeLimit: 64Gi }
+      envs:
+        - { name: DYNAMO_BACKEND, value: "trtllm" }
+        - { name: DYN_NAMESPACE,  value: "dynamo-combined-trtllm" }
+        - { name: ETCD_ENDPOINTS, value: "http://dynamo-platform-etcd.default.svc.cluster.local:2379" }
+        - { name: NATS_SERVER,    value: "nats://dynamo-platform-nats.default.svc.cluster.local:4222" }
+        - { name: DYN_SYSTEM_PORT,    value: "9191" }
+        - { name: DYN_SYSTEM_ENABLED, value: "true" }
+        - { name: NIXL_BACKEND,               value: "LIBFABRIC" }
+        - { name: NIXL_SKIP_TOPOLOGY_CHECK,   value: "1" }
+        - { name: NIXL_LIBFABRIC_MAX_RAILS,   value: "1" }
+        - { name: TRTLLM_NIXL_KVCACHE_BACKEND, value: "LIBFABRIC" }
+        - { name: FI_PROVIDER,                value: "efa" }
+        - { name: FI_EFA_USE_DEVICE_RDMA,     value: "1" }
+        - { name: FI_EFA_ENABLE_SHM,          value: "0" }
+        - { name: FI_EFA_ENABLE_SHM_TRANSFER, value: "0" }
+        - { name: HF_HOME,                    value: "/shared/nvrx-demo/hf_cache" }
+        - name: NIXL_SIDE_CHANNEL_HOST
+          valueFrom: { fieldRef: { fieldPath: status.podIP } }
+        - { name: NIXL_SIDE_CHANNEL_PORT, value: "5700" }
+
+---
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  name: dynamo-combined-trtllm-decode
+  namespace: default
+  labels:
+    app.kubernetes.io/part-of: dynamo-combined-trtllm
+    backend: trtllm
+spec:
+  services:
+    DecodeWorker:
+      dynamoNamespace: dynamo-combined-trtllm
+      componentType: worker
+      replicas: 1
+      extraPodSpec:
+        mainContainer:
+          image: 159553542841.dkr.ecr.us-west-2.amazonaws.com/dynamo-combined-efa:latest
+          imagePullPolicy: IfNotPresent
+          securityContext: { privileged: true }
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              unset HPCX_DIR HPCX_MPI_DIR HPCX_HOME HPCX_UCX_DIR \
+                    HPCX_SHARP_DIR HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR \
+                    HPCX_HCOLL_DIR HPCX_MPI_TESTS_DIR
+              source /opt/trtllm-venv/bin/activate
+              ENGINE_ARGS=$(cat /shared/nvrx-demo/nemotron_disagg_args.json)
+              exec python3 -m dynamo.trtllm \
+                --model-path dmvevents/Nemotron-Mini-4B-Instruct \
+                --served-model-name dmvevents/Nemotron-Mini-4B-Instruct \
+                --disaggregation-mode decode \
+                --max-batch-size 32 \
+                --max-num-tokens 2048 \
+                --override-engine-args "$ENGINE_ARGS"
+          resources:
+            limits:
+              cpu: "16"
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+              hugepages-2Mi: 5120Mi
+            requests:
+              cpu: "16"
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+              vpc.amazonaws.com/efa: "1"
+              hugepages-2Mi: 5120Mi
+          volumeMounts:
+            - { name: dev-infiniband, mountPath: /dev/infiniband }
+            - { name: hugepages,      mountPath: /dev/hugepages  }
+            - { name: shared,         mountPath: /shared         }
+            - { name: shm,            mountPath: /dev/shm        }
+        hostNetwork: true
+        dnsPolicy: ClusterFirstWithHostNet
+        tolerations:
+          - { key: nvidia.com/gpu, operator: Exists, effect: NoSchedule }
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/part-of
+                      operator: In
+                      values: [dynamo-combined-trtllm]
+                topologyKey: kubernetes.io/hostname
+        volumes:
+          - name: dev-infiniband
+            hostPath: { path: /dev/infiniband, type: DirectoryOrCreate }
+          - name: hugepages
+            emptyDir: { medium: HugePages }
+          - name: shared
+            persistentVolumeClaim: { claimName: fsx-pvc }
+          - name: shm
+            emptyDir: { medium: Memory, sizeLimit: 64Gi }
+      envs:
+        - { name: DYNAMO_BACKEND, value: "trtllm" }
+        - { name: DYN_NAMESPACE,  value: "dynamo-combined-trtllm" }
+        - { name: ETCD_ENDPOINTS, value: "http://dynamo-platform-etcd.default.svc.cluster.local:2379" }
+        - { name: NATS_SERVER,    value: "nats://dynamo-platform-nats.default.svc.cluster.local:4222" }
+        - { name: DYN_SYSTEM_PORT,    value: "9191" }
+        - { name: DYN_SYSTEM_ENABLED, value: "true" }
+        - { name: NIXL_BACKEND,               value: "LIBFABRIC" }
+        - { name: NIXL_SKIP_TOPOLOGY_CHECK,   value: "1" }
+        - { name: NIXL_LIBFABRIC_MAX_RAILS,   value: "1" }
+        - { name: TRTLLM_NIXL_KVCACHE_BACKEND, value: "LIBFABRIC" }
+        - { name: FI_PROVIDER,                value: "efa" }
+        - { name: FI_EFA_USE_DEVICE_RDMA,     value: "1" }
+        - { name: FI_EFA_ENABLE_SHM,          value: "0" }
+        - { name: FI_EFA_ENABLE_SHM_TRANSFER, value: "0" }
+        - { name: HF_HOME,                    value: "/shared/nvrx-demo/hf_cache" }
+        - name: NIXL_SIDE_CHANNEL_HOST
+          valueFrom: { fieldRef: { fieldPath: status.podIP } }
+        - { name: NIXL_SIDE_CHANNEL_PORT, value: "5700" }

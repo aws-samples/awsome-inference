@@ -1,0 +1,183 @@
+[t11] init OK: world_size=16 nccl_ver=(2, 27, 5)
+ip-172-16-243-103:73:73 [0] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ^lo,docker,veth
+ip-172-16-243-103:73:73 [0] NCCL INFO Bootstrap: Using enp74s0:10.1.3.73<0>
+ip-172-16-243-103:73:73 [0] NCCL INFO cudaDriverVersion 13000
+ip-172-16-243-103:73:73 [0] NCCL INFO NCCL version 2.27.5+cuda12.9
+ip-172-16-243-103:73:73 [0] NCCL INFO Comm config Blocking set to 1
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Plugin name set by env to libnccl-net-ofi.so
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Loaded net plugin Libfabric (v10)
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v10 symbol.
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v9 symbol.
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v8 symbol.
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v7 symbol.
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v6 symbol.
+ip-172-16-243-103:73:619 [0] NCCL INFO Successfully loaded external plugin ofi
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Initializing aws-ofi-nccl 1.19.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Using Libfabric version 2.4
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Using CUDA driver version 13000 with runtime 12090
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Plugin selected platform: AWS
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Configuring AWS-specific options
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Internode latency set at 75.0 us
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Using transport protocol RDMA (platform set)
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Selected provider is efa, fabric is efa-direct (found 32 nics)
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 0 device #0 0000:52:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 0 device #1 0000:51:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 0 device #2 0000:50:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 0 device #3 0000:4f:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 1 device #0 0000:63:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 1 device #1 0000:62:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 1 device #2 0000:61:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 1 device #3 0000:60:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 2 device #0 0000:74:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 2 device #1 0000:73:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 2 device #2 0000:72:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 2 device #3 0000:71:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 3 device #0 0000:85:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 3 device #1 0000:84:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 3 device #2 0000:83:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 3 device #3 0000:82:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 4 device #0 0000:96:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 4 device #1 0000:95:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 4 device #2 0000:94:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 4 device #3 0000:93:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 5 device #0 0000:a7:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 5 device #1 0000:a6:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 5 device #2 0000:a5:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 5 device #3 0000:a4:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 6 device #0 0000:b8:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 6 device #1 0000:b7:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 6 device #2 0000:b6:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 6 device #3 0000:b5:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 7 device #0 0000:c9:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 7 device #1 0000:c8:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 7 device #2 0000:c7:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI NIC group 7 device #3 0000:c6:00.0
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID of rdmap82s0: 13b2755f00000501
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID for dev[0]: 00000000000000000a01034900000000
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Created device with 4 rails
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID of rdmap99s0: 5ba5ba9b00001c00
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID for dev[1]: 00000000000000000a01034900000001
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Created device with 4 rails
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID of rdmap116s0: 657672ea00004601
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID for dev[2]: 00000000000000000a01034900000002
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Created device with 4 rails
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID of rdmap133s0: 1b2f668a00005d00
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID for dev[3]: 00000000000000000a01034900000003
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Created device with 4 rails
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID of rdmap150s0: 0ba4e36b00008300
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID for dev[4]: 00000000000000000a01034900000004
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Created device with 4 rails
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID of rdmap167s0: ef3196c100009b01
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID for dev[5]: 00000000000000000a01034900000005
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Created device with 4 rails
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID of rdmap184s0: 3d43e4f50000be00
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID for dev[6]: 00000000000000000a01034900000006
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Created device with 4 rails
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID of rdmap201s0: 8fc5f19e0000d601
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI GUID for dev[7]: 00000000000000000a01034900000007
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Created device with 4 rails
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Support for global registrations: true
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Support for DMA-BUF registrations: false
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Adding FI_EFA_FORK_SAFE=1 to environment
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Adding NCCL_BUFFSIZE=8388608 to environment
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Adding NCCL_NET_FORCE_FLUSH=0 to environment
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Adding NCCL_NVLSTREE_MAX_CHUNKSIZE=524288 to environment
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Adding NCCL_NVLS_CHUNKSIZE=524288 to environment
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Adding NCCL_P2P_NET_CHUNKSIZE=524288 to environment
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Adding NCCL_TOPO_FILE=/proc/self/fd/184 to environment
+ip-172-16-243-103:73:619 [0] NCCL INFO Initialized NET plugin Libfabric
+ip-172-16-243-103:73:619 [0] NCCL INFO Assigned NET plugin Libfabric to comm
+ip-172-16-243-103:73:619 [0] NCCL INFO Using network Libfabric
+ip-172-16-243-103:73:619 [0] NCCL INFO DMA-BUF is available on GPU device 0
+ip-172-16-243-103:73:619 [0] NCCL INFO ncclCommInitRankConfig comm 0x48686640 rank 0 nranks 16 cudaDev 0 nvmlDev 0 busId 53000 commId 0x6ed44f8557b5cebb - Init START
+ip-172-16-243-103:73:619 [0] NCCL INFO RAS client listening socket at 127.0.0.1<28028>
+ip-172-16-243-103:73:619 [0] NCCL INFO Bootstrap timings total 0.838308 (create 0.000052, send 0.000284, recv 0.833733, ring 0.003556, delay 0.000001)
+ip-172-16-243-103:73:619 [0] NCCL INFO MNNVL busId 0x53000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+ip-172-16-243-103:73:619 [0] NCCL INFO NCCL_TOPO_FILE set by environment to /proc/self/fd/184
+ip-172-16-243-103:73:619 [0] NCCL INFO Setting affinity for GPU 0 to 0-47
+ip-172-16-243-103:73:619 [0] NCCL INFO NCCL_NVLS_ENABLE set by environment to 0.
+ip-172-16-243-103:73:619 [0] NCCL INFO comm 0x48686640 rank 0 nRanks 16 nNodes 2 localRanks 8 localRank 0 MNNVL 0
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 00/16 :  0  7  6  5  4  3  2  1  9 10 11 12 13 14 15  8
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 01/16 :  0  8 15 14 13 12 11 10  9  1  2  3  4  5  6  7
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 02/16 :  0  7  6  5  4  3 11 12 13 14 15  8  9 10  2  1
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 03/16 :  0  1  2 10  9  8 15 14 13 12 11  3  4  5  6  7
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 04/16 :  0  7  6  5 13 14 15  8  9 10 11 12  4  3  2  1
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 05/16 :  0  1  2  3  4 12 11 10  9  8 15 14 13  5  6  7
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 06/16 :  0  7 15  8  9 10 11 12 13 14  6  5  4  3  2  1
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 07/16 :  0  1  2  3  4  5  6 14 13 12 11 10  9  8 15  7
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 08/16 :  0  7  6  5  4  3  2  1  9 10 11 12 13 14 15  8
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 09/16 :  0  8 15 14 13 12 11 10  9  1  2  3  4  5  6  7
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 10/16 :  0  7  6  5  4  3 11 12 13 14 15  8  9 10  2  1
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 11/16 :  0  1  2 10  9  8 15 14 13 12 11  3  4  5  6  7
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 12/16 :  0  7  6  5 13 14 15  8  9 10 11 12  4  3  2  1
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 13/16 :  0  1  2  3  4 12 11 10  9  8 15 14 13  5  6  7
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 14/16 :  0  7 15  8  9 10 11 12 13 14  6  5  4  3  2  1
+ip-172-16-243-103:73:619 [0] NCCL INFO Channel 15/16 :  0  1  2  3  4  5  6 14 13 12 11 10  9  8 15  7
+ip-172-16-243-103:73:619 [0] NCCL INFO Trees [0] 1/8/-1->0->-1 [1] -1/-1/-1->0->7 [2] 1/-1/-1->0->7 [3] 1/-1/-1->0->7 [4] 1/-1/-1->0->7 [5] 1/-1/-1->0->7 [6] 1/-1/-1->0->7 [7] 1/-1/-1->0->7 [8] 1/-1/-1->0->8 [9] -1/-1/-1->0->7 [10] 1/-1/-1->0->7 [11] 1/-1/-1->0->7 [12] 1/-1/-1->0->7 [13] 1/-1/-1->0->7 [14] 1/-1/-1->0->7 [15] 1/-1/-1->0->7
+ip-172-16-243-103:73:619 [0] NCCL INFO NCCL_BUFFSIZE set by environment to 8388608.
+ip-172-16-243-103:73:619 [0] NCCL INFO NCCL_P2P_NET_CHUNKSIZE set by environment to 524288.
+ip-172-16-243-103:73:619 [0] NCCL INFO P2P Chunksize set to 524288
+ip-172-16-243-103:73:619 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+ip-172-16-243-103:73:619 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0
+ip-172-16-243-103:73:651 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 37
+ip-172-16-243-103:73:642 [0] NCCL INFO [Proxy Service] Device 0 CPU core 26
+ip-172-16-243-103:73:619 [0] NCCL INFO threadThresholds 8/8/64 | 128/8/64 | 512 | 512
+ip-172-16-243-103:73:619 [0] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 2 p2p channels per peer
+ip-172-16-243-103:73:619 [0] NCCL INFO CC Off, workFifoBytes 1048576
+ip-172-16-243-103:73:619 [0] NCCL INFO TUNER/Plugin: Plugin name set by env to libnccl-tuner-ofi.so
+ip-172-16-243-103:73:619 [0] NCCL INFO TUNER/Plugin: Failed to find ncclTunerPlugin_v4 symbol.
+ip-172-16-243-103:73:619 [0] NCCL INFO TUNER/Plugin: Using tuner plugin nccl_ofi_tuner
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Tuner selected platform: AWS
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5.48xlarge
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 16 ranks and 2 nodes.
+ip-172-16-243-103:73:619 [0] NCCL INFO NET/OFI Tuner init: comm with 16 ranks and 2 nodes.
+ip-172-16-243-103:73:619 [0] NCCL INFO ncclCommInitRankConfig comm 0x48686640 rank 0 nranks 16 cudaDev 0 nvmlDev 0 busId 53000 commId 0x6ed44f8557b5cebb - Init COMPLETE
+ip-172-16-243-103:73:619 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 0 nranks 16 total 2.48 (kernels 0.27, al[t11] size=    1 MiB  time=   0.32 ms  algbw=  3.29 GB/s  busbw=  6.16 GB/s
+[t11] size=    4 MiB  time=   0.14 ms  algbw= 30.37 GB/s  busbw= 56.95 GB/s
+[t11] size=   16 MiB  time=   0.35 ms  algbw= 48.50 GB/s  busbw= 90.94 GB/s
+[t11] size=   64 MiB  time=   0.61 ms  algbw=109.18 GB/s  busbw=204.72 GB/s
+[t11] size=  256 MiB  time=   1.84 ms  algbw=146.24 GB/s  busbw=274.20 GB/s
+[t11] size= 1024 MiB  time=   6.09 ms  algbw=176.20 GB/s  busbw=330.38 GB/s
+[t11] wrote /tmp/t11-results.json
+loc 0.73, bootstrap 0.84, allgathers 0.00, topo 0.07, graphs 0.01, connections 0.06, rest 0.49)
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 00/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 02/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 03/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 04/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 05/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 06/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 07/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 08/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 10/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 11/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 12/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 13/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 14/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 15/0 : 0[0] -> 1[1] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 01/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 02/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 03/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 04/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 05/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 06/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 07/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 09/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 10/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 11/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 12/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 13/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 14/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 15/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:664 [0] NCCL INFO NCCL_NET_FORCE_FLUSH set by environment to 0.
+ip-172-16-243-103:73:671 [0] NCCL INFO [Proxy Progress] Device 0 CPU core 26
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 00/0 : 8[0] -> 0[0] [receive] via NET/Libfabric/0/GDRDMA
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 08/0 : 8[0] -> 0[0] [receive] via NET/Libfabric/0/GDRDMA
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 00/0 : 0[0] -> 8[0] [send] via NET/Libfabric/0/GDRDMA
+ip-172-16-243-103:73:664 [0] NCCL INFO Channel 08/0 : 0[0] -> 8[0] [send] via NET/Libfabric/0/GDRDMA
+ip-172-16-243-103:73:664 [0] NCCL INFO Connected all trees
+ip-172-16-243-103:73:678 [0] NCCL INFO Channel 00/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:678 [0] NCCL INFO Channel 08/0 : 0[0] -> 7[7] via P2P/CUMEM
+ip-172-16-243-103:73:678 [0] NCCL INFO Channel 01/0 : 0[0] -> 8[0] [send] via NET/Libfabric/0/GDRDMA
+ip-172-16-243-103:73:678 [0] NCCL INFO Channel 09/0 : 0[0] -> 8[0] [send] via NET/Libfabric/0/GDRDMA
+ip-172-16-243-103:73:678 [0] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+ip-172-16-243-103:73:73 [0] NCCL INFO comm 0x48686640 rank 0 nranks 16 cudaDev 0 busId 53000 - Destroy COMPLETE

@@ -1,0 +1,44 @@
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" Paris","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":".","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" The","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" capital","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" of","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" France","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" is","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" Paris","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":".","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" The","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" capital","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" of","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" France","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" is","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" Paris","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":".","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" The","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" capital","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" of","index":0}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null}
+
+data: {"id":"cmpl-131994fe-b9f2-49fa-b245-f12e325f15cf","choices":[{"text":" France","index":0,"finish_reason":"length"}],"created":1778067615,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":null,"nvext":{"timing":{"request_received_ms":1778067615056,"total_time_ms":130.13653}}}
+
+data: [DONE]
+
+
+HTTP 200 | latency 0.133573s

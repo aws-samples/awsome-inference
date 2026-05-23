@@ -1,0 +1,110 @@
+[smoke 2026-05-05T17:01:51+00:00] === smoke.sh SHA=d35812db45d6 image=058264135704.dkr.ecr.us-east-1.amazonaws.com/dynamo-efa:d35812db45d6 model=facebook/opt-125m ===
+<string>:5: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+[smoke 2026-05-05T17:01:51+00:00] claimed H100 lock
+[smoke 2026-05-05T17:01:51+00:00] T1 image pushed to ECR
+[smoke FAIL] image 058264135704.dkr.ecr.us-east-1.amazonaws.com/dynamo-efa:d35812db45d6 not in ECR — run CodeBuild first
+[smoke 2026-05-05T17:01:52+00:00] teardown: deleting pod dynamo-smoke-d35812db45d6
+<string>:5: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+[smoke 2026-05-05T17:06:09+00:00] === smoke.sh SHA=d35812db45d6 image=058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:d35812db45d6 model=facebook/opt-125m ===
+[smoke FAIL] cluster-lock-h100 held by 'dyno-smoke-d35812db45d6' — abort
+[smoke 2026-05-05T17:07:39+00:00] === smoke.sh SHA=d35812db45d6 image=058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:d35812db45d6 model=facebook/opt-125m ===
+<string>:5: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+[smoke 2026-05-05T17:07:39+00:00] claimed H100 lock
+[smoke 2026-05-05T17:07:39+00:00] T1 image pushed to ECR
+[smoke 2026-05-05T17:07:39+00:00]   T1: PASS
+[smoke 2026-05-05T17:07:39+00:00] T2 image sanity
+[smoke 2026-05-05T17:07:39+00:00]   image size: 23.6 GB
+[smoke 2026-05-05T17:07:39+00:00]   T2: PASS
+[smoke 2026-05-05T17:07:39+00:00] T4 deploy smoke pod
+The Pod "dynamo-smoke-d35812db45d6" is invalid: spec.containers[0].resources: Forbidden: HugePages require cpu or memory
+[smoke 2026-05-05T17:07:41+00:00] teardown: deleting pod dynamo-smoke-d35812db45d6
+<string>:5: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+[smoke 2026-05-05T17:09:32+00:00] === smoke.sh SHA=d35812db45d6 image=058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:d35812db45d6 model=facebook/opt-125m ===
+<string>:5: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+[smoke 2026-05-05T17:09:32+00:00] claimed H100 lock
+[smoke 2026-05-05T17:09:32+00:00] T1 image pushed to ECR
+[smoke 2026-05-05T17:09:33+00:00]   T1: PASS
+[smoke 2026-05-05T17:09:33+00:00] T2 image sanity
+[smoke 2026-05-05T17:09:33+00:00]   image size: 23.6 GB
+[smoke 2026-05-05T17:09:33+00:00]   T2: PASS
+[smoke 2026-05-05T17:09:33+00:00] T4 deploy smoke pod
+pod/dynamo-smoke-d35812db45d6 created
+[smoke 2026-05-05T17:09:34+00:00] waiting for pod Ready (up to 10 min)…
+pod/dynamo-smoke-d35812db45d6 condition met
+[smoke 2026-05-05T17:12:55+00:00]   EFA devices: 96
+[smoke 2026-05-05T17:12:55+00:00]   T4: PASS
+[smoke 2026-05-05T17:12:55+00:00] T3 NCCL fat-binary arches
+[smoke 2026-05-05T17:12:58+00:00]   T3: PASS
+[smoke 2026-05-05T17:12:58+00:00] T5 vLLM /v1/models
+[smoke 2026-05-05T17:12:59+00:00]   T5: FAIL
+[smoke 2026-05-05T17:12:59+00:00]   T5: PASS
+[smoke 2026-05-05T17:12:59+00:00] T6 chat completion
+[smoke 2026-05-05T17:13:00+00:00]   latency: 852 ms
+[smoke 2026-05-05T17:13:00+00:00]   T6: FAIL
+[smoke 2026-05-05T17:13:00+00:00] T7 RDMA hw_counters
+[smoke 2026-05-05T17:13:10+00:00]   total _bytes counters: 12260214835062476
+[smoke 2026-05-05T17:13:10+00:00]   T7: PASS
+[smoke 2026-05-05T17:13:10+00:00] T8 NCCL WARN scan
+[smoke 2026-05-05T17:13:11+00:00]   T8: PASS
+[smoke 2026-05-05T17:13:11+00:00] T9 SBOM files
+[smoke 2026-05-05T17:13:13+00:00]   T9: PASS
+
+# smoke d35812db45d6 summary
+
+- image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:d35812db45d6
+- model: facebook/opt-125m
+- size: 23.6 GB
+- EFA devices: 96
+- completion latency: 852 ms
+- hw_counters total bytes: 12260214835062476
+- blocking fails: T5 T6
+- warning fails: none
+
+[smoke FAIL] blocking gates failed: T5 T6
+[smoke 2026-05-05T17:13:13+00:00] teardown: deleting pod dynamo-smoke-d35812db45d6
+pod "dynamo-smoke-d35812db45d6" deleted
+<string>:5: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+[smoke 2026-05-05T17:16:31+00:00] === smoke.sh SHA=d35812db45d6 image=058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:d35812db45d6 model=facebook/opt-125m ===
+<string>:5: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+[smoke 2026-05-05T17:16:31+00:00] claimed H100 lock
+[smoke 2026-05-05T17:16:31+00:00] T1 image pushed to ECR
+[smoke 2026-05-05T17:16:31+00:00]   T1: PASS
+[smoke 2026-05-05T17:16:31+00:00] T2 image sanity
+[smoke 2026-05-05T17:16:31+00:00]   image size: 23.6 GB
+[smoke 2026-05-05T17:16:31+00:00]   T2: PASS
+[smoke 2026-05-05T17:16:31+00:00] T4 deploy smoke pod
+pod/dynamo-smoke-d35812db45d6 created
+[smoke 2026-05-05T17:16:33+00:00] waiting for pod Ready (up to 10 min)…
+pod/dynamo-smoke-d35812db45d6 condition met
+[smoke 2026-05-05T17:16:38+00:00]   EFA devices: 96
+[smoke 2026-05-05T17:16:38+00:00]   T4: PASS
+[smoke 2026-05-05T17:16:38+00:00] T3 NCCL fat-binary arches
+[smoke 2026-05-05T17:16:41+00:00]   T3: PASS
+[smoke 2026-05-05T17:16:41+00:00] T5 vLLM /v1/models (polling up to 8 min for model load)
+[smoke 2026-05-05T17:17:58+00:00]   T5: PASS (after 80s)
+[smoke 2026-05-05T17:17:58+00:00] T6 chat completion
+[smoke 2026-05-05T17:17:59+00:00]   latency: 937 ms
+[smoke 2026-05-05T17:17:59+00:00]   T6: PASS (" I'm a newbie to the game and I'm looking for a good way to …")
+[smoke 2026-05-05T17:17:59+00:00] T7 RDMA hw_counters
+[smoke 2026-05-05T17:18:09+00:00]   total _bytes counters: 12260214835062476
+[smoke 2026-05-05T17:18:09+00:00]   T7: PASS
+[smoke 2026-05-05T17:18:09+00:00] T8 NCCL WARN scan
+[smoke 2026-05-05T17:18:09+00:00]   T8: PASS
+[smoke 2026-05-05T17:18:10+00:00] T9 SBOM files
+[smoke 2026-05-05T17:18:12+00:00]   T9: PASS
+
+# smoke d35812db45d6 summary
+
+- image: 058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:d35812db45d6
+- model: facebook/opt-125m
+- size: 23.6 GB
+- EFA devices: 96
+- completion latency: 937 ms
+- hw_counters total bytes: 12260214835062476
+- blocking fails: none
+- warning fails: none
+
+[smoke 2026-05-05T17:18:12+00:00] === smoke.sh PASS for d35812db45d6 ===
+[smoke 2026-05-05T17:18:12+00:00] teardown: deleting pod dynamo-smoke-d35812db45d6
+pod "dynamo-smoke-d35812db45d6" deleted
+<string>:5: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).

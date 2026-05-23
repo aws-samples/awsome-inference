@@ -1,0 +1,13 @@
+=== T11 /v1/models ===
+{"object":"list","data":[{"id":"meta-llama/Llama-3.1-8B-Instruct","object":"model","created":1779556748,"owned_by":"nvidia","context_window":4096}]}
+=== Q1 cold ===
+{"id":"cmpl-8384f788-9d27-4933-99c2-202281ae3975","choices":[{"text":" Paris. The capital of France is Paris. The capital of France is Paris. The capital of France","index":0,"finish_reason":"length"}],"created":1779556752,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":{"prompt_tokens":5,"completion_tokens":20,"total_tokens":25},"nvext":{"timing":{"request_received_ms":1779556752052,"total_time_ms":1861.9349939999997}}}
+HTTP=200 TIME=1.864915s
+
+=== Q2 prefix-match (expect KV cache hit) ===
+{"id":"cmpl-9976f135-baa5-4da8-9df8-e6389c7a2bdb","choices":[{"text":" Paris. The capital of France is Paris. The capital of France is Paris","index":0,"finish_reason":"length"}],"created":1779556782,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":{"prompt_tokens":5,"completion_tokens":15,"total_tokens":20},"nvext":{"timing":{"request_received_ms":1779556782566,"total_time_ms":119.856238}}}
+HTTP=200 TIME=0.122676s
+
+=== Q3 fresh ===
+{"id":"cmpl-5311cbfa-8cdc-4ed7-9826-1c3122d989c0","choices":[{"text":" wave function is a mathematical description of the quantum state of a system. It encodes all the information","index":0,"finish_reason":"length"}],"created":1779556819,"model":"meta-llama/Llama-3.1-8B-Instruct","system_fingerprint":null,"object":"text_completion","usage":{"prompt_tokens":5,"completion_tokens":20,"total_tokens":25},"nvext":{"timing":{"request_received_ms":1779556819565,"total_time_ms":151.933824}}}
+HTTP=200 TIME=0.154995s

@@ -1,0 +1,90 @@
+schema_version: "1.1"
+
+parameters:
+  ECR_REGISTRY: "${ECR_REGISTRY}"
+  IMAGE_TAG: "33b2c52e8660"
+  AWS_REGION: "us-east-2"
+
+experiment_id: rev8-build15-nixlbench-partial
+campaign: pr72-rev8
+date: 2026-05-21T22:00:00Z
+status: PARTIAL
+
+image:
+  registry: "${ECR_REGISTRY}"
+  repository: dynamo-efa
+  tag: 33b2c52e8660
+  digest: sha256:2a47ff97d54c25ae1a8afc7b602aaf4c667261ccd139a619ca7b6ec0717458c1
+  built_from_commit: 33b2c52
+
+git:
+  repo: dmvevents/awsome-inference-1
+  commit: 33b2c52
+  branch: feature/dynamo-combined-vllm-trtllm-efa
+
+hardware:
+  region: us-east-2
+  instance_type: p5.48xlarge
+  node_count: 2
+  gpu: H100
+  efa_version: 1.48.0
+
+stack:
+  nixl: v1.0.1
+  libfabric: 2.4.0amzn3.0
+  nixlbench: v1.0.1
+
+config:
+  test_type: wire-level-bench
+  workload: nixlbench
+  features: [libfabric, vram-vram, etcd-coordination]
+  topology: cross-node
+  backend: LIBFABRIC
+
+results:
+  status: PARTIAL — silent COPY-drop fix from bb83ad3+33b2c52 confirmed; 2 new gaps surfaced
+  copy_drop_fix_validated: yes (/opt/nixlbench/bin/nixlbench is now in trtllm/vllm runtime stages)
+  gap_1: libgflags2.2 + libtomlplusplus3 missing in runtime stages
+  gap_2: etcd-cpp-api not detected by meson at compile time → ETCD runtime not registered
+  symptom_1: "nixlbench: error while loading shared libraries: libgflags.so.2.2"
+  symptom_2: "Invalid runtime: ETCD"
+  successor_image: 520cfc584abb (rev8 build #19 PASS — closes both gaps)
+  smoke_pass_count: 7
+  smoke_fail_count: 3
+
+documents:
+  verdict: VERDICT.md
+  reproduce: REPRODUCE.md
+
+artifacts:
+  - artifacts/00-smoke.log
+  - artifacts/00-manifest-applied.yaml
+  - artifacts/01-apply.log
+  - artifacts/01-image-validation.txt
+  - artifacts/02-manifest-applied.yaml
+  - artifacts/02-pods-initial.txt
+  - artifacts/03-apply.log
+  - artifacts/03-wait.log
+  - artifacts/04-pods-ready.txt
+  - artifacts/04-wait-ready.log
+  - artifacts/05-binary-check.txt
+  - artifacts/05-pod-a.log
+  - artifacts/05-pod-b.log
+  - artifacts/06-pod-a.log
+  - artifacts/06-pod-b.log
+  - artifacts/07-pod-a-status.json
+  - artifacts/README.md
+  - artifacts/VERDICT.md
+  - artifacts/counters-r4-pre.txt
+
+notes: |
+  PARTIAL = silent-COPY-drop fix worked, but binary couldn't run end-to-end
+  due to missing runtime libs + missing etcd-cpp-api detection.
+
+  These gaps motivated the rev8 build #19 fixes:
+    - source-build etcd-cpp-apiv3 v0.15.4
+    - manually write /usr/local/lib/pkgconfig/etcd-cpp-api.pc
+    - apt install runtime t64 packages: libcpprest2.10 libprotobuf32t64 libgrpc29t64 libgrpc++1.51t64
+    - copy libetcd-cpp-api*.so* into trtllm/vllm runtime stages
+
+  Successor (PASS): ../2026-05-22T0550Z-nixlbench-multinode-PASS/

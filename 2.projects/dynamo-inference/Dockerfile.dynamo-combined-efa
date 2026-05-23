@@ -1,0 +1,517 @@
+# syntax=docker/dockerfile:1.10
+# =============================================================================
+# Dockerfile.dynamo-combined-efa — Dynamo with vLLM + TRT-LLM over EFA
+# =============================================================================
+#
+# Single deployable container serving EITHER the TRT-LLM or vLLM backend from
+# NVIDIA's official Dynamo runtime images, with the EFA/NCCL/NIXL networking
+# stack overlaid. Includes SBOM (syft) and CVE scanning (trivy) in-build.
+#
+# Runtime backend selection:
+#   docker run ... -e DYNAMO_BACKEND=vllm   dynamo-combined-efa:v1  (default)
+#   docker run ... -e DYNAMO_BACKEND=trtllm dynamo-combined-efa:v1
+#
+# Multi-arch build:
+#   docker buildx build --platform linux/amd64,linux/arm64 \
+#       -f Dockerfile.dynamo-combined-efa \
+#       -t dynamo-combined-efa:v1 .
+#
+# Single-arch (typical for GPU clusters):
+#   docker buildx build --platform linux/amd64 \
+#       -f Dockerfile.dynamo-combined-efa \
+#       -t dynamo-combined-efa:v1 .
+#
+# Build args:
+#   NETWORKING_BASE  — networking-base image (default: public ECR)
+#   TRTLLM_IMAGE     — TRT-LLM runtime source (default: NGC 1.1.0)
+#   VLLM_IMAGE       — vLLM runtime source (default: NGC 1.1.0)
+#   GENERATE_SBOM    — "0" to skip SBOM (default: "1")
+#   CVE_SCAN         — "0" to skip CVE scan (default: "1")
+#
+# Security artifacts (inside image at /opt/security/):
+#   sbom.spdx.json       — SPDX 2.3 SBOM
+#   sbom.cyclonedx.json  — CycloneDX 1.5 SBOM
+#   cve-report.txt       — Trivy CRITICAL + HIGH
+#   cve-critical.txt     — Trivy CRITICAL only
+#
+# =============================================================================
+
+ARG TRTLLM_IMAGE=nvcr.io/nvidia/ai-dynamo/tensorrtllm-runtime:1.1.0
+ARG VLLM_IMAGE=nvcr.io/nvidia/ai-dynamo/vllm-runtime:1.1.0
+
+# Public-only FROM chain (distribution-review requirement):
+#   nvcr.io/nvidia/cuda-dl-base                      — NVIDIA NGC, public
+#   nvcr.io/nvidia/ai-dynamo/tensorrtllm-runtime     — NVIDIA NGC, public
+#   nvcr.io/nvidia/ai-dynamo/vllm-runtime            — NVIDIA NGC, public
+#   aquasec/trivy + anchore/syft                     — Docker Hub, scanner-only
+# The networking stages below build the EFA + NCCL + UCX + NIXL stack from
+# source on top of cuda-dl-base, so there is NO dependency on a private
+# ECR or the personal public.ecr.aws/v9l4g5s4 namespace.
+
+ARG CUDA_DL_BASE=nvcr.io/nvidia/cuda-dl-base:25.06-cuda12.9-devel-ubuntu24.04
+ARG GDRCOPY_REF=v2.5.2
+ARG EFA_VERSION=1.48.0
+ARG UCX_REF=v1.20.0
+ARG NIXL_REF=v1.0.1
+ARG NCCL_VERSION=v2.30.3-1
+
+# Fat default spans A100 (sm_80), A10 (sm_86), L40S/L4 (sm_89), H100 (sm_90),
+# H200/B200 (sm_100), and B300 (sm_120). Override via `./build.sh -a "<sm list>"`
+# or `CUDA_ARCH_LIST=...` to produce a targeted single/multi-arch image.
+ARG NVCC_GENCODE="-gencode=arch=compute_80,code=sm_80 -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_89,code=sm_89 -gencode=arch=compute_90,code=sm_90 -gencode=arch=compute_100,code=sm_100 -gencode=arch=compute_120,code=sm_120"
+
+# ---------------------
+# Security scanner binaries (not in final image's ancestry)
+# ---------------------
+FROM aquasec/trivy:latest AS trivy-bin
+FROM anchore/syft:latest AS syft-bin
+
+# =============================================================================
+# efa-rdma-stage — EFA 1.48.0 + GDRCopy 2.5.2 on public NGC base
+# =============================================================================
+FROM ${CUDA_DL_BASE} AS efa-rdma-stage
+
+ARG GDRCOPY_REF
+ARG EFA_VERSION
+
+USER root
+WORKDIR /workspace
+
+ENV CUDA_HOME=/usr/local/cuda \
+    PATH=/usr/local/cuda/bin:$PATH
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        autoconf automake build-essential cmake curl git \
+        libnuma-dev libtool librdmacm-dev libibverbs-dev \
+        ninja-build numactl pkg-config \
+        python3-dev python3-pip wget \
+        pciutils net-tools iproute2 \
+        nvtop \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# AWS EFA: two-pass install — full install (upgrade rdma-core to v59) then NGC overlay
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && \
+    mkdir -p /tmp/efa && cd /tmp/efa && \
+    curl --retry 3 --retry-delay 2 -fsSL -o aws-efa-installer-${EFA_VERSION}.tar.gz \
+        https://efa-installer.amazonaws.com/aws-efa-installer-${EFA_VERSION}.tar.gz && \
+    tar -xf aws-efa-installer-${EFA_VERSION}.tar.gz && \
+    cd aws-efa-installer && \
+    ./efa_installer.sh -y --skip-kmod --skip-limit-conf --no-verify && \
+    ./efa_installer.sh --build-ngc -y && \
+    dpkg --force-depends -i DEBS/UBUNTU*/$(uname -m)/libfabric-aws-dev_*.deb && \
+    rm -f /opt/amazon/efa/lib/libfabric.a && \
+    rm -rf /tmp/efa && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    ldconfig
+
+# CVE-2025-68121 mitigation: remove Nsight Systems nic_sampler (Go 1.23.4 TLS bug)
+RUN find /usr/local/cuda*/NsightSystems-cli-*/target-linux-x64/plugins/efa_metrics/nic_sampler \
+         -delete 2>/dev/null; \
+    find / -type f -name "nic_sampler" -delete 2>/dev/null; \
+    echo "nic_sampler removed"
+
+RUN git clone --depth 1 --branch ${GDRCOPY_REF} https://github.com/NVIDIA/gdrcopy.git && \
+    cd gdrcopy && \
+    make -j$(nproc) prefix=/opt/gdrcopy CUDA=${CUDA_HOME} lib && \
+    make prefix=/opt/gdrcopy CUDA=${CUDA_HOME} install && \
+    echo "/opt/gdrcopy/lib" > /etc/ld.so.conf.d/gdrcopy.conf && \
+    ldconfig && ls /opt/gdrcopy/lib/libgdrapi.so && \
+    cd /workspace && rm -rf gdrcopy
+
+COPY scripts/efa/detect-efa.sh /usr/local/bin/detect-efa.sh
+COPY scripts/efa/efatop.sh     /usr/local/bin/efatop.sh
+RUN chmod +x /usr/local/bin/detect-efa.sh /usr/local/bin/efatop.sh
+
+ENV LD_LIBRARY_PATH="/opt/amazon/efa/lib:/opt/gdrcopy/lib:${LD_LIBRARY_PATH:-}" \
+    PATH="/opt/amazon/efa/bin:${PATH}"
+
+# =============================================================================
+# networking-builder — UCX + NIXL + NCCL source builds
+# =============================================================================
+FROM efa-rdma-stage AS networking-builder
+
+ARG UCX_REF
+ARG NIXL_REF
+ARG NCCL_VERSION
+ARG NVCC_GENCODE
+
+USER root
+WORKDIR /workspace
+
+ENV CUDA_HOME=/usr/local/cuda \
+    PATH=/usr/local/cuda/bin:$PATH
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    libhwloc-dev libgflags-dev libtomlplusplus-dev && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir --break-system-packages meson pybind11
+
+RUN git clone --depth 1 --branch ${UCX_REF} https://github.com/openucx/ucx.git && \
+    cd ucx && ./autogen.sh && \
+    ./contrib/configure-release \
+        --prefix=/usr/local/ucx \
+        --enable-shared --disable-static --disable-doxygen-doc \
+        --enable-optimizations --enable-cma --enable-devel-headers \
+        --with-cuda=${CUDA_HOME} --with-verbs --with-dm \
+        --with-gdrcopy=/opt/gdrcopy --with-efa=/opt/amazon/efa --enable-mt && \
+    make -j$(nproc) && make -j install-strip && \
+    cd /workspace && rm -rf ucx
+
+ENV NIXL_PREFIX=/opt/nvidia/nvda_nixl \
+    NIXL_LIB_DIR=/opt/nvidia/nvda_nixl/lib64 \
+    NIXL_PLUGIN_DIR=/opt/nvidia/nvda_nixl/lib64/plugins
+
+RUN git clone --depth 1 --branch ${NIXL_REF} https://github.com/ai-dynamo/nixl.git && \
+    cd nixl && mkdir build && \
+    meson setup build/ --prefix=${NIXL_PREFIX} --libdir=lib64 --buildtype=release \
+        -Dcudapath_lib="${CUDA_HOME}/lib64" -Dcudapath_inc="${CUDA_HOME}/include" \
+        -Ducx_path="/usr/local/ucx" -Dlibfabric_path="/opt/amazon/efa" \
+        -Dbuild_tests=true -Dbuild_examples=true && \
+    cd build && ninja && ninja install && \
+    cd /workspace && rm -rf nixl
+
+# etcd-cpp-apiv3 — required for nixlbench's ETCD coordination runtime.
+# nixlbench's meson.build does `dependency('etcd-cpp-api', required : false)`;
+# without this dep, meson disables ETCD runtime at compile time and the binary
+# fails at flag-parse with "Invalid runtime: ETCD" even with default flags.
+# Round 4 evidence: docs/evidence/rev8-pr72-e2e-2026-05-21/round4-nixlbench-multinode/VERDICT.md
+RUN set -eux; \
+    apt-get update && apt-get install -y --no-install-recommends \
+        libcpprest-dev libprotobuf-dev libgrpc-dev libgrpc++-dev protobuf-compiler-grpc && \
+    rm -rf /var/lib/apt/lists/*; \
+    git clone --depth 1 --branch v0.15.4 https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3.git && \
+    cd etcd-cpp-apiv3 && mkdir build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .. && \
+    make -j$(nproc) && make install && ldconfig && \
+    mkdir -p /usr/local/lib/pkgconfig && \
+    printf 'prefix=/usr/local\nexec_prefix=${prefix}\nlibdir=${exec_prefix}/lib\nincludedir=${prefix}/include\n\nName: etcd-cpp-api\nDescription: etcd C++ client library\nVersion: 0.15.4\nLibs: -L${libdir} -letcd-cpp-api -lcpprest -lprotobuf\nCflags: -I${includedir}\n' \
+        > /usr/local/lib/pkgconfig/etcd-cpp-api.pc && \
+    pkg-config --exists etcd-cpp-api && pkg-config --modversion etcd-cpp-api && \
+    cd /workspace && rm -rf etcd-cpp-apiv3
+
+# nixlbench (C++ NIXL benchmark) — paired with NIXL above. Apt deps
+# libhwloc-dev libgflags-dev libtomlplusplus-dev mirror base/networking-base/Dockerfile.
+# etcd-cpp-api is built from source above so the ETCD runtime is enabled.
+# Without /opt/nixlbench, the COPY --from=networking downstream fails the build
+# (rev8 build #14 hit this exact gap). Without etcd-cpp-api, the binary can't
+# coordinate cross-node and fails with "Invalid runtime: ETCD" (rev8 round 4).
+RUN set -eux; \
+    apt-get update && apt-get install -y --no-install-recommends \
+        libhwloc-dev libgflags-dev libtomlplusplus-dev && \
+    rm -rf /var/lib/apt/lists/*; \
+    git clone --depth 1 --branch ${NIXL_REF} https://github.com/ai-dynamo/nixl.git nixl-bench-src && \
+    cd nixl-bench-src/benchmark/nixlbench && mkdir build && \
+    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-} \
+    meson setup build/ --prefix=/opt/nixlbench --libdir=lib64 --buildtype=release \
+        -Dnixl_path="${NIXL_PREFIX}" \
+        -Dcudapath_lib="${CUDA_HOME}/lib64" \
+        -Dcudapath_inc="${CUDA_HOME}/include" \
+        -Detcd_inc_path=/usr/local/include \
+        -Detcd_lib_path=/usr/local/lib && \
+    grep -q "ETCD_AVAILABLE.*1\|HAVE_ETCD.*1" build/meson-info/intro-buildoptions.json 2>/dev/null \
+        || meson configure build/ | grep -i etcd || true; \
+    cd build && ninja && ninja install && \
+    test -x /opt/nixlbench/bin/nixlbench && \
+    cd /workspace && rm -rf nixl-bench-src
+
+RUN git clone --branch ${NCCL_VERSION} --depth 1 https://github.com/NVIDIA/nccl.git && \
+    cd nccl && \
+    make -j$(nproc) src.build \
+        NVCC_GENCODE="${NVCC_GENCODE}" \
+        CUDA_HOME=${CUDA_HOME} BUILDDIR=/workspace/nccl-build && \
+    make install PREFIX=/usr/local/nccl BUILDDIR=/workspace/nccl-build && \
+    cd /workspace && rm -rf nccl nccl-build
+
+# nccl-tests v2.18.2 — bandwidth benches (all_reduce_perf, all_gather_perf, etc).
+# Not in upstream nccl install; built from source here so /opt/nccl-tests/bin
+# ships in the final combined image. Used by docs/evidence/multinode-*/t11.
+RUN git clone --branch v2.18.2 --depth 1 https://github.com/NVIDIA/nccl-tests.git && \
+    cd nccl-tests && \
+    make -j$(nproc) NCCL_HOME=/usr/local/nccl CUDA_HOME=${CUDA_HOME} MPI=0 && \
+    mkdir -p /opt/nccl-tests/bin && cp -r build/* /opt/nccl-tests/bin/ && \
+    cd /workspace && rm -rf nccl-tests
+
+RUN curl -sL "https://dl.k8s.io/release/v1.35.4/bin/linux/amd64/kubectl" -o /usr/local/bin/kubectl && \
+    chmod +x /usr/local/bin/kubectl
+
+# networking stage is the runtime view — everything subsequent COPY --from=networking uses
+FROM networking-builder AS networking
+
+# ---------------------
+# TRT-LLM stage
+# ---------------------
+FROM ${TRTLLM_IMAGE} AS trtllm-stage
+
+USER root
+
+# EFA + RDMA core + UCX + NIXL + GDRCopy
+COPY --from=networking /opt/gdrcopy            /opt/gdrcopy
+COPY --from=networking /usr/local/ucx          /usr/local/ucx
+COPY --from=networking /opt/amazon/efa         /opt/amazon/efa
+COPY --from=networking /opt/amazon/aws-ofi-nccl /opt/amazon/aws-ofi-nccl
+COPY --from=networking /opt/nvidia/nvda_nixl   /opt/nvidia/nvda_nixl
+COPY --from=networking /opt/nixlbench          /opt/nixlbench
+COPY --from=networking /usr/local/nccl         /usr/local/nccl
+COPY --from=networking /opt/nccl-tests         /opt/nccl-tests
+
+# rdma-core libs w/ EFA_1.4 symbols
+COPY --from=networking /lib/x86_64-linux-gnu/libefa.so*      /lib/x86_64-linux-gnu/
+COPY --from=networking /lib/x86_64-linux-gnu/libibverbs.so*  /lib/x86_64-linux-gnu/
+COPY --from=networking /lib/x86_64-linux-gnu/librdmacm.so*   /lib/x86_64-linux-gnu/
+# libibverbs provider shared objects (rdmav59 ABI — what NCCL 2.30+ loads).
+# The upstream NVIDIA Dynamo runtime images ship rdmav34; replace with v59.
+COPY --from=networking /usr/lib/x86_64-linux-gnu/libibverbs/ /usr/lib/x86_64-linux-gnu/libibverbs/
+
+RUN cd /lib/x86_64-linux-gnu \
+ && LIBEFA=$(ls libefa.so.1.*.0 2>/dev/null | sort -V | tail -1) \
+ && [ -n "$LIBEFA" ] && ln -sf "$LIBEFA" libefa.so.1 && ln -sf "$LIBEFA" libefa.so || true \
+ && ldconfig
+
+# Python tooling
+COPY --from=networking /usr/local/bin/kubectl /usr/local/bin/kubectl
+RUN pip install --no-cache-dir \
+      "nemo-evaluator>=0.2.5" \
+      "nvidia-resiliency-ext>=0.5.0" \
+      "genai-perf>=0.0.16" \
+      "nixl>=1.0.0" \
+      boto3 2>/dev/null || true
+
+# nixlbench runtime deps. The build stage uses -dev variants (which provide
+# headers + symlinks for compilation); runtime stages need the actual .so
+# packages. Without these, `nixlbench` fails at exec with "libgflags.so.2.2:
+# cannot open shared object file". Round 4 evidence pinned this gap.
+# nixlbench also links against etcd-cpp-api → cpprest + protobuf + libgrpc.
+COPY --from=networking /usr/local/lib/libetcd-cpp-api*.so* /usr/local/lib/
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgflags2.2 libtomlplusplus3 \
+        libcpprest2.10 libprotobuf32t64 libgrpc29t64 libgrpc++1.51t64 && \
+    rm -rf /var/lib/apt/lists/* && \
+    ldconfig
+
+RUN echo "/opt/dynamo/venv"                                 > /opt/.trtllm_prefix \
+ && echo "/opt/dynamo/venv/lib/python3.12/site-packages"    > /opt/.trtllm_sitepkg \
+ && test -d /opt/dynamo/venv/lib/python3.12/site-packages/tensorrt_llm \
+ && test -x /opt/dynamo/venv/bin/trtllm-serve \
+ && test -x /opt/dynamo/venv/bin/trtllm-build \
+ && test -x /opt/nixlbench/bin/nixlbench
+
+# ---------------------
+# vLLM stage
+# ---------------------
+FROM ${VLLM_IMAGE} AS vllm-stage
+
+USER root
+
+COPY --from=networking /opt/gdrcopy            /opt/gdrcopy
+COPY --from=networking /usr/local/ucx          /usr/local/ucx
+COPY --from=networking /opt/amazon/efa         /opt/amazon/efa
+COPY --from=networking /opt/amazon/aws-ofi-nccl /opt/amazon/aws-ofi-nccl
+COPY --from=networking /opt/nvidia/nvda_nixl   /opt/nvidia/nvda_nixl
+COPY --from=networking /opt/nixlbench          /opt/nixlbench
+COPY --from=networking /usr/local/nccl         /usr/local/nccl
+# nccl-tests (all_reduce_perf, all_gather_perf, etc.) — lets cross-node
+# bandwidth benches run without installing anything extra. 2026-05-05 multinode
+# T11 needed these and they were only in the efa base, not combined.
+COPY --from=networking /opt/nccl-tests         /opt/nccl-tests
+
+COPY --from=networking /lib/x86_64-linux-gnu/libefa.so*      /lib/x86_64-linux-gnu/
+COPY --from=networking /lib/x86_64-linux-gnu/libibverbs.so*  /lib/x86_64-linux-gnu/
+COPY --from=networking /lib/x86_64-linux-gnu/librdmacm.so*   /lib/x86_64-linux-gnu/
+# libibverbs provider shared objects (rdmav59 ABI — what NCCL 2.30+ loads).
+# The upstream NVIDIA Dynamo runtime images ship rdmav34; replace with v59.
+COPY --from=networking /usr/lib/x86_64-linux-gnu/libibverbs/ /usr/lib/x86_64-linux-gnu/libibverbs/
+
+RUN cd /lib/x86_64-linux-gnu \
+ && LIBEFA=$(ls libefa.so.1.*.0 2>/dev/null | sort -V | tail -1) \
+ && [ -n "$LIBEFA" ] && ln -sf "$LIBEFA" libefa.so.1 && ln -sf "$LIBEFA" libefa.so || true \
+ && ldconfig
+
+COPY --from=networking /usr/local/bin/kubectl /usr/local/bin/kubectl
+RUN pip install --no-cache-dir \
+      "nemo-evaluator>=0.2.5" \
+      "nvidia-resiliency-ext>=0.5.0" \
+      "genai-perf>=0.0.16" \
+      "nixl>=1.0.0" \
+      boto3 2>/dev/null || true
+
+# nixlbench runtime deps — see trtllm-stage explanation above.
+COPY --from=networking /usr/local/lib/libetcd-cpp-api*.so* /usr/local/lib/
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgflags2.2 libtomlplusplus3 \
+        libcpprest2.10 libprotobuf32t64 libgrpc29t64 libgrpc++1.51t64 && \
+    rm -rf /var/lib/apt/lists/* && \
+    ldconfig
+
+# ---------------------
+# Combined stage — vLLM base + TRT-LLM overlay
+# ---------------------
+FROM vllm-stage AS combined
+
+USER root
+
+# OpenMPI runtime: TRT-LLM's torch binary links libmpi.so.40 at load time.
+# Distro openmpi is safe here — HPCX is kept unset so aws-ofi-nccl is the active
+# NCCL network plugin over EFA/libfabric; OpenMPI just satisfies torch's dlopen.
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        libopenmpi3 openmpi-bin && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=trtllm-stage /opt/dynamo/venv                    /opt/trtllm-venv
+COPY --from=trtllm-stage /opt/.trtllm_prefix                 /opt/trtllm/.prefix
+COPY --from=trtllm-stage /opt/.trtllm_sitepkg                /opt/trtllm/.sitepkg
+
+# Intel MKL libraries required by TRT-LLM's torch.
+# The upstream NGC tensorrtllm-runtime ships MKL at /usr/local/lib/libmkl_*.
+# Copy them into /opt/trtllm-libs so we can add them to the trtllm-backend
+# LD_LIBRARY_PATH without polluting the default (vLLM) runtime linker path.
+COPY --from=trtllm-stage /usr/local/lib/libmkl_*            /opt/trtllm-libs/
+COPY --from=trtllm-stage /usr/local/lib/libiomp5*           /opt/trtllm-libs/
+
+# CUDA 13 runtime libraries required by TRT-LLM.
+# The trtllm venv bundles nvidia-cu13 wheels for some libs but torch expects
+# system CUDA 13 runtime libs for libcublas/libcusolver/libcufft/libcudnn.
+# vLLM uses CUDA 12.9 (the image's default); TRT-LLM torch uses CUDA 13.
+# Segregating under /opt/trtllm-cuda13 keeps the two CUDA stacks side-by-side.
+COPY --from=trtllm-stage /usr/local/cuda-13.1/targets/x86_64-linux/lib/  /opt/trtllm-cuda13/
+COPY --from=trtllm-stage /usr/local/cuda/include                         /opt/trtllm-cuda13/include
+
+# cuDNN 9 for CUDA 13 (TRT-LLM torch dlopens libcudnn.so.9 during init).
+COPY --from=trtllm-stage /usr/lib/x86_64-linux-gnu/libcudnn*   /opt/trtllm-cuda13/
+# nccl for CUDA 13 (TRT-LLM's torch links its own NCCL)
+COPY --from=trtllm-stage /usr/lib/x86_64-linux-gnu/libnccl.so* /opt/trtllm-cuda13/
+# UCC (collective comms library) from HPCX — TRT-LLM torch links it.
+# HPCX ompi is kept UNSET so aws-ofi-nccl remains the NCCL net plugin; UCC is
+# only loaded by torch's dlopen chain, not used as a message transport.
+COPY --from=trtllm-stage /opt/hpcx/ucc/lib/libucc.so*          /opt/trtllm-libs/
+COPY --from=trtllm-stage /opt/hpcx/ucc/lib/ucc                 /opt/trtllm-libs/ucc
+# Also pull the HPCX ompi libraries TRT-LLM was linked against (libmpi.so.40.30.8).
+# Distro libopenmpi3 is .30.6 which usually works via soname, but keep HPCX as a
+# fallback under a dedicated path for future experiments.
+COPY --from=trtllm-stage /opt/hpcx/ompi/lib/libmpi.so*         /opt/trtllm-libs/
+COPY --from=trtllm-stage /opt/hpcx/ompi/lib/libopen-*          /opt/trtllm-libs/
+# nvshmem 3 for CUDA 13 — TRT-LLM torch links libnvshmem_host.so.3
+COPY --from=trtllm-stage /usr/lib/x86_64-linux-gnu/nvshmem/13  /opt/trtllm-cuda13/nvshmem
+
+RUN test -d /opt/trtllm-venv/lib/python3.12/site-packages/tensorrt_llm \
+ && test -x /opt/trtllm-venv/bin/trtllm-serve \
+ && test -x /opt/trtllm-venv/bin/trtllm-build \
+ && mkdir -p /opt/trtllm/bin \
+ && ln -sf /opt/trtllm-venv/bin/trtllm-serve /opt/trtllm/bin/trtllm-serve \
+ && ln -sf /opt/trtllm-venv/bin/trtllm-build /opt/trtllm/bin/trtllm-build \
+ && ln -sf /opt/trtllm-venv/lib/python3.12/site-packages/tensorrt_llm /opt/trtllm/tensorrt_llm
+
+WORKDIR /workspace
+
+COPY entrypoint.sh /usr/local/bin/dynamo-combined-entrypoint
+RUN chmod +x /usr/local/bin/dynamo-combined-entrypoint
+
+# NIXL plugin discovery — override the source-built path from networking-builder
+# stage. At runtime, Dynamo's vLLM workers use the pip-installed nixl-cu12
+# wheel, whose plugins live INSIDE the /opt/dynamo/venv site-packages. The NIXL
+# loader reads NIXL_PLUGIN_DIR (singular) from nixl_plugin_manager.cpp:278. The
+# canonical wheel plugin path is .nixl_cu12.mesonpy.libs/plugins/ because the
+# NIXL core libnixl.so sits in .nixl_cu12.mesonpy.libs/ and the loader falls back
+# to dladdr(&getPluginDir) + "/plugins" when the env var is unset. Setting the
+# env explicitly removes ambiguity.
+#
+# libfabric.so.1 and libhwloc.so.15 are NOT bundled in the nixl wheel (policy
+# since 0.7.0 — AWS EFA version-skew avoidance). Must be on LD_LIBRARY_PATH.
+# Auditwheel-vendored libs (libucp, libnuma) live in nixl_cu12.libs/.
+ENV NIXL_PLUGIN_DIR=/opt/dynamo/venv/lib/python3.12/site-packages/.nixl_cu12.mesonpy.libs/plugins \
+    LD_LIBRARY_PATH="/opt/amazon/efa/lib:/opt/amazon/efa/lib64:/opt/dynamo/venv/lib/python3.12/site-packages/nixl_cu12.libs:/opt/dynamo/venv/lib/python3.12/site-packages/.nixl_cu12.mesonpy.libs:/opt/nvidia/nvda_nixl/lib64:/opt/nvidia/nvda_nixl/lib64/plugins:/usr/local/ucx/lib:/opt/amazon/aws-ofi-nccl/lib:/usr/local/nccl/lib:/opt/gdrcopy/lib:${LD_LIBRARY_PATH:-}" \
+    PATH="/opt/nccl-tests/bin:/usr/local/ucx/bin:/opt/amazon/efa/bin:${PATH}" \
+    FI_PROVIDER=efa \
+    FI_EFA_USE_DEVICE_RDMA=1 \
+    FI_EFA_ENABLE_SHM=0 \
+    FI_EFA_ENABLE_SHM_TRANSFER=0 \
+    NCCL_NET_PLUGIN=ofi \
+    NCCL_TUNER_PLUGIN=ofi \
+    NCCL_GIN_TYPE=2 \
+    NCCL_NVLS_ENABLE=0 \
+    NCCL_SOCKET_IFNAME="^lo,docker,veth,eni" \
+    HPCX_DIR="" HPCX_MPI_DIR="" HPCX_HOME="" HPCX_UCX_DIR="" \
+    DYNAMO_BACKEND=vllm
+
+# Filesystem validation (no Python execution — avoids GPU-less CodeBuild stalls)
+RUN echo "=== dynamo-combined-efa build validation ===" \
+ && ls /opt/nvidia/nvda_nixl/lib64/plugins/libplugin_LIBFABRIC.so \
+ && echo "  NIXL (source) LIBFABRIC plugin: present" \
+ && ls /opt/dynamo/venv/lib/python3.12/site-packages/.nixl_cu12.mesonpy.libs/plugins/libplugin_LIBFABRIC.so \
+ && echo "  NIXL (pip wheel) LIBFABRIC plugin: present at NIXL_PLUGIN_DIR" \
+ && ls /opt/amazon/efa/lib/libfabric.so* >/dev/null \
+ && echo "  libfabric: present" \
+ && ls /opt/nccl-tests/bin/all_reduce_perf >/dev/null \
+ && echo "  nccl-tests: present" \
+ && ls /opt/trtllm-venv/bin/trtllm-serve >/dev/null \
+ && ls /opt/trtllm-venv/lib/python3.12/site-packages/tensorrt_llm >/dev/null \
+ && echo "  TRT-LLM venv present at /opt/trtllm-venv" \
+ && (ls /opt/dynamo/venv/lib/python3.12/site-packages/vllm >/dev/null 2>&1 \
+      && echo "  vLLM site-packages present at /opt/dynamo/venv" \
+      || echo "  vLLM: deferred (runtime check)") \
+ && echo "=== OK ==="
+
+# ---------------------
+# Security scan stage
+# ---------------------
+FROM combined AS security-scan
+
+ARG GENERATE_SBOM=1
+ARG CVE_SCAN=1
+
+COPY --from=trivy-bin /usr/local/bin/trivy /usr/local/bin/trivy
+COPY --from=syft-bin /syft /usr/local/bin/syft
+
+RUN mkdir -p /opt/security
+
+# SBOM generation (syft — SPDX + CycloneDX)
+RUN if [ "$GENERATE_SBOM" = "1" ]; then \
+        echo "=== Generating SBOM (SPDX) ===" && \
+        syft dir:/ -o spdx-json=/opt/security/sbom.spdx.json 2>/dev/null || \
+            echo '{"comment":"sbom generation skipped or failed"}' > /opt/security/sbom.spdx.json && \
+        echo "=== Generating SBOM (CycloneDX) ===" && \
+        syft dir:/ -o cyclonedx-json=/opt/security/sbom.cyclonedx.json 2>/dev/null || \
+            echo '{"comment":"sbom generation skipped or failed"}' > /opt/security/sbom.cyclonedx.json && \
+        echo "SBOM generation complete"; \
+    else \
+        echo '{"comment":"sbom generation disabled"}' > /opt/security/sbom.spdx.json && \
+        echo '{"comment":"sbom generation disabled"}' > /opt/security/sbom.cyclonedx.json; \
+    fi
+
+# CVE scan (trivy filesystem mode)
+RUN if [ "$CVE_SCAN" = "1" ]; then \
+        echo "=== CVE Scan (CRITICAL + HIGH) ===" && \
+        trivy filesystem --scanners vuln --severity CRITICAL,HIGH \
+            --skip-db-update --skip-java-db-update \
+            --timeout 10m --quiet / > /opt/security/cve-report.txt 2>&1 || true && \
+        echo "=== CVE Scan (CRITICAL only) ===" && \
+        trivy filesystem --scanners vuln --severity CRITICAL \
+            --skip-db-update --skip-java-db-update \
+            --timeout 10m --quiet / > /opt/security/cve-critical.txt 2>&1 || true && \
+        echo "CVE scan complete"; \
+    else \
+        echo "CVE scan disabled" > /opt/security/cve-report.txt && \
+        echo "CVE scan disabled" > /opt/security/cve-critical.txt; \
+    fi
+
+# ---------------------
+# Final stage — clean image with security artifacts, no scanner binaries
+# ---------------------
+FROM combined AS final
+
+COPY --from=security-scan /opt/security /opt/security
+
+LABEL maintainer="nemo-rl" \
+      description="Dynamo Combined EFA — TRT-LLM + vLLM with SBOM and CVE scan" \
+      dynamo.trtllm.version="1.1.0" \
+      dynamo.vllm.version="1.1.0" \
+      efa.version="1.48.0" \
+      networking.base="v5" \
+      security.sbom="spdx+cyclonedx at /opt/security/" \
+      security.cve-scan="trivy at /opt/security/"
+
+ENTRYPOINT ["/usr/local/bin/dynamo-combined-entrypoint"]
+CMD ["--help"]

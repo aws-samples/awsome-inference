@@ -1,0 +1,134 @@
+# Multi-node nixlbench LIBFABRIC test on EFA, VRAM↔VRAM (GPU-direct).
+# Both pods run identical args; ETCD elects initiator/target roles.
+# Image tag: rev8 rebuild produced by CodeBuild :8d3d2497 (commit 6b93ff1).
+# Replace 520cfc584abb with the SHA from the build's pushed ECR digest.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nixlbench-a
+  namespace: default
+  labels: { app: nixlbench, role: a }
+spec:
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  nodeSelector:
+    node.kubernetes.io/instance-type: ml.p5.48xlarge
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector: { matchExpressions: [{ key: app, operator: In, values: [nixlbench] }] }
+          topologyKey: kubernetes.io/hostname
+  tolerations:
+    - { key: nvidia.com/gpu, operator: Exists, effect: NoSchedule }
+  restartPolicy: Never
+  containers:
+    - name: main
+      image: ${ECR_REGISTRY}/dynamo-efa:520cfc584abb
+      imagePullPolicy: IfNotPresent
+      securityContext: { privileged: true }
+      command: ["/bin/bash", "-c"]
+      args:
+        - |
+          set -euo pipefail
+          export PATH=/opt/nixlbench/bin:$PATH
+          export LD_LIBRARY_PATH=/opt/nvidia/nvda_nixl/lib64:/opt/nvidia/nvda_nixl/lib64/plugins:$LD_LIBRARY_PATH
+          export NIXL_PLUGIN_DIR=/opt/nvidia/nvda_nixl/lib64/plugins
+          which nixlbench
+          nixlbench --version 2>&1 || true
+          # VRAM↔VRAM cross-node bench, LIBFABRIC backend, ETCD coordination.
+          # Both pods invoke the same command; ETCD resolves initiator/target.
+          nixlbench \
+            --etcd_endpoints http://dynamo-platform-etcd.default.svc.cluster.local:2379 \
+            --backend LIBFABRIC \
+            --initiator_seg_type VRAM \
+            --target_seg_type VRAM
+          sleep 90  # keep alive for kubectl logs
+      env:
+        - { name: FI_PROVIDER, value: "efa" }
+        - { name: FI_EFA_USE_DEVICE_RDMA, value: "1" }
+      resources:
+        limits:
+          nvidia.com/gpu: "1"
+          vpc.amazonaws.com/efa: "1"
+          hugepages-2Mi: 5120Mi
+          cpu: "8"
+          memory: 32Gi
+        requests:
+          nvidia.com/gpu: "1"
+          vpc.amazonaws.com/efa: "1"
+          hugepages-2Mi: 5120Mi
+          cpu: "4"
+          memory: 16Gi
+      volumeMounts:
+        - { name: dev-infiniband, mountPath: /dev/infiniband }
+        - { name: hugepages,      mountPath: /dev/hugepages  }
+        - { name: shm,            mountPath: /dev/shm        }
+  volumes:
+    - { name: dev-infiniband, hostPath: { path: /dev/infiniband, type: DirectoryOrCreate } }
+    - { name: hugepages,      emptyDir: { medium: HugePages } }
+    - { name: shm,            emptyDir: { medium: Memory, sizeLimit: 16Gi } }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nixlbench-b
+  namespace: default
+  labels: { app: nixlbench, role: b }
+spec:
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  nodeSelector:
+    node.kubernetes.io/instance-type: ml.p5.48xlarge
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector: { matchExpressions: [{ key: app, operator: In, values: [nixlbench] }] }
+          topologyKey: kubernetes.io/hostname
+  tolerations:
+    - { key: nvidia.com/gpu, operator: Exists, effect: NoSchedule }
+  restartPolicy: Never
+  containers:
+    - name: main
+      image: ${ECR_REGISTRY}/dynamo-efa:520cfc584abb
+      imagePullPolicy: IfNotPresent
+      securityContext: { privileged: true }
+      command: ["/bin/bash", "-c"]
+      args:
+        - |
+          set -euo pipefail
+          export PATH=/opt/nixlbench/bin:$PATH
+          export LD_LIBRARY_PATH=/opt/nvidia/nvda_nixl/lib64:/opt/nvidia/nvda_nixl/lib64/plugins:$LD_LIBRARY_PATH
+          export NIXL_PLUGIN_DIR=/opt/nvidia/nvda_nixl/lib64/plugins
+          which nixlbench
+          nixlbench --version 2>&1 || true
+          sleep 8  # let pod-a register first as initiator
+          nixlbench \
+            --etcd_endpoints http://dynamo-platform-etcd.default.svc.cluster.local:2379 \
+            --backend LIBFABRIC \
+            --initiator_seg_type VRAM \
+            --target_seg_type VRAM
+          sleep 90
+      env:
+        - { name: FI_PROVIDER, value: "efa" }
+        - { name: FI_EFA_USE_DEVICE_RDMA, value: "1" }
+      resources:
+        limits:
+          nvidia.com/gpu: "1"
+          vpc.amazonaws.com/efa: "1"
+          hugepages-2Mi: 5120Mi
+          cpu: "8"
+          memory: 32Gi
+        requests:
+          nvidia.com/gpu: "1"
+          vpc.amazonaws.com/efa: "1"
+          hugepages-2Mi: 5120Mi
+          cpu: "4"
+          memory: 16Gi
+      volumeMounts:
+        - { name: dev-infiniband, mountPath: /dev/infiniband }
+        - { name: hugepages,      mountPath: /dev/hugepages  }
+        - { name: shm,            mountPath: /dev/shm        }
+  volumes:
+    - { name: dev-infiniband, hostPath: { path: /dev/infiniband, type: DirectoryOrCreate } }
+    - { name: hugepages,      emptyDir: { medium: HugePages } }
+    - { name: shm,            emptyDir: { medium: Memory, sizeLimit: 16Gi } }

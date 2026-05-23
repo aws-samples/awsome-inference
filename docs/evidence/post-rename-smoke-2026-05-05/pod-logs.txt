@@ -1,0 +1,24 @@
+[smoke] 2026-05-05T17:16:35+00:00 boot with image=058264135704.dkr.ecr.us-east-2.amazonaws.com/dynamo-efa:d35812db45d6 sha=d35812db45d6
+GPU 0: NVIDIA H100 80GB HBM3 (UUID: GPU-45d5070a-17d4-b24e-a1aa-655b055c9eb0)
+provider: efa
+    fabric: efa-direct
+    domain: rdmap79s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap80s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+    domain: rdmap81s0-rdm
+    version: 204.0
+    type: FI_EP_RDM
+    protocol: FI_PROTO_EFA
+provider: efa
+    fabric: efa-direct
+[smoke][WARN] fi_info failed
+[smoke] sleeping for test harness

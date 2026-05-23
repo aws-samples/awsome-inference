@@ -1,0 +1,3 @@
+dynamo-combined-vllm-decodeworker-4e46d612-66bdc8f9cb-xkxzz       0/1     Running                  0             8m46s   10.1.3.73        hyperpod-i-0a3eb6d3953cceaa7                   <none>           <none>
+dynamo-combined-vllm-frontend-566fb465df-brmfl                    1/1     Running                  0             2m      10.1.0.188       ip-10-1-0-174.us-east-2.compute.internal       <none>           <none>
+dynamo-combined-vllm-prefillworker-4e46d612-6866dbc855-fnctd      0/1     Running                  0             8m45s   10.1.3.30        hyperpod-i-01aee349f9991c414                   <none>           <none>

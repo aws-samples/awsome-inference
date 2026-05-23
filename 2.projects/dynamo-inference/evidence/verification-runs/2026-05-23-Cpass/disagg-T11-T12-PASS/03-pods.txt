@@ -1,0 +1,4 @@
+NAME                                                           READY   STATUS    RESTARTS   AGE     IP           NODE                           NOMINATED NODE   READINESS GATES
+dynamo-combined-vllm-decodeworker-ac0f6b5e-864cc668d9-lkn7t    1/1     Running   0          3m24s   ${POD_IP}    ${NODE_A}   <none>           <none>
+dynamo-combined-vllm-frontend-67567df8b-sgqk4                  1/1     Running   0          3m24s   ${POD_IP}     ${NODE_A}   <none>           <none>
+dynamo-combined-vllm-prefillworker-ac0f6b5e-7c6d89bf88-2gkcj   1/1     Running   0          3m24s   ${POD_IP}   ${NODE_B}   <none>           <none>

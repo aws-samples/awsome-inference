@@ -1,0 +1,64 @@
+schema_version: "1.1"
+
+parameters:
+  ECR_REGISTRY: "${ECR_REGISTRY}"
+  IMAGE_TAG: "9467d1460c71"
+  AWS_REGION: "us-east-2"
+
+experiment_id: l2-backend-ucx-vs-libfabric
+campaign: pr72-rev8
+date: 2026-05-21T15:47:00Z
+status: PARTIAL  # LIBFABRIC PASS, UCX FAIL — both legs are diagnostic value
+
+image:
+  registry: "${ECR_REGISTRY}"
+  repository: dynamo-efa
+  tag: 9467d1460c71
+  digest: sha256:a5480b03efce4f92f18821480c222c5b108d1e805c315e6574d5e2dadb9066bc
+  built_from_commit: rev7
+
+git:
+  repo: dmvevents/awsome-inference-1
+  commit: rev7
+  branch: feature/dynamo-combined-vllm-trtllm-efa
+
+hardware:
+  region: us-east-2
+  instance_type: p5.48xlarge
+  node_count: 2
+  gpu: H100
+  efa_version: 1.48.0
+
+config:
+  test_type: backend-comparison
+  workload: nixlbench-build-attempts
+  features: [ucx, libfabric, l2-comparison]
+  topology: cross-node
+
+results:
+  libfabric_leg: PASS — wire-level cross-node OK
+  ucx_leg: FAIL — UCX cross-node falls back to link-local 169.254.0.1 (EC2 metadata IP) on hostNetwork pods
+  nixlbench_build_attempts: 5 — recorded at the time before round 5 image fix
+  conclusion: LIBFABRIC is the only viable NIXL backend on EFA RDM endpoints with hostNetwork
+
+documents:
+  verdict: VERDICT.md
+  reproduce: REPRODUCE.md
+
+artifacts:
+  - artifacts/libfabric-client.log
+  - artifacts/libfabric-server.log
+  - artifacts/nixlbench-build.log
+  - artifacts/nixlbench-meson-setup.log
+  - artifacts/nixlbench-setup.log
+  - artifacts/nixlbench-setup-attempt2.log
+  - artifacts/nixlbench-setup3.log
+
+notes: |
+  This experiment did the L2 wire-level comparison (UCX vs LIBFABRIC) AND
+  recorded the 5 failed nixlbench-build attempts that informed the rev8
+  Dockerfile fixes (etcd-cpp-api source build + runtime libs).
+
+  The build attempts captured here are diagnostic — they show why the
+  initial build approaches failed before the working recipe was nailed
+  in rev8 build #19.

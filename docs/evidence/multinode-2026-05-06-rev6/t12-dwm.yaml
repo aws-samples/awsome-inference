@@ -1,0 +1,199 @@
+apiVersion: v1
+items:
+- apiVersion: nvidia.com/v1alpha1
+  kind: DynamoWorkerMetadata
+  metadata:
+    creationTimestamp: "2026-05-06T07:09:51Z"
+    generation: 5
+    name: dynamo-combined-vllm-decodeworker-1aaa3f69-76fc75f9f-khlqc
+    namespace: default
+    ownerReferences:
+    - apiVersion: v1
+      blockOwnerDeletion: false
+      controller: true
+      kind: Pod
+      name: dynamo-combined-vllm-decodeworker-1aaa3f69-76fc75f9f-khlqc
+      uid: 3a41a8a2-50dd-4d01-9361-effab688bea7
+    resourceVersion: "249620598"
+    uid: 18dc4336-9a10-4e88-8c42-2b36926b0499
+  spec:
+    data:
+      endpoints:
+        default-dynamo-combined-vllm-1aaa3f69/backend/clear_kv_blocks/fc9f408ad6379:
+          component: backend
+          device_type: cpu
+          endpoint: clear_kv_blocks
+          instance_id: 4444174605443961
+          namespace: default-dynamo-combined-vllm-1aaa3f69
+          transport:
+            tcp: 10.1.3.73:36197/fc9f408ad6379/clear_kv_blocks
+          type: Endpoint
+        default-dynamo-combined-vllm-1aaa3f69/backend/generate/fc9f408ad6379:
+          component: backend
+          device_type: cpu
+          endpoint: generate
+          instance_id: 4444174605443961
+          namespace: default-dynamo-combined-vllm-1aaa3f69
+          transport:
+            tcp: 10.1.3.73:36197/fc9f408ad6379/generate
+          type: Endpoint
+        default-dynamo-combined-vllm-1aaa3f69/backend/get_perf_metrics/fc9f408ad6379:
+          component: backend
+          device_type: cpu
+          endpoint: get_perf_metrics
+          instance_id: 4444174605443961
+          namespace: default-dynamo-combined-vllm-1aaa3f69
+          transport:
+            tcp: 10.1.3.73:36197/fc9f408ad6379/get_perf_metrics
+          type: Endpoint
+      event_channels:
+        default-dynamo-combined-vllm-1aaa3f69//kv_metrics/fc9f408ad6379:
+          component: ""
+          instance_id: 4444174605443961
+          namespace: default-dynamo-combined-vllm-1aaa3f69
+          topic: kv_metrics
+          transport:
+            config:
+              subject_prefix: namespace.default-dynamo-combined-vllm-1aaa3f69
+            kind: Nats
+          type: EventChannel
+      model_cards:
+        default-dynamo-combined-vllm-1aaa3f69/backend/generate/fc9f408ad6379:
+          card_json:
+            context_length: 4096
+            display_name: meta-llama/Llama-3.1-8B-Instruct
+            gen_config:
+              hf_generation_config_json:
+                checksum: blake3:0523e4e0a4dd34381ea42fcf70a9e5130722c59b6c8425d5efdecac386c2790d
+                path: hf://meta-llama/Llama-3.1-8B-Instruct/generation_config.json
+            kv_cache_block_size: 16
+            media_decoder: null
+            media_fetcher: null
+            migration_limit: 0
+            model_info:
+              hf_config_json:
+                checksum: blake3:35526c33568b4823f63765ea29c1b2780659caddec1724adb057cc2495205f51
+                path: hf://meta-llama/Llama-3.1-8B-Instruct/config.json
+            model_input: Tokens
+            model_type: Chat | Completions
+            prompt_formatter:
+              hf_tokenizer_config_json:
+                checksum: blake3:ea3865c7f6f322eeab4d3a61ea83102e19bcfefb5b9022acf16b8ffeaabf21c9
+                path: hf://meta-llama/Llama-3.1-8B-Instruct/tokenizer_config.json
+            runtime_config:
+              data_parallel_size: 1
+              data_parallel_start_rank: 0
+              enable_eagle: false
+              enable_local_indexer: false
+              exclude_tools_when_tool_choice_none: true
+              max_num_batched_tokens: 8192
+              max_num_seqs: 1024
+              reasoning_parser: null
+              tool_call_parser: null
+              total_kv_blocks: 25731
+            slug: meta-llama_llama-3_1-8b-instruct
+            source_path: meta-llama/Llama-3.1-8B-Instruct
+            tokenizer:
+              hf_tokenizer_json:
+                checksum: blake3:6c628c92d1623f93fe811c3974c81fbc415d776f33cc440d44ee6c7d9ed9e066
+                path: hf://meta-llama/Llama-3.1-8B-Instruct/tokenizer.json
+          component: backend
+          endpoint: generate
+          instance_id: 4444174605443961
+          namespace: default-dynamo-combined-vllm-1aaa3f69
+          type: Model
+- apiVersion: nvidia.com/v1alpha1
+  kind: DynamoWorkerMetadata
+  metadata:
+    creationTimestamp: "2026-05-06T07:08:27Z"
+    generation: 4
+    name: dynamo-combined-vllm-prefillworker-1aaa3f69-695fc5475b-9fpc5
+    namespace: default
+    ownerReferences:
+    - apiVersion: v1
+      blockOwnerDeletion: false
+      controller: true
+      kind: Pod
+      name: dynamo-combined-vllm-prefillworker-1aaa3f69-695fc5475b-9fpc5
+      uid: 4b6d63d0-d43c-4782-ad29-5fcb2b1967ab
+    resourceVersion: "249619500"
+    uid: 13bcd625-72d5-495e-a9cc-4acc7f72a0a4
+  spec:
+    data:
+      endpoints:
+        default-dynamo-combined-vllm-1aaa3f69/prefill/clear_kv_blocks/121df74d1a22c0:
+          component: prefill
+          device_type: cpu
+          endpoint: clear_kv_blocks
+          instance_id: 5099497568477888
+          namespace: default-dynamo-combined-vllm-1aaa3f69
+          transport:
+            tcp: 10.1.0.198:40179/121df74d1a22c0/clear_kv_blocks
+          type: Endpoint
+        default-dynamo-combined-vllm-1aaa3f69/prefill/generate/121df74d1a22c0:
+          component: prefill
+          device_type: cpu
+          endpoint: generate
+          instance_id: 5099497568477888
+          namespace: default-dynamo-combined-vllm-1aaa3f69
+          transport:
+            tcp: 10.1.0.198:40179/121df74d1a22c0/generate
+          type: Endpoint
+        default-dynamo-combined-vllm-1aaa3f69/prefill/get_perf_metrics/121df74d1a22c0:
+          component: prefill
+          device_type: cpu
+          endpoint: get_perf_metrics
+          instance_id: 5099497568477888
+          namespace: default-dynamo-combined-vllm-1aaa3f69
+          transport:
+            tcp: 10.1.0.198:40179/121df74d1a22c0/get_perf_metrics
+          type: Endpoint
+      event_channels: {}
+      model_cards:
+        default-dynamo-combined-vllm-1aaa3f69/prefill/generate/121df74d1a22c0:
+          card_json:
+            context_length: 4096
+            display_name: meta-llama/Llama-3.1-8B-Instruct
+            gen_config:
+              hf_generation_config_json:
+                checksum: blake3:0523e4e0a4dd34381ea42fcf70a9e5130722c59b6c8425d5efdecac386c2790d
+                path: hf://meta-llama/Llama-3.1-8B-Instruct/generation_config.json
+            kv_cache_block_size: 16
+            media_decoder: null
+            media_fetcher: null
+            migration_limit: 0
+            model_info:
+              hf_config_json:
+                checksum: blake3:35526c33568b4823f63765ea29c1b2780659caddec1724adb057cc2495205f51
+                path: hf://meta-llama/Llama-3.1-8B-Instruct/config.json
+            model_input: Tokens
+            model_type: Prefill
+            prompt_formatter:
+              hf_tokenizer_config_json:
+                checksum: blake3:ea3865c7f6f322eeab4d3a61ea83102e19bcfefb5b9022acf16b8ffeaabf21c9
+                path: hf://meta-llama/Llama-3.1-8B-Instruct/tokenizer_config.json
+            runtime_config:
+              data_parallel_size: 1
+              data_parallel_start_rank: 0
+              enable_eagle: false
+              enable_local_indexer: true
+              exclude_tools_when_tool_choice_none: true
+              max_num_batched_tokens: 2048
+              max_num_seqs: 256
+              reasoning_parser: null
+              tool_call_parser: null
+              total_kv_blocks: 8930
+            slug: meta-llama_llama-3_1-8b-instruct
+            source_path: meta-llama/Llama-3.1-8B-Instruct
+            tokenizer:
+              hf_tokenizer_json:
+                checksum: blake3:6c628c92d1623f93fe811c3974c81fbc415d776f33cc440d44ee6c7d9ed9e066
+                path: hf://meta-llama/Llama-3.1-8B-Instruct/tokenizer.json
+          component: prefill
+          endpoint: generate
+          instance_id: 5099497568477888
+          namespace: default-dynamo-combined-vllm-1aaa3f69
+          type: Model
+kind: List
+metadata:
+  resourceVersion: ""

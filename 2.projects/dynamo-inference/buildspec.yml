@@ -1,0 +1,80 @@
+version: 0.2
+
+# CodeBuild spec — dynamo-inference (public FROM chain, single project).
+# All multi-line logic delegated to ci/codebuild-post-build.sh so the
+# CodeBuild YAML parser doesn't get confused by shell heredocs.
+#
+# Project env vars (set in the CodeBuild project):
+#   AWS_ACCOUNT_ID, AWS_DEFAULT_REGION  (always required)
+#   ECR_REPO_PREFIX                     ("" or "dynamo-inference/")
+#   CUDA_ARCH                           (80, 86, 90=H100 default, 100)
+#   S3_SBOM_BUCKET                      (optional, uploads SBOM + CVE)
+#   CVE_ALLOW_CRITICAL                  (0|1, default 0)
+#
+# Required project settings: BUILD_GENERAL1_2XLARGE, privilegedMode=true.
+
+env:
+  variables:
+    ECR_REPO_PREFIX: ""
+    S3_SBOM_BUCKET: ""
+    CVE_ALLOW_CRITICAL: "0"
+    # CUDA_ARCH removed in 2026-05-04 Alex rename: shipping images are now
+    # fat binaries covering sm80..sm120 (A100 → B300 + L40S). A single image
+    # per build step.
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - docker --version
+      - aws --version
+      - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.69.3
+      - trivy --version
+
+  pre_build:
+    commands:
+      - export ECR="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+      - export SHA="${CODEBUILD_RESOLVED_SOURCE_VERSION:0:12}"
+      - export EFA_URI="${ECR}/${ECR_REPO_PREFIX}efa:${SHA}"
+      - export COMBINED_URI="${ECR}/${ECR_REPO_PREFIX}dynamo-efa:${SHA}"
+      - 'echo "ECR=${ECR} SHA=${SHA}"'
+      - 'echo "efa target: ${EFA_URI}"'
+      - 'echo "dynamo-efa target: ${COMBINED_URI}"'
+      - aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" | docker login --username AWS --password-stdin "${ECR}"
+      - aws ecr describe-repositories --repository-names "${ECR_REPO_PREFIX}efa"         --region "${AWS_DEFAULT_REGION}" >/dev/null 2>&1 || aws ecr create-repository --repository-name "${ECR_REPO_PREFIX}efa"         --region "${AWS_DEFAULT_REGION}" --image-scanning-configuration scanOnPush=true --encryption-configuration encryptionType=AES256
+      - aws ecr describe-repositories --repository-names "${ECR_REPO_PREFIX}dynamo-efa"  --region "${AWS_DEFAULT_REGION}" >/dev/null 2>&1 || aws ecr create-repository --repository-name "${ECR_REPO_PREFIX}dynamo-efa"  --region "${AWS_DEFAULT_REGION}" --image-scanning-configuration scanOnPush=true --encryption-configuration encryptionType=AES256
+      - docker pull "${ECR}/${ECR_REPO_PREFIX}efa:latest"        2>/dev/null || echo "  no cached efa — first build"
+      - docker pull "${ECR}/${ECR_REPO_PREFIX}dynamo-efa:latest" 2>/dev/null || echo "  no cached dynamo-efa — first build"
+
+  build:
+    commands:
+      - cd "${CODEBUILD_SRC_DIR}/2.projects/dynamo-inference"
+      - DOCKER_BUILDKIT=1 ./build.sh -b efa      -t "${SHA}" --no-extract
+      # Alex 2026-05-04: combined build reuses the efa image built above via
+      # --base-image to avoid the 25-min network-stack recompile.
+      - DOCKER_BUILDKIT=1 ./build.sh -b combined -t "${SHA}" --no-extract --base-image "efa:${SHA}"
+      - docker tag "efa:${SHA}"        "${EFA_URI}"
+      - docker tag "efa:${SHA}"        "${ECR}/${ECR_REPO_PREFIX}efa:latest"
+      - docker tag "dynamo-efa:${SHA}" "${COMBINED_URI}"
+      - docker tag "dynamo-efa:${SHA}" "${ECR}/${ECR_REPO_PREFIX}dynamo-efa:latest"
+
+  post_build:
+    commands:
+      - export ECR="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+      - export SHA="${CODEBUILD_RESOLVED_SOURCE_VERSION:0:12}"
+      - export EFA_URI="${ECR}/${ECR_REPO_PREFIX}efa:${SHA}"
+      - export COMBINED_URI="${ECR}/${ECR_REPO_PREFIX}dynamo-efa:${SHA}"
+      - cd "${CODEBUILD_SRC_DIR}/2.projects/dynamo-inference"
+      - chmod +x ci/codebuild-post-build.sh
+      - ./ci/codebuild-post-build.sh
+
+artifacts:
+  files:
+    - 2.projects/dynamo-inference/cve-reports/**/*
+    - 2.projects/dynamo-inference/sbom-out/**/*
+  name: dynamo-inference-build-$CODEBUILD_RESOLVED_SOURCE_VERSION
+
+cache:
+  paths:
+    - /root/.docker/**/*

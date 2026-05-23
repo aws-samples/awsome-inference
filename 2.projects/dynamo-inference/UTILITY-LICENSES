@@ -1,0 +1,35 @@
+# Utility Licenses
+
+Licenses for tools used at BUILD time or DEV time that are NOT shipped inside
+the final Docker images of this workshop. These are required by Amazon OSA
+policy to be called out alongside the primary LICENSE and THIRD-PARTY-LICENSES.
+
+## Build / scanning tools
+
+| Tool | Version | License | Project |
+|---|---|---|---|
+| syft | latest | Apache-2.0 | https://github.com/anchore/syft |
+| trivy | latest | Apache-2.0 | https://github.com/aquasecurity/trivy |
+| grype | latest | Apache-2.0 | https://github.com/anchore/grype |
+| cyclonedx-cli | latest | Apache-2.0 | https://github.com/CycloneDX/cyclonedx-cli |
+| dpkg-licenses | master | MIT | https://github.com/daald/dpkg-licenses |
+
+## Kubernetes / cluster operations
+
+| Tool | Version | License | Project |
+|---|---|---|---|
+| kubectl | v1.35.4 (client-side) | Apache-2.0 | https://github.com/kubernetes/kubernetes |
+| helm | latest | Apache-2.0 | https://helm.sh/ |
+| docker / containerd | 2.x | Apache-2.0 | https://github.com/moby/moby |
+
+## Base images
+
+| Image | License | Registry |
+|---|---|---|
+| public.ecr.aws/ubuntu/ubuntu:24.04 | Ubuntu's various upstream licenses | Amazon ECR Public Gallery |
+| public.ecr.aws/amazonlinux/amazonlinux:2023 | Various | Amazon ECR Public Gallery |
+| nvcr.io/nvidia/ai-dynamo/tensorrtllm-runtime:1.0.1 | Commercial NVIDIA SLA + transitive OSS | NGC |
+| nvcr.io/nvidia/ai-dynamo/vllm-runtime:1.0.1 | Commercial NVIDIA SLA + transitive OSS | NGC |
+
+See LICENSE for this workshop's own license and THIRD-PARTY-LICENSES for
+licenses of components that ship inside the Docker images.

@@ -1,0 +1,2 @@
+-rw-r--r--. 1 root root 13180980 May  5 16:12 /opt/security/sbom.cyclonedx.json
+-rw-r--r--. 1 root root 29451776 May  5 16:11 /opt/security/sbom.spdx.json

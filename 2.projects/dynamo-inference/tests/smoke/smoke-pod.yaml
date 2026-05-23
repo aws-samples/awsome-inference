@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: SMOKE_POD_NAME
+  namespace: default
+  labels:
+    app: dynamo-smoke
+    sha: SMOKE_SHA
+  annotations:
+    k8s.v1.cni.cncf.io/networks: efa1,efa2,efa3,efa4,efa5,efa6,efa7,efa8,efa9,efa10,efa11,efa12,efa13,efa14,efa15,efa16,efa17,efa18,efa19,efa20,efa21,efa22,efa23,efa24,efa25,efa26,efa27,efa28,efa29,efa30,efa31,efa32
+spec:
+  restartPolicy: Never
+  hostNetwork: true
+  hostIPC: true
+  nodeSelector:
+    node.kubernetes.io/instance-type: ml.p5.48xlarge
+  tolerations:
+    - operator: Exists
+  volumes:
+    - name: dshm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 64Gi
+    - name: hugepages
+      emptyDir:
+        medium: HugePages
+  containers:
+    - name: dynamo
+      image: SMOKE_IMAGE_URI
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        capabilities:
+          add: [IPC_LOCK, SYS_PTRACE]
+        privileged: false
+      command: ["/bin/bash", "-lc"]
+      # Boot vLLM with a tiny model, keep pod alive, write marker file when ready.
+      args:
+        - |
+          set -eo pipefail
+          echo "[smoke] $(date -Is) boot with image=SMOKE_IMAGE_URI sha=SMOKE_SHA"
+          nvidia-smi -L
+          fi_info -p efa | head -20 || echo "[smoke][WARN] fi_info failed"
+          # Single-instance vLLM server on localhost:8000 (no DGD CRD).
+          export DYNAMO_BACKEND=vllm
+          export HF_HOME=/tmp/hf-cache
+          export FI_PROVIDER=efa
+          export FI_EFA_USE_DEVICE_RDMA=1
+          export NCCL_NET_PLUGIN=ofi
+          export NCCL_NVLS_ENABLE=0
+          mkdir -p /tmp/smoke
+          ( python3 -m vllm.entrypoints.openai.api_server \
+              --model SMOKE_MODEL \
+              --max-model-len 2048 \
+              --gpu-memory-utilization 0.40 \
+              --port 8000 \
+              > /tmp/smoke/server.log 2>&1 ) &
+          SERVER_PID=$!
+          # Readiness wait — up to 5 min for tiny model.
+          for i in $(seq 1 60); do
+              sleep 5
+              if curl -sf http://127.0.0.1:8000/v1/models >/dev/null 2>&1; then
+                  echo "[smoke] READY after ${i}*5s" > /tmp/smoke/ready
+                  break
+              fi
+              kill -0 "$SERVER_PID" 2>/dev/null || { echo "[smoke][FAIL] server died"; cat /tmp/smoke/server.log; exit 1; }
+          done
+          [ -f /tmp/smoke/ready ] || { echo "[smoke][FAIL] readiness timeout"; tail -80 /tmp/smoke/server.log; exit 1; }
+          # Keep alive so the test harness can run checks.
+          echo "[smoke] sleeping for test harness"
+          sleep 3600
+      resources:
+        limits:
+          nvidia.com/gpu: "1"
+          hugepages-2Mi: "2Gi"
+          vpc.amazonaws.com/efa: "32"
+          memory: "32Gi"
+          cpu: "8"
+        requests:
+          nvidia.com/gpu: "1"
+          hugepages-2Mi: "2Gi"
+          vpc.amazonaws.com/efa: "32"
+          memory: "16Gi"
+          cpu: "4"
+      volumeMounts:
+        - mountPath: /dev/shm
+          name: dshm
+        - mountPath: /dev/hugepages
+          name: hugepages
