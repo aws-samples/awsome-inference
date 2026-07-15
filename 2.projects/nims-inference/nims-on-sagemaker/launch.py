@@ -169,7 +169,7 @@ def create_shim_image():
     docker_pull(SRC_IMAGE_PATH)
 
     # Load Dockerfile template and replace placeholder
-    env = Environment(loader=FileSystemLoader('.'))
+    env = Environment(loader=FileSystemLoader('.'), autoescape=True)
     template = env.get_template('Dockerfile')  # Ensure your template is named Dockerfile.j2
     dockerfile_content = template.render(SRC_IMAGE=SRC_IMAGE_PATH)
 
@@ -296,7 +296,7 @@ def render_template(template_file, output_file, context):
     template_name = os.path.basename(template_file)
 
     # Set up the Jinja2 environment with the determined template directory
-    env = Environment(loader=FileSystemLoader(template_dir))
+    env = Environment(loader=FileSystemLoader(template_dir), autoescape=True)
     
     try:
         # Load and render the template
